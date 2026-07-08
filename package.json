@@ -1,0 +1,16 @@
+{
+  "name": "fresher-hub",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev --parallel",
+    "build": "turbo run build",
+    "check": "turbo run check"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.6"
+  }
+}
