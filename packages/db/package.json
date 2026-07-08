@@ -8,6 +8,7 @@
     "generate": "drizzle-kit generate --config drizzle.config.ts",
     "migrate": "node ./scripts/migrate.js",
     "seed": "node ./scripts/seed.js",
+    "import:admissions": "node ./scripts/import-admissions.js",
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit"
   },

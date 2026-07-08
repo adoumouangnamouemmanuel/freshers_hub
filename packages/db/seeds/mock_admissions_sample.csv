@@ -1,0 +1,11 @@
+school_id,email,full_name,phone,class_year,country,major
+30302027,fresher.one@ashesi.edu.gh,Fresher One,+233200000001,2027,Ghana,Computer Science
+40412027,fresher.two@ashesi.edu.gh,Fresher Two,+233200000002,2027,Nigeria,Business Administration
+50552028,fresher.three@ashesi.edu.gh,Fresher Three,+233200000003,2028,Kenya,Electrical Engineering
+60662028,fresher.four@ashesi.edu.gh,Fresher Four,+233200000004,2028,Ghana,Mechanical Engineering
+70772029,fresher.five@ashesi.edu.gh,Fresher Five,+233200000005,2029,Uganda,Computer Science
+80882029,fresher.six@ashesi.edu.gh,Fresher Six,+233200000006,2029,Ghana,Management Information Systems
+90992030,fresher.seven@ashesi.edu.gh,Fresher Seven,+233200000007,2030,Cameroon,Electrical Engineering
+10102030,fresher.eight@ashesi.edu.gh,Fresher Eight,+233200000008,2030,Rwanda,Computer Science
+11112031,fresher.nine@ashesi.edu.gh,Fresher Nine,+233200000009,2031,Ghana,Computer Engineering
+12122031,fresher.ten@ashesi.edu.gh,Fresher Ten,+233200000010,2031,Togo,Business Administration

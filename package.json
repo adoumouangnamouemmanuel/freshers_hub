@@ -11,7 +11,8 @@
     "check": "turbo run check",
     "db:generate": "npm run generate -w @fresher-hub/db",
     "db:migrate": "npm run migrate -w @fresher-hub/db",
-    "db:seed": "npm run seed -w @fresher-hub/db"
+    "db:seed": "npm run seed -w @fresher-hub/db",
+    "db:import-admissions": "npm run import:admissions -w @fresher-hub/db"
   },
   "devDependencies": {
     "@types/node": "^26.1.1",
