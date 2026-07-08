@@ -1,3 +1,5 @@
+export * from "./schema";
+
 export const dbPackageName = "@fresher-hub/db";
 
-export const dbPackageStatus = "scaffold-ready";
+export const dbPackageStatus = "identity-schema-ready";
