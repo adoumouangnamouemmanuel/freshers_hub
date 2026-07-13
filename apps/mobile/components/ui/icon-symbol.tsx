@@ -25,6 +25,7 @@ const MAPPING = {
   'heart.text.square.fill': 'support',
   'person.2.fill': 'groups',
   'questionmark.circle.fill': 'help',
+  'star.fill': 'star',
 } as IconMapping;
 
 /**

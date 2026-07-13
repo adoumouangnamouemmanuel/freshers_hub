@@ -4,6 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
+import { useAuth } from '@/context/auth-context';
+import { isClubLead } from '@/lib/permissions';
 
 const ACTIVE_TINT   = '#1f1a17';
 const INACTIVE_TINT = '#a89b8f';
@@ -12,7 +14,10 @@ const TAB_BASE_H    = 56; // visual height above the inset
 
 export default function TabLayout() {
   const insets = useSafeAreaInsets();
+  const { session } = useAuth();
   const tabBarHeight = TAB_BASE_H + insets.bottom;
+  
+  const showClubAdmin = session?.user?.roles ? isClubLead(session.user.roles) : false;
 
   return (
     <Tabs
@@ -77,6 +82,16 @@ export default function TabLayout() {
           title: 'Help',
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="questionmark.circle.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="club-admin"
+        options={{
+          title: 'My Club',
+          href: showClubAdmin ? '/(tabs)/club-admin' : null,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={26} name="star.fill" color={color} />
           ),
         }}
       />
