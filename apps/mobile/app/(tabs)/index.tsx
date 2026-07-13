@@ -24,6 +24,7 @@ type Post = {
   createdAt: string;
   authorName: string;
   authorAvatar: string | null;
+  authorId: string;
 };
 
 function PostCard({ post }: { post: Post }) {
