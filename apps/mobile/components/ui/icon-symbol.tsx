@@ -38,6 +38,8 @@ const MAPPING = {
   'envelope.fill': 'email',
   'message.fill': 'chat',
   'magnifyingglass': 'search',
+  'plus': 'add',
+  'xmark.circle.fill': 'cancel',
 };
 
 export type IconSymbolName = keyof typeof MAPPING;

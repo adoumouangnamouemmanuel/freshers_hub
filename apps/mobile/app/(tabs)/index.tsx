@@ -5,23 +5,108 @@ import {
   StyleSheet,
   Text,
   View,
+  ActivityIndicator,
+  RefreshControl
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Link } from "expo-router";
 
 import { useAuth } from "@/context/auth-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { apiRequest } from "@/lib/api";
+import { useEffect, useState } from "react";
+
+type Post = {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  createdAt: string;
+  authorName: string;
+  authorAvatar: string | null;
+};
+
+function PostCard({ post }: { post: Post }) {
+  const router = useRouter();
+  const { session } = useAuth();
+  const [expanded, setExpanded] = useState(false);
+  
+  const isLong = post.content.length > 120;
+  const displayContent = !isLong || expanded ? post.content : post.content.slice(0, 120) + "...";
+  const isAlert = post.category.toLowerCase() === "alert";
+  const isOwner = session?.user.id === post.authorId || session?.user.roles.some((r: any) => r.name === "admin");
+
+  return (
+    <Pressable 
+      style={[styles.postCard, isAlert && styles.alertCard]} 
+      onPress={() => {
+        if (isOwner) {
+          router.push({ pathname: "/post/[id]", params: { id: post.id } } as any);
+        } else if (isLong) {
+          setExpanded(!expanded);
+        }
+      }}
+    >
+      <View style={styles.postHeader}>
+        <View style={styles.postAuthorAvatar}>
+          <Text style={styles.postAuthorInitial}>{post.authorName.charAt(0).toUpperCase()}</Text>
+        </View>
+        <View style={styles.postAuthorInfo}>
+          <Text style={styles.postAuthorName}>{post.authorName}</Text>
+          <Text style={styles.postDate}>
+            {new Date(post.createdAt).toLocaleDateString()} • {post.category}
+          </Text>
+        </View>
+      </View>
+      <Text style={styles.postTitle}>{post.title}</Text>
+      <Text style={styles.postContent}>
+        {displayContent}
+        {isLong && !expanded && <Text style={styles.viewMoreInline}> View more</Text>}
+      </Text>
+    </Pressable>
+  );
+}
 
 export default function FeedScreen() {
   const router = useRouter();
-  const { session, signOut } = useAuth();
+  const { session } = useAuth();
 
-  const handleSignOut = async () => {
-    await signOut();
-    router.replace("/(auth)/login");
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchPosts = async () => {
+    try {
+      const data = await apiRequest<{ posts: Post[] }>("/posts");
+      setPosts(data.posts || []);
+    } catch (err) {
+      console.error("Failed to fetch posts:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPosts().finally(() => setIsLoading(false));
+  }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await fetchPosts();
+    setRefreshing(false);
   };
 
   const firstName = session?.user.fullName?.split(" ")[0] ?? "there";
   const userInitial = session?.user.fullName?.charAt(0).toUpperCase() ?? "?";
+
+  const allowedRoles = ["staff", "faculty", "student_leader", "admin", "club_lead"];
+  const canPost = session?.user.roles.some((r) => allowedRoles.includes(r.name));
+
+  const categories = ["All", "Announcement", "Event", "Alert"];
+  const [activeCategory, setActiveCategory] = useState("All");
+
+  const filteredPosts = posts.filter(p => {
+    if (activeCategory !== "All" && p.category.toLowerCase() !== activeCategory.toLowerCase()) return false;
+    return true;
+  });
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
@@ -29,40 +114,32 @@ export default function FeedScreen() {
         style={styles.scroll}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#A93C40" />}
       >
-        {/* Header Hero Section */}
-        <View style={styles.heroCard}>
-          <View style={styles.heroTop}>
-            <View>
-              <Text style={styles.greeting}>Hello, {firstName}</Text>
-              <Text style={styles.dateText}>
-                {new Date().toLocaleDateString("en-US", {
-                  weekday: "long",
-                  month: "long",
-                  day: "numeric",
-                })}
-              </Text>
-            </View>
-            <View style={styles.avatarCircle}>
-              <Text style={styles.avatarInitial}>{userInitial}</Text>
-            </View>
-          </View>
-          
-          <View style={styles.heroDivider} />
-          
-          <View style={styles.heroBottom}>
-            <View style={styles.studentInfo}>
-              <Text style={styles.studentId}>
-                {session?.user.studentProfile?.schoolId ?? "Student ID Pending"}
-              </Text>
-              <Text style={styles.studentClass}>
-                Class of {session?.user.studentProfile?.graduationYear ?? "2028"}
-              </Text>
-            </View>
-            <Pressable style={styles.signOutBtn} onPress={handleSignOut}>
-              <Text style={styles.signOutText}>Sign out</Text>
-            </Pressable>
-          </View>
+        {/* Top Header */}
+        <View style={styles.topHeader}>
+          <Pressable style={styles.headerAvatar} onPress={() => router.push("/profile")}>
+            <Text style={styles.headerAvatarText}>{userInitial}</Text>
+          </Pressable>
+          <Pressable style={styles.headerSearchContainer} onPress={() => router.push("/search")}>
+            <IconSymbol name="magnifyingglass" size={20} color="#9BA3AE" style={styles.searchIcon} />
+            <Text style={styles.searchPlaceholder}>Search campus updates...</Text>
+          </Pressable>
+        </View>
+
+        {/* Category Filters */}
+        <View style={styles.categoryScrollContainer}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScrollContent}>
+            {categories.map(cat => (
+              <Pressable 
+                key={cat} 
+                style={[styles.categoryChip, activeCategory === cat && styles.categoryChipActive]}
+                onPress={() => setActiveCategory(cat)}
+              >
+                <Text style={[styles.categoryChipText, activeCategory === cat && styles.categoryChipTextActive]}>{cat}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
         </View>
 
         {/* Quick Actions */}
@@ -79,11 +156,14 @@ export default function FeedScreen() {
               <Text style={styles.actionTileText}>Support</Text>
             </Pressable>
 
-            <Pressable style={styles.actionTile}>
+            <Pressable 
+              style={styles.actionTile}
+              onPress={() => router.push("/(tabs)/clubs")}
+            >
               <View style={[styles.actionIconBg, { backgroundColor: "#C9933A15" }]}>
-                <IconSymbol name="newspaper.fill" size={24} color="#C9933A" />
+                <IconSymbol name="person.2.fill" size={24} color="#C9933A" />
               </View>
-              <Text style={styles.actionTileText}>News</Text>
+              <Text style={styles.actionTileText}>Clubs</Text>
             </Pressable>
 
             <Pressable style={styles.actionTile}>
@@ -99,18 +179,35 @@ export default function FeedScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeaderRow}>
             <Text style={styles.sectionTitle}>Campus Updates</Text>
-            <Text style={styles.seeAllText}>See all</Text>
+            {canPost && (
+              <Link href="/new-post" asChild>
+                <Pressable style={styles.createPostBtn}>
+                  <IconSymbol name="plus" size={16} color="#FFFFFF" />
+                  <Text style={styles.createPostBtnText}>New Post</Text>
+                </Pressable>
+              </Link>
+            )}
           </View>
           
-          <View style={styles.emptyFeedCard}>
-            <View style={styles.emptyFeedIcon}>
-              <IconSymbol name="newspaper.fill" size={28} color="#9BA3AE" />
+          {isLoading ? (
+            <ActivityIndicator size="large" color="#A93C40" style={{ marginTop: 24 }} />
+          ) : posts.length === 0 ? (
+            <View style={styles.emptyFeedCard}>
+              <View style={styles.emptyFeedIcon}>
+                <IconSymbol name="newspaper.fill" size={28} color="#9BA3AE" />
+              </View>
+              <Text style={styles.emptyFeedTitle}>You're all caught up!</Text>
+              <Text style={styles.emptyFeedDesc}>
+                Announcements and events for your class will appear here.
+              </Text>
             </View>
-            <Text style={styles.emptyFeedTitle}>You're all caught up!</Text>
-            <Text style={styles.emptyFeedDesc}>
-              Announcements and events for your class will appear here.
-            </Text>
-          </View>
+          ) : (
+            <View style={styles.postsList}>
+              {filteredPosts.map((post) => (
+                <PostCard key={post.id} post={post} />
+              ))}
+            </View>
+          )}
         </View>
 
       </ScrollView>
@@ -132,80 +229,69 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
 
-  // Hero Card
-  heroCard: {
-    backgroundColor: "#A93C40", // Ashesi Maroon
-    borderRadius: 24,
-    padding: 24,
-    shadowColor: "#A93C40",
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  heroTop: {
+  // Top Header
+  topHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 8,
   },
-  greeting: {
-    fontSize: 28,
-    fontWeight: "800",
-    color: "#FFFFFF",
-    letterSpacing: -0.5,
-    marginBottom: 4,
-  },
-  dateText: {
-    fontSize: 14,
-    color: "rgba(255,255,255,0.8)",
-    fontWeight: "500",
-  },
-  avatarCircle: {
+  headerAvatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#A93C40",
     alignItems: "center",
     justifyContent: "center",
   },
-  avatarInitial: {
+  headerAvatarText: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#A93C40",
-  },
-  heroDivider: {
-    height: 1,
-    backgroundColor: "rgba(255,255,255,0.15)",
-    marginVertical: 20,
-  },
-  heroBottom: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  studentInfo: {
-    flex: 1,
-  },
-  studentId: {
-    fontSize: 16,
-    fontWeight: "700",
     color: "#FFFFFF",
-    letterSpacing: 1,
-    marginBottom: 2,
   },
-  studentClass: {
-    fontSize: 13,
-    color: "rgba(255,255,255,0.8)",
-  },
-  signOutBtn: {
-    backgroundColor: "rgba(255,255,255,0.15)",
+  headerSearchContainer: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 16,
+    borderRadius: 24,
+    height: 48,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
   },
-  signOutText: {
+  searchPlaceholder: {
+    color: "#9BA3AE",
+    fontSize: 16,
+  },
+  searchIcon: {
+    marginRight: 8,
+  },
+  categoryScrollContainer: {
+    marginHorizontal: -20,
+    marginTop: 0,
+  },
+  categoryScrollContent: {
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  categoryChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: "#F0F2F5",
+    borderWidth: 1,
+    borderColor: "transparent",
+  },
+  categoryChipActive: {
+    backgroundColor: "#A93C40",
+  },
+  categoryChipText: {
     fontSize: 13,
+    color: "#6B7280",
     fontWeight: "600",
+  },
+  categoryChipTextActive: {
     color: "#FFFFFF",
   },
 
@@ -230,7 +316,6 @@ const styles = StyleSheet.create({
     color: "#A93C40",
     marginBottom: 2,
   },
-
   // Action Grid
   actionGrid: {
     flexDirection: "row",
@@ -262,7 +347,7 @@ const styles = StyleSheet.create({
     color: "#1A2B4A",
   },
 
-  // Empty Feed
+  // Empty Feed & Posts
   emptyFeedCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 24,
@@ -295,5 +380,81 @@ const styles = StyleSheet.create({
     textAlign: "center",
     lineHeight: 22,
     paddingHorizontal: 20,
+  },
+  createPostBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#A93C40",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    gap: 4,
+  },
+  createPostBtnText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+    fontSize: 13,
+  },
+  postsList: {
+    gap: 16,
+  },
+  postCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  alertCard: {
+    backgroundColor: "#FEF2F2",
+    borderColor: "#FCA5A5",
+  },
+  postHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 16,
+  },
+  postAuthorAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#F0F2F5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  postAuthorInitial: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  postAuthorInfo: {
+    flex: 1,
+  },
+  postAuthorName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  postDate: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginTop: 2,
+  },
+  postTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#1A2B4A",
+    marginBottom: 8,
+    letterSpacing: -0.3,
+  },
+  postContent: {
+    fontSize: 16,
+    color: "#4B5563",
+    lineHeight: 26,
+  },
+  viewMoreInline: {
+    color: "#A93C40",
+    fontWeight: "700",
   },
 });
