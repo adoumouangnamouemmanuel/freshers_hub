@@ -1,4 +1,4 @@
-import * as SecureStore from "expo-secure-store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 
 import { apiRequest } from "./api";
@@ -55,7 +55,7 @@ async function getItem(key: string) {
     return storage.getItem(key);
   }
 
-  return SecureStore.getItemAsync(key);
+  return AsyncStorage.getItem(key);
 }
 
 async function setItem(key: string, value: string) {
@@ -65,7 +65,7 @@ async function setItem(key: string, value: string) {
     return;
   }
 
-  await SecureStore.setItemAsync(key, value);
+  await AsyncStorage.setItem(key, value);
 }
 
 async function removeItem(key: string) {
@@ -75,7 +75,7 @@ async function removeItem(key: string) {
     return;
   }
 
-  await SecureStore.deleteItemAsync(key);
+  await AsyncStorage.removeItem(key);
 }
 
 export async function loadSession() {
