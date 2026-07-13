@@ -6,7 +6,7 @@
 
 ## 1. Core Data Philosophy: Unified Profile
 
-Every person is **one row in `users`**, created once (via the Ashesi IT/admissions data import), and student identity lives in a separate student profile that carries the `school_id` plus the student-specific fields. **Every user starts from the imported identity source, but the `school_id` itself exists only for students.** Additional roles (`peer_coach`, `coach_admin`, `club_lead`, `staff`, etc.) are _added on top_ of that base identity, never replacing it — a club lead is still a student underneath, a peer coach is still a student underneath. This is what makes multi-role support low-friction: no separate signup, no separate account, no separate app experience — just more rows in `user_roles`.
+Every person is **one row in `users`**, created once (via the Ashesi IT/admissions data import), carrying a permanent `school_id` and `email`. **Every user starts with the `student` role.** Additional roles (`peer_coach`, `coach_admin`, `club_lead`, `staff`, etc.) are *added on top* of that base role, never replacing it — a club lead is still a student underneath, a peer coach is still a student underneath. This is what makes multi-role support low-friction: no separate signup, no separate account, no separate app experience — just more rows in `user_roles`.
 
 This decision drives the entire schema below: roles are additive metadata on a single identity, not a fork in identity.
 
@@ -51,13 +51,12 @@ flowchart TB
 ### 2.2 Why this shape
 
 - **Single backend API, two frontends** (mobile + web), same auth, same permission rules — no duplicated business logic.
-- **PostgreSQL with Row-Level Security (RLS)** enforces unit confidentiality _in the database itself_, not just in application code. Even a bug in the API layer cannot leak a Coaching report to a Counselling head, because Postgres itself refuses the row.
+- **PostgreSQL with Row-Level Security (RLS)** enforces unit confidentiality *in the database itself*, not just in application code. Even a bug in the API layer cannot leak a Coaching report to a Counselling head, because Postgres itself refuses the row.
 - **Background job runner** handles the things that must happen without a user present: nightly ODIP pairing sync, session reminder pushes, mandatory-session compliance recalculation.
 - **WhatsApp bridge as a redirect, not a raw link** — the API logs the "contact" click, then 302-redirects to `wa.me`, which is how click-tracking becomes possible without building chat.
 
 ### 2.3 Authentication
-
-- Accounts are **pre-provisioned**, not self-registered — imported from the admissions/IT dataset (`email`, `full_name`, `class_year`, `country`, `major`), with student-only `school_id` data stored in a dedicated profile table.
+- Accounts are **pre-provisioned**, not self-registered — imported from the admissions/IT dataset (`school_id`, `email`, `full_name`, `class_year`, `country`, `major`).
 - First login: user verifies their Ashesi email (magic link or OTP) and sets a password/PIN. No open signup form — the email must already exist in `users` from the import, closing off outside registration.
 - JWT-based sessions, short-lived access token + refresh token, standard for a mobile + web split.
 
@@ -72,6 +71,7 @@ Below is the full schema, grouped by domain. `uuid` primary keys throughout for 
 ```sql
 CREATE TABLE users (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    school_id       TEXT UNIQUE NOT NULL,
     email           TEXT UNIQUE NOT NULL,
     full_name       TEXT NOT NULL,
     phone           TEXT,
@@ -497,75 +497,64 @@ fresher-hub/
 
 ## 5. Four-Week Roadmap — Build in Add-On, Testable Increments
 
-Each step below is designed to be **independently mergeable and testable** — you should be able to demo something working at the end of every step, not just at the end of every week. Each maps to one or more GitHub issues (see §6).
+**Rule for every single step below: it includes schema + API + a real UI screen, together, in the same step.** Nothing is "backend this week, frontend later" — that's what made the earlier version feel disconnected (it promised a login and tab-bar demo at the end of Week 1 while all of Week 1's steps were backend-only). Each step is sized to roughly one working day, 5 steps per week, so progress is checkable day-by-day, not just at week boundaries.
 
-### Week 1 — Foundations (identity, data, navigation shell)
+### Week 1 — Foundations: a real login and a real (if empty) home screen
 
-| #   | Step                            | Deliverable                                                                                                  | Test Criteria                                                                                                  |
-| --- | ------------------------------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
-| 1.1 | Repo scaffold                   | Turborepo initialized, all 3 apps + `db`/`types` packages boot with placeholder screens                      | `turbo dev` runs mobile + web + api simultaneously without errors                                              |
-| 1.2 | Postgres schema v1              | Identity tables (`users`, `roles`, `units`, `user_roles`, `academic_years`) via Drizzle migrations           | Migration runs clean on a fresh Ashesi-server Postgres instance; can seed one test user with two roles         |
-| 1.3 | Admissions data import script   | CLI script to bulk-import IT/admissions CSV into `users` and student profiles, auto-assigning `student` role | Import 10-row sample CSV → 10 users created with correct student profile data (`school_id`/class_year/country) |
-| 1.4 | Auth (email verification + JWT) | Login flow: verify Ashesi email exists in `users`, OTP/magic link, issue JWT                                 | Can log in as a seeded test user on mobile and receive a valid token                                           |
-| 1.5 | Role-aware navigation shell     | `permissions.ts` config + mobile tab bar that changes based on roles returned at login                       | Logging in as `student` vs `student+club_lead` shows different tabs, verified manually                         |
-| 1.6 | CI pipeline                     | GitHub Actions: lint + typecheck + test on every PR                                                          | A deliberately broken PR fails CI; a clean PR passes                                                           |
+| Day | Step | What gets built (DB + API + UI, together) | What you can literally do at end of day |
+|---|---|---|---|
+| 1 | Repo + schema bootstrap | Turborepo scaffold; identity tables (`users`, `roles`, `units`, `user_roles`, `academic_years`) migrated onto real Postgres on the Ashesi server; seed script with 5 fake users, mixed roles | Connect to the DB with a client, see 5 real seeded rows with roles attached |
+| 2 | Admissions import + auth backend | CSV import script (assigns base `student` role); `credentials`/`refresh_tokens` tables; login endpoint (email + password → JWT); email OTP for first-time activation | Hit the login endpoint with curl/Postman using a seeded user, get back a real JWT |
+| 3 | Mobile: login screen (real UI) | Expo app: login screen, OTP/activation screen, secure token storage (`expo-secure-store`), calling the real API from Day 2 | Open the app on a phone/simulator, type a seeded user's email, log in for real, land on a blank "Home" screen |
+| 4 | Role-aware navigation shell | `permissions.ts` config; tab bar renders different tabs based on the roles returned at login; a placeholder screen per tab (title only, no data yet) | Log in as a plain `student` → see Feed/Map/Support/Clubs tabs. Log out, log in as a `club_lead` → see an extra "My Club" tab. Real difference, real login, on your phone. |
+| 5 | CI + RLS foundation | GitHub Actions (lint/typecheck/test on PR); enable RLS on `users`/`user_roles` with a first working policy (a user can read their own row and role list, nothing else) | A broken PR fails CI automatically; a manual SQL query as "user A" cannot read "user B"'s role row |
 
-**Week 1 exit demo:** log in as two different seeded users, see two different nav shells, backed by real Postgres data.
+**Week 1 exit demo (now actually true):** two people log into the real app on their own phones with their own seeded accounts, see two visibly different tab bars, backed by a live Postgres instance on the Ashesi server — not mocked, not "coming later."
 
-### Week 2 — Core information layer
+### Week 2 — Core information layer (the tabs get real content)
 
-| #   | Step                                  | Deliverable                                                                                      | Test Criteria                                                                                                 |
-| --- | ------------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
-| 2.1 | Help Center                           | `offices`, `office_staff`, `office_links` tables + API + mobile screens                          | Seed 3 offices; browse and open each office's detail page                                                     |
-| 2.2 | FAQ + Search                          | `faq_items` table, searchable list screen                                                        | Search "hostel" returns a matching seeded FAQ                                                                 |
-| 2.3 | Campus Map                            | Map integration (Mapbox/Google Maps), static building pins                                       | App shows map centered on campus with at least 5 pinned locations                                             |
-| 2.4 | Feed (announcements + campus updates) | `posts` table, post creation restricted to staff/faculty/student_leader/admin roles, feed screen | A `staff` user can post; a plain `student` user cannot (verified via permission check, both UI and API-level) |
-| 2.5 | Groups + targeted posts               | `groups`, `group_members`, `post_targets`                                                        | Post targeted to "Class of 2029" only appears in that group's feed, not others                                |
-| 2.6 | Events                                | `events`, `event_rsvps`, RSVP flow                                                               | Create an event with date/time/location/dress code; RSVP as a student; capacity limit enforced                |
-| 2.7 | Notifications skeleton                | `notifications`, `notification_preferences`, Expo push wiring                                    | A test push notification is received on a physical/simulator device                                           |
+| Day | Step | What gets built | What you can literally do at end of day |
+|---|---|---|---|
+| 6 | Help Center | `offices`/`office_staff`/`office_links` tables + API + mobile list screen + detail screen; seed 3–4 real Ashesi offices | Open Help Center tab, tap "ODIP", see its real description/contact/staff |
+| 7 | FAQ + Search | `faq_items` table + API + searchable list UI | Type "hostel" in search, see a matching seeded FAQ answer |
+| 8 | Campus Map | Map integration (Mapbox/Google Maps) + pinned buildings + tappable pin detail | Open Map tab, see the actual campus with 5+ real pinned buildings, tap one for info |
+| 9 | Feed: announcements + campus updates | `posts` table + API with role check (staff/faculty/student_leader/admin can post, student cannot) + feed list UI + "new post" screen (only visible to allowed roles) | Log in as staff, post an announcement, see it appear in the feed; log in as a student, confirm no "+" post button appears and a direct API call is rejected too |
+| 10 | Groups, targeted posts, events, notifications wiring | `groups`/`group_members`/`post_targets`/`events`/`event_rsvps`/`notifications` + UI: event card with RSVP button; push notification on new targeted post | Post an event targeted at "Class of 2029" only; log in as a 2029 student, see and RSVP to it; log in as a different class year, confirm it's absent; receive a real push notification |
 
-**Week 2 exit demo:** a fresher opens the app, sees the campus map, browses Help Center, reads a targeted event invite, and gets a push notification about it.
+**Week 2 exit demo:** a fresher opens the app cold, browses the Help Center, checks the map to find a building, sees a class-specific event in their feed, RSVPs, and gets a push notification confirming it — all real screens, real data, real device.
 
-### Week 3 — Support units (the confidential core)
+### Week 3 — Support units (the confidential core — highest-risk week)
 
-| #   | Step                                                                                        | Deliverable                                                                | Test Criteria                                                                                                                             |
-| --- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| 3.1 | `sessions`, `session_reports`, `session_feedback`, `report_templates` schema + RLS policies | Migrations + Postgres RLS enabled                                          | Direct SQL query as a `counselling_head` role cannot read `coaching` unit rows — verified with a manual RLS test script                   |
-| 3.2 | Coaching: assignment + booking                                                              | `coach_assignments`, booking API + screens                                 | Coach Yvonne assigns a peer coach to a fresher; fresher books a session; appears on Yvonne's dashboard                                    |
-| 3.3 | Coaching: mandatory tracking + compliance dashboard                                         | Progress checklist (fresher-facing) + compliance dashboard (Yvonne-facing) | Fresher sees "1 of 3 sessions complete" after one `completed` session; Yvonne's dashboard flags freshers with 0 sessions after a set date |
-| 3.4 | Report submission (template-driven)                                                         | Peer coach submits report using `report_templates` schema                  | Submitted report renders correctly as structured JSON; only visible to Coaching unit roles                                                |
-| 3.5 | Counselling module                                                                          | Same `sessions` flow, no mandatory tracking, multiple heads                | A counselling head sees only counselling sessions, not coaching                                                                           |
-| 3.6 | Advising module                                                                             | Same `sessions` flow, 2 advisors                                           | Advisor sees own bookings only                                                                                                            |
-| 3.7 | Buddy Up + ODIP sync job                                                                    | `buddy_pairings`, nightly sync job (mocked ODIP endpoint initially)        | Running the sync job against a mock ODIP API populates pairings correctly, no duplicates on re-run                                        |
-| 3.8 | WhatsApp bridge + click tracking                                                            | `contact_clicks` + redirect endpoint                                       | Tapping "Contact via WhatsApp" logs a row in `contact_clicks` and opens WhatsApp with the correct number                                  |
-| 3.9 | Session reminders (cron)                                                                    | Background job pushing reminders ahead of `scheduled_at`                   | A session scheduled for tomorrow triggers a reminder notification today                                                                   |
+| Day | Step | What gets built | What you can literally do at end of day |
+|---|---|---|---|
+| 11 | Sessions schema + RLS + Coaching booking UI | `sessions`/`report_templates`/`session_reports`/`session_feedback`/`coach_assignments` tables + RLS policies; mobile screen: fresher sees assigned peer coach's profile + "Book a session" flow | Log in as a fresher with a seeded coach assignment, book a real session, see it land in Postgres with the correct `unit_id` |
+| 12 | Coaching: compliance view (both sides) | Fresher-facing progress checklist UI ("1 of 3 sessions complete"); Coach Yvonne's mobile dashboard listing her assigned freshers + status | Mark a session `completed` via the app, watch the fresher's checklist update and Yvonne's dashboard reflect it |
+| 13 | Report submission + WhatsApp bridge | Peer coach report screen (driven by `report_templates` JSON schema); `contact_clicks` table + redirect endpoint + "Contact via WhatsApp" button wired into the Coaching screen | Submit a real structured report after a session; tap the WhatsApp button and confirm both the click log and WhatsApp actually opening with the right number |
+| 14 | Counselling + Advising modules | Same `sessions` UI pattern reused/adapted: counselling screen (self-book, multiple heads), advising screen (2 advisors, no mandatory tracking) + confirm RLS isolation in the running app, not just via raw SQL | Log in as a counselling head, confirm the Coaching sessions from Days 11–13 are invisible in their dashboard, and vice versa |
+| 15 | Buddy Up + reminders | `buddy_pairings` + mocked ODIP sync job + mobile Buddy Up screen (assigned buddy profile + WhatsApp button); cron job for session reminders | Run the mock sync, see a buddy pairing appear on a fresher's Buddy Up screen; schedule a session for "tomorrow," confirm a reminder notification fires |
 
-**Week 3 exit demo:** full loop — fresher assigned a peer coach, books a session, gets a reminder, session happens, coach submits a report, fresher gives feedback, Yvonne sees updated compliance status. All while a counselling head, watching the same platform, sees none of it.
+**Week 3 exit demo:** the full human loop, on real screens — fresher assigned a coach → books → gets reminded → session happens → coach reports → fresher gives feedback → Yvonne's dashboard updates — while a counselling head, logged in alongside, sees none of it.
 
-### Week 4 — Clubs, Web Admin, Analytics, Polish
+### Week 4 — Clubs, Web Admin, Analytics, Deployment
 
-| #   | Step                                     | Deliverable                                                               | Test Criteria                                                                                                                         |
-| --- | ---------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| 4.1 | Clubs                                    | `clubs`, `club_members` (instant join), `club_posts`                      | Student joins a club instantly; club lead posts an announcement visible only on that club's page                                      |
-| 4.2 | Web admin dashboard shell                | Next.js app, shares auth with mobile, role-gated routes                   | Coach Yvonne logs into web, sees Coaching dashboard; a `student`-only account is denied access                                        |
-| 4.3 | Compliance dashboard (web, full version) | Filterable table: by cohort, completion status, overdue flag              | Filtering by "Class of 2029, incomplete" returns correct subset                                                                       |
-| 4.4 | Aggregate analytics (anonymized)         | Materialized views: completion-speed by class/year, unit engagement rates | Platform admin dashboard shows a chart comparing average days-to-completion across class years, with no individual identities exposed |
-| 4.5 | Notification preferences UI              | Per-category opt-in/out screen                                            | Disabling "club" notifications stops club pushes while session reminders still arrive                                                 |
-| 4.6 | End-to-end QA pass                       | Manual test script covering every role × every module                     | All items in test script pass; bugs filed as issues, triaged by severity                                                              |
-| 4.7 | Deployment to Ashesi server              | Production Postgres + API deployed, mobile build (EAS Build) submitted    | API reachable over HTTPS on Ashesi infrastructure; Expo build installs on a test device                                               |
+| Day | Step | What gets built | What you can literally do at end of day |
+|---|---|---|---|
+| 16 | Clubs | `clubs`/`club_members`/`club_posts` + mobile: browse clubs, instant-join, club page with its own mini-feed | Join a club with one tap, see its dedicated feed, post as club lead, confirm it doesn't leak into the main Feed |
+| 17 | Web admin dashboard shell + Coaching compliance (web) | Next.js app, shared JWT auth, role-gated routes; full filterable compliance table (by cohort/status/overdue) | Log into the web dashboard as Coach Yvonne on a laptop, filter "Class of 2029, incomplete," get the right list; a student account gets denied at the route level |
+| 18 | Counselling/Advising/Buddy Up web views | Same admin pattern extended to the remaining units, each scoped to its own head role | Log in as an ODIP head on web, see only Buddy Up data; confirm no cross-unit visibility, same as mobile |
+| 19 | Aggregate analytics (anonymized) | Materialized views (completion speed by class year, unit engagement rates) + admin analytics screen with a real chart | Platform admin views a chart comparing average days-to-completion across class years — with no student names anywhere on that screen |
+| 20 | Notification preferences, QA pass, deployment | Per-category notification toggle UI; full manual test script across every role × module; deploy API + Postgres + web to the Ashesi server, submit Expo build via EAS | Toggle off "club" notifications and confirm session reminders still arrive; install the production build on a real device and complete one full journey end-to-end, on Ashesi's own infrastructure |
 
-**Week 4 exit demo:** full platform walkthrough across every role, live on Ashesi's own server.
+**Week 4 exit demo:** a complete, installable app plus a working web dashboard, both live on Ashesi's server, walked through role by role, front-to-back, with nothing "still to be wired up."
 
 ---
 
 ## 6. GitHub Project Tracking Setup
 
 ### 6.1 Repository structure
-
 - One repo (`fresher-hub`) housing the monorepo above — keeps issues, PRs, and code in one place, since mobile/web/api are tightly coupled through shared schema/types.
 
 ### 6.2 Milestones (map directly to the 4 weeks)
-
 - `Week 1 — Foundations`
 - `Week 2 — Core Info Layer`
 - `Week 3 — Support Units`
@@ -573,13 +562,13 @@ Each step below is designed to be **independently mergeable and testable** — y
 
 ### 6.3 Labels
 
-| Label                                                                                   | Purpose                                                                 |
-| --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| `area:mobile` / `area:web` / `area:api` / `area:db`                                     | Which part of the stack                                                 |
-| `unit:coaching` / `unit:counselling` / `unit:advising` / `unit:buddy-up` / `unit:clubs` | Which support unit                                                      |
-| `type:feature` / `type:bug` / `type:chore` / `type:docs`                                | Kind of work                                                            |
-| `priority:p0` / `p1` / `p2`                                                             | Urgency                                                                 |
-| `confidentiality-critical`                                                              | Flags anything touching RLS/unit data isolation — extra review required |
+| Label | Purpose |
+|---|---|
+| `area:mobile` / `area:web` / `area:api` / `area:db` | Which part of the stack |
+| `unit:coaching` / `unit:counselling` / `unit:advising` / `unit:buddy-up` / `unit:clubs` | Which support unit |
+| `type:feature` / `type:bug` / `type:chore` / `type:docs` | Kind of work |
+| `priority:p0` / `p1` / `p2` | Urgency |
+| `confidentiality-critical` | Flags anything touching RLS/unit data isolation — extra review required |
 
 ### 6.4 Issue template (`.github/ISSUE_TEMPLATE/feature.md`)
 
@@ -594,8 +583,8 @@ labels: type:feature
 
 **What this delivers:**
 
-**Acceptance criteria (must be testable):**
 
+**Acceptance criteria (must be testable):**
 - [ ]
 - [ ]
 
@@ -603,16 +592,13 @@ labels: type:feature
 ```
 
 ### 6.5 Project Board (GitHub Projects)
-
 Columns: `Backlog → Ready → In Progress → In Review → Done`.
-Every row in the Week 1–4 tables above becomes one GitHub Issue, added to the board and assigned to its Milestone. This gives you:
-
-- A **burndown view** per week (are you on pace for the 4-week target?)
-- A single place to see what's blocking what (e.g., 3.7 Buddy Up sync blocks 3.8 WhatsApp bridge for buddies specifically)
+Every **Day** row in the Week 1–4 tables above becomes one GitHub Issue (so ~20 issues total for the core build, plus any bugs filed during QA), added to the board and assigned to its Milestone. This gives you:
+- A **burndown view** per week (are you on pace for the 4-week target — roughly one issue closed per working day?)
+- A single place to see what's blocking what (e.g., Day 15's Buddy Up sync depends on Day 11's `sessions`/RLS foundation being merged first)
 - Clear "exit demo" checkpoints at the end of each week to catch drift early
 
 ### 6.6 Suggested working rhythm
-
 - Daily: move one card at a time through the board; avoid starting a new step before the previous one passes its test criteria — this is what keeps the "add-on, testable" property real rather than aspirational.
 - End of each week: run that week's "exit demo" against the actual app before starting the next week's issues.
 - Any issue that touches a confidential table (`sessions`, `session_reports`, `session_feedback`, `buddy_pairings`) gets a mandatory RLS check before merge — this is the single highest-risk area for a silent confidentiality bug.
@@ -621,11 +607,11 @@ Every row in the Week 1–4 tables above becomes one GitHub Issue, added to the 
 
 ## 7. Risk Notes Worth Carrying Into Week 1
 
-1. **RLS correctness is the make-or-break constraint.** Confidentiality was stated as non-negotiable across every unit — invest real test-writing time in Step 3.1 specifically (automated tests that assert cross-unit access is denied), not just manual spot checks.
-2. **ODIP's API shape is unknown until you get access.** Step 3.7 should start against a mocked endpoint so Week 3 isn't blocked waiting on ODIP; swap in the real integration once available.
-3. **Admissions data import (1.3) is a hard dependency for almost everything else** — prioritize getting a real (or realistic sample) CSV from IT as early as possible in Week 1, even before the format is finalized, so the import script isn't guessing at fields.
-4. **4 weeks is tight for this scope.** If Week 3 (the most complex week) slips, the safest place to cut is **Step 4.4 (analytics)** or **web admin polish (4.2/4.3 can ship with fewer filters)** — not the confidentiality/RLS work, and not the core coaching/counselling/advising loop, since that's the platform's actual value.
+1. **RLS correctness is the make-or-break constraint.** Confidentiality was stated as non-negotiable across every unit — invest real test-writing time on Day 11 specifically (automated tests that assert cross-unit access is denied), not just manual spot checks.
+2. **ODIP's API shape is unknown until you get access.** Day 15 should start against a mocked endpoint so Week 3 isn't blocked waiting on ODIP; swap in the real integration once available.
+3. **Admissions data import (Day 2) is a hard dependency for almost everything else** — prioritize getting a real (or realistic sample) CSV from IT as early as possible in Week 1, even before the format is finalized, so the import script isn't guessing at fields.
+4. **4 weeks is tight for this scope.** If Week 3 (the most complex week) slips, the safest place to cut is **Day 19 (analytics)** or trimming the Day 17–18 web admin filters — not the confidentiality/RLS work, and not the core coaching/counselling/advising loop, since that's the platform's actual value.
 
 ---
 
-_This document is the execution companion to `Fresher_Hub_Project_Description.md` and should be read alongside it — this file answers "how and in what order," the other answers "what and why."_
+*This document is the execution companion to `Fresher_Hub_Project_Description.md` and should be read alongside it — this file answers "how and in what order," the other answers "what and why."*
