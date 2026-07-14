@@ -40,6 +40,14 @@ const MAPPING = {
   'magnifyingglass': 'search',
   'plus': 'add',
   'xmark.circle.fill': 'cancel',
+  'xmark': 'close',
+  'building.2.fill': 'business',
+  'fork.knife': 'restaurant',
+  'book.fill': 'menu-book',
+  'hammer.fill': 'build',
+  'bed.double.fill': 'hotel',
+  'arrow.triangle.turn.up.right.circle.fill': 'directions',
+  'location.fill': 'my-location',
 };
 
 export type IconSymbolName = keyof typeof MAPPING;
