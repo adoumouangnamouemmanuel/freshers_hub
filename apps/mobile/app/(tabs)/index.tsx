@@ -8,40 +8,76 @@ import {
   ActivityIndicator,
   RefreshControl
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Link } from "expo-router";
 
 import { useAuth } from "@/context/auth-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { apiRequest } from "@/lib/api";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 
 type Post = {
   id: string;
   title: string;
   content: string;
   category: string;
+  visibility: string;
   createdAt: string;
   authorName: string;
   authorAvatar: string | null;
   authorId: string;
+  eventId?: string;
+  eventDate?: string;
+  eventTime?: string;
+  eventLocation?: string;
+  eventOrganizer?: string;
+  eventCapacity?: number;
+  rsvpEnabled?: boolean;
+  eventStatus?: string;
+  goingCount?: number;
+  myRsvp?: string;
 };
 
-function PostCard({ post }: { post: Post }) {
+function PostCard({ post, onUpdate }: { post: Post; onUpdate: () => void }) {
   const router = useRouter();
   const { session } = useAuth();
   const [expanded, setExpanded] = useState(false);
+  const [isRsvping, setIsRsvping] = useState(false);
   
   const isLong = post.content.length > 120;
   const displayContent = !isLong || expanded ? post.content : post.content.slice(0, 120) + "...";
   const isAlert = post.category.toLowerCase() === "alert";
+  const isEvent = post.category.toLowerCase() === "event" && post.eventId;
   const isOwner = session?.user.id === post.authorId || session?.user.roles.some((r: any) => r.name === "admin");
+
+  const handleRsvp = async (status: string) => {
+    if (!session || !post.eventId || isRsvping) return;
+    setIsRsvping(true);
+    try {
+      await apiRequest(`/events/${post.eventId}/rsvp`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.accessToken}` },
+        body: JSON.stringify({ status }),
+      });
+      onUpdate();
+    } catch (err) {
+      console.error("Failed to RSVP:", err);
+    } finally {
+      setIsRsvping(false);
+    }
+  };
+
+  const formattedEventDate = post.eventDate 
+    ? new Date(post.eventDate).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
+    : "";
 
   return (
     <Pressable 
       style={[styles.postCard, isAlert && styles.alertCard]} 
       onPress={() => {
-        if (isOwner) {
+        if (isEvent) {
+          router.push({ pathname: "/event/[id]", params: { id: post.eventId } } as any);
+        } else if (isOwner) {
           router.push({ pathname: "/post/[id]", params: { id: post.id } } as any);
         } else if (isLong) {
           setExpanded(!expanded);
@@ -56,6 +92,7 @@ function PostCard({ post }: { post: Post }) {
           <Text style={styles.postAuthorName}>{post.authorName}</Text>
           <Text style={styles.postDate}>
             {new Date(post.createdAt).toLocaleDateString()} • {post.category}
+            {post.visibility === "targeted" && " • Targeted"}
           </Text>
         </View>
       </View>
@@ -64,6 +101,42 @@ function PostCard({ post }: { post: Post }) {
         {displayContent}
         {isLong && !expanded && <Text style={styles.viewMoreInline}> View more</Text>}
       </Text>
+
+      {isEvent && (
+        <View style={styles.eventContainer}>
+          <View style={styles.eventDetailsRow}>
+            <IconSymbol name="calendar" size={14} color="#6B7280" />
+            <Text style={styles.eventDetailsText}>
+              {formattedEventDate} at {post.eventTime?.substring(0, 5)}
+            </Text>
+          </View>
+          {!!post.eventLocation && (
+            <View style={styles.eventDetailsRow}>
+              <IconSymbol name="mappin.and.ellipse" size={14} color="#6B7280" />
+              <Text style={styles.eventDetailsText}>{post.eventLocation}</Text>
+            </View>
+          )}
+          
+          <View style={styles.eventFooter}>
+            <Text style={styles.attendeeCount}>
+              {post.goingCount || 0} attending
+            </Text>
+            {post.rsvpEnabled && (
+              <View style={styles.rsvpActions}>
+                <Pressable
+                  style={[styles.rsvpBtn, post.myRsvp === "going" && styles.rsvpBtnActive]}
+                  onPress={() => handleRsvp(post.myRsvp === "going" ? "declined" : "going")}
+                  disabled={isRsvping}
+                >
+                  <Text style={[styles.rsvpBtnText, post.myRsvp === "going" && styles.rsvpBtnTextActive]}>
+                    {post.myRsvp === "going" ? "Going" : "RSVP"}
+                  </Text>
+                </Pressable>
+              </View>
+            )}
+          </View>
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -71,27 +144,42 @@ function PostCard({ post }: { post: Post }) {
 export default function FeedScreen() {
   const router = useRouter();
   const { session } = useAuth();
+  const insets = useSafeAreaInsets();
 
   const [posts, setPosts] = useState<Post[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const fetchPosts = async () => {
     try {
-      const data = await apiRequest<{ posts: Post[] }>("/posts");
+      const headers = session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : undefined;
+      const data = await apiRequest<{ posts: Post[] }>("/posts", { headers });
       setPosts(data.posts || []);
     } catch (err) {
       console.error("Failed to fetch posts:", err);
     }
   };
 
+  const fetchUnreadCount = async () => {
+    if (!session?.accessToken) return;
+    try {
+      const data = await apiRequest<{ unreadCount: number }>("/notifications/unread-count", {
+        headers: { Authorization: `Bearer ${session.accessToken}` },
+      });
+      setUnreadCount(data.unreadCount || 0);
+    } catch (err) {
+      console.error("Failed to fetch unread count:", err);
+    }
+  };
+
   useEffect(() => {
-    fetchPosts().finally(() => setIsLoading(false));
-  }, []);
+    Promise.all([fetchPosts(), fetchUnreadCount()]).finally(() => setIsLoading(false));
+  }, [session?.accessToken]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchPosts();
+    await Promise.all([fetchPosts(), fetchUnreadCount()]);
     setRefreshing(false);
   };
 
@@ -103,6 +191,7 @@ export default function FeedScreen() {
 
   const categories = ["All", "Announcement", "Event", "Alert"];
   const [activeCategory, setActiveCategory] = useState("All");
+  const [viewMode, setViewMode] = useState("list");
 
   const filteredPosts = posts.filter(p => {
     if (activeCategory !== "All" && p.category.toLowerCase() !== activeCategory.toLowerCase()) return false;
@@ -113,7 +202,7 @@ export default function FeedScreen() {
     <SafeAreaView style={styles.screen} edges={["top"]}>
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom + 20, 100) }]}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#A93C40" />}
       >
@@ -126,6 +215,14 @@ export default function FeedScreen() {
             <IconSymbol name="magnifyingglass" size={20} color="#9BA3AE" style={styles.searchIcon} />
             <Text style={styles.searchPlaceholder}>Search campus updates...</Text>
           </Pressable>
+          <Pressable style={styles.notificationBtn} onPress={() => router.push("/notifications")}>
+            <IconSymbol name="bell.fill" size={24} color="#1A2B4A" />
+            {unreadCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{unreadCount > 99 ? "99+" : unreadCount}</Text>
+              </View>
+            )}
+          </Pressable>
         </View>
 
         {/* Category Filters */}
@@ -135,12 +232,16 @@ export default function FeedScreen() {
               <Pressable 
                 key={cat} 
                 style={[styles.categoryChip, activeCategory === cat && styles.categoryChipActive]}
-                onPress={() => setActiveCategory(cat)}
+                onPress={() => {
+                  setActiveCategory(cat);
+                  if (cat !== "Event") setViewMode("list");
+                }}
               >
                 <Text style={[styles.categoryChipText, activeCategory === cat && styles.categoryChipTextActive]}>{cat}</Text>
               </Pressable>
             ))}
           </ScrollView>
+
         </View>
 
         {/* Quick Actions */}
@@ -192,7 +293,7 @@ export default function FeedScreen() {
           
           {isLoading ? (
             <ActivityIndicator size="large" color="#A93C40" style={{ marginTop: 24 }} />
-          ) : posts.length === 0 ? (
+          ) : filteredPosts.length === 0 ? (
             <View style={styles.emptyFeedCard}>
               <View style={styles.emptyFeedIcon}>
                 <IconSymbol name="newspaper.fill" size={28} color="#9BA3AE" />
@@ -205,7 +306,7 @@ export default function FeedScreen() {
           ) : (
             <View style={styles.postsList}>
               {filteredPosts.map((post) => (
-                <PostCard key={post.id} post={post} />
+                <PostCard key={post.id} post={post} onUpdate={fetchPosts} />
               ))}
             </View>
           )}
@@ -258,8 +359,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 24,
     height: 48,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   searchPlaceholder: {
     color: "#9BA3AE",
@@ -267,6 +371,38 @@ const styles = StyleSheet.create({
   },
   searchIcon: {
     marginRight: 8,
+  },
+  notificationBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  badge: {
+    position: "absolute",
+    top: 6,
+    right: 8,
+    backgroundColor: "#A93C40",
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: "#FFFFFF",
+  },
+  badgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "800",
   },
   categoryScrollContainer: {
     marginHorizontal: -20,
@@ -280,9 +416,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 16,
-    backgroundColor: "#F0F2F5",
-    borderWidth: 1,
-    borderColor: "transparent",
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
   },
   categoryChipActive: {
     backgroundColor: "#A93C40",
@@ -376,11 +515,14 @@ const styles = StyleSheet.create({
     color: "#1A2B4A",
   },
   emptyFeedDesc: {
-    fontSize: 14,
-    color: "#5f6874",
+    fontSize: 15,
+    color: "#6B7280",
     textAlign: "center",
-    lineHeight: 22,
     paddingHorizontal: 20,
+    lineHeight: 22,
+  },
+  postsList: {
+    gap: 16,
   },
   createPostBtn: {
     flexDirection: "row",
@@ -396,19 +538,21 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     fontSize: 13,
   },
-  postsList: {
-    gap: 16,
-  },
+
   postCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 20,
     padding: 20,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 3,
   },
   alertCard: {
     backgroundColor: "#FEF2F2",
-    borderColor: "#FCA5A5",
+    shadowColor: "#DC2626",
+    shadowOpacity: 0.06,
   },
   postHeader: {
     flexDirection: "row",
@@ -457,5 +601,54 @@ const styles = StyleSheet.create({
   viewMoreInline: {
     color: "#A93C40",
     fontWeight: "700",
+  },
+  eventContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#F0F2F5",
+    gap: 8,
+  },
+  eventDetailsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  eventDetailsText: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  eventFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 8,
+  },
+  attendeeCount: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight: "600",
+  },
+  rsvpActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  rsvpBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+    backgroundColor: "#F0F2F5",
+  },
+  rsvpBtnActive: {
+    backgroundColor: "#FEF2F2",
+  },
+  rsvpBtnText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  rsvpBtnTextActive: {
+    color: "#A93C40",
   },
 });

@@ -22,6 +22,10 @@ type Post = {
   createdAt: string;
   authorName: string;
   authorId: string;
+  eventId?: string;
+  eventDate?: string;
+  eventTime?: string;
+  eventLocation?: string;
 };
 
 function SearchResultCard({ post }: { post: Post }) {
@@ -32,12 +36,19 @@ function SearchResultCard({ post }: { post: Post }) {
   const isLong = post.content.length > 80;
   const isOwner = session?.user.id === post.authorId || session?.user.roles.some((r: any) => r.name === "admin");
   const isAlert = post.category.toLowerCase() === "alert";
+  const isEvent = post.category.toLowerCase() === "event" && post.eventId;
+
+  const formattedEventDate = post.eventDate 
+    ? new Date(post.eventDate).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
+    : "";
 
   return (
     <Pressable 
       style={[styles.resultCard, isAlert && styles.alertCard]}
       onPress={() => {
-        if (isOwner) {
+        if (isEvent) {
+          router.push({ pathname: "/event/[id]", params: { id: post.eventId } } as any);
+        } else if (isOwner) {
           router.push({ pathname: "/post/[id]", params: { id: post.id } } as any);
         } else if (isLong) {
           setExpanded(!expanded);
@@ -52,6 +63,23 @@ function SearchResultCard({ post }: { post: Post }) {
       <Text style={styles.resultContent} numberOfLines={expanded ? undefined : 2}>
         {post.content}
       </Text>
+
+      {isEvent && (
+        <View style={styles.eventContainer}>
+          <View style={styles.eventDetailsRow}>
+            <IconSymbol name="calendar" size={14} color="#6B7280" />
+            <Text style={styles.eventDetailsText}>
+              {formattedEventDate} at {post.eventTime?.substring(0, 5)}
+            </Text>
+          </View>
+          {!!post.eventLocation && (
+            <View style={styles.eventDetailsRow}>
+              <IconSymbol name="mappin.and.ellipse" size={14} color="#6B7280" />
+              <Text style={styles.eventDetailsText}>{post.eventLocation}</Text>
+            </View>
+          )}
+        </View>
+      )}
     </Pressable>
   );
 }
@@ -242,5 +270,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#4B5563",
     lineHeight: 20,
+  },
+  eventContainer: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#F0F2F5",
+    gap: 8,
+  },
+  eventDetailsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  eventDetailsText: {
+    fontSize: 13,
+    color: "#6B7280",
+    fontWeight: "500",
   },
 });

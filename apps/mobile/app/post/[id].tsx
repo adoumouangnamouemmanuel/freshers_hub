@@ -9,7 +9,7 @@ import {
   Alert 
 } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useAuth } from "@/context/auth-context";
 import { apiRequest } from "@/lib/api";
@@ -28,6 +28,7 @@ export default function PostScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
   const { session } = useAuth();
+  const insets = useSafeAreaInsets();
   
   const [post, setPost] = useState<Post | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -92,7 +93,7 @@ export default function PostScreen() {
           <Text style={styles.emptyStateTitle}>Post Not Found</Text>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom + 20, 100) }]}>
           <View style={[styles.card, isAlert && styles.alertCard]}>
             <View style={styles.postHeader}>
               <View style={styles.postAuthorAvatar}>
@@ -145,7 +146,7 @@ export default function PostScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: "#FAFAFA",
   },
   header: {
     flexDirection: "row",
@@ -153,9 +154,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F2F5",
+    backgroundColor: "#FAFAFA",
   },
   headerTitle: {
     fontSize: 18,
@@ -181,19 +180,18 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: "#F0F2F5",
+    borderRadius: 24,
+    padding: 24,
     shadowColor: "#1A2B4A",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 3,
   },
   alertCard: {
     backgroundColor: "#FEF2F2",
-    borderColor: "#FCA5A5",
+    shadowColor: "#DC2626",
+    shadowOpacity: 0.06,
   },
   postHeader: {
     flexDirection: "row",
@@ -276,8 +274,11 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 16,
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#FEE2E2",
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 1,
   },
   deleteBtnText: {
     color: "#DC2626",

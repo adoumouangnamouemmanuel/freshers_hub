@@ -43,6 +43,8 @@ function AppNavigator() {
       <Stack.Screen name="search" options={{ headerShown: false, presentation: "fullScreenModal" }} />
       <Stack.Screen name="post/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="edit-post/[id]" options={{ headerShown: false, presentation: "modal" }} />
+      <Stack.Screen name="notifications" options={{ headerShown: false }} />
+      <Stack.Screen name="event/[id]" options={{ headerShown: false }} />
     </Stack>
   );
 }

@@ -48,6 +48,12 @@ const MAPPING = {
   'bed.double.fill': 'hotel',
   'arrow.triangle.turn.up.right.circle.fill': 'directions',
   'location.fill': 'my-location',
+  'bell.fill': 'notifications',
+  'bell.slash.fill': 'notifications-off',
+  'mappin.and.ellipse': 'location-on',
+  'megaphone.fill': 'campaign',
+  'person.3.fill': 'groups',
+  'checkmark.circle.fill': 'check-circle',
 };
 
 export type IconSymbolName = keyof typeof MAPPING;

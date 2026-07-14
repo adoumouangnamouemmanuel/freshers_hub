@@ -3,6 +3,9 @@ const cors = require("cors");
 const authRoutes = require("./src/routes/authRoutes");
 const postRoutes = require("./src/routes/postRoutes");
 const faqRoutes = require("./src/routes/faqRoutes");
+const groupRoutes = require("./src/routes/groupRoutes");
+const eventRoutes = require("./src/routes/eventRoutes");
+const notificationRoutes = require("./src/routes/notificationRoutes");
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
@@ -17,6 +20,9 @@ app.get("/health", (req, res) => {
 app.use("/auth", authRoutes);
 app.use("/posts", postRoutes);
 app.use("/faqs", faqRoutes);
+app.use("/groups", groupRoutes);
+app.use("/events", eventRoutes);
+app.use("/notifications", notificationRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
@@ -29,6 +35,14 @@ app.use((req, res) => {
       "GET /faqs/search",
       "GET /posts",
       "POST /posts",
+      "GET /groups",
+      "GET /groups/my",
+      "GET /events",
+      "POST /events",
+      "POST /events/:id/rsvp",
+      "GET /notifications",
+      "PATCH /notifications/:id/read",
+      "PATCH /notifications/read-all",
     ],
   });
 });
