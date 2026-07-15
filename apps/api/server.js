@@ -6,6 +6,7 @@ const faqRoutes = require("./src/routes/faqRoutes");
 const groupRoutes = require("./src/routes/groupRoutes");
 const eventRoutes = require("./src/routes/eventRoutes");
 const notificationRoutes = require("./src/routes/notificationRoutes");
+const supportRoutes = require("./src/routes/supportRoutes");
 
 const app = express();
 const port = Number(process.env.PORT || 4000);
@@ -46,6 +47,7 @@ app.use("/faqs", faqRoutes);
 app.use("/groups", groupRoutes);
 app.use("/events", eventRoutes);
 app.use("/notifications", notificationRoutes);
+app.use("/support", supportRoutes);
 
 app.use((req, res) => {
   res.status(404).json({

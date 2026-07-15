@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuth } from '@/context/auth-context';
-import { isClubLead } from '@/lib/permissions';
+import { isClubLead, isCoachAdmin } from '@/lib/permissions';
 
 const ACTIVE_TINT   = '#1f1a17';
 const INACTIVE_TINT = '#a89b8f';
@@ -18,6 +18,7 @@ export default function TabLayout() {
   const tabBarHeight = TAB_BASE_H + insets.bottom;
   
   const showClubAdmin = session?.user?.roles ? isClubLead(session.user.roles) : false;
+  const showCoachAdmin = session?.user?.roles ? isCoachAdmin(session.user.roles) : false;
 
   return (
     <Tabs
@@ -53,6 +54,7 @@ export default function TabLayout() {
         name="map"
         options={{
           title: 'Map',
+          href: showCoachAdmin ? null : '/(tabs)/map',
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="map.fill" color={color} />
           ),
@@ -62,6 +64,7 @@ export default function TabLayout() {
         name="support"
         options={{
           title: 'Support',
+          href: showCoachAdmin ? null : '/(tabs)/support',
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="heart.text.square.fill" color={color} />
           ),
@@ -71,6 +74,7 @@ export default function TabLayout() {
         name="clubs"
         options={{
           title: 'Clubs',
+          href: showCoachAdmin ? null : '/(tabs)/clubs',
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="person.2.fill" color={color} />
           ),
@@ -80,6 +84,7 @@ export default function TabLayout() {
         name="help"
         options={{
           title: 'Help',
+          href: showCoachAdmin ? null : '/(tabs)/help',
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="questionmark.circle.fill" color={color} />
           ),
@@ -92,6 +97,16 @@ export default function TabLayout() {
           href: showClubAdmin ? '/(tabs)/club-admin' : null,
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="star.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="coaching-admin"
+        options={{
+          title: 'Admin',
+          href: showCoachAdmin ? '/(tabs)/coaching-admin' : null,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={26} name="chart.bar.fill" color={color} />
           ),
         }}
       />

@@ -54,6 +54,9 @@ const MAPPING = {
   'megaphone.fill': 'campaign',
   'person.3.fill': 'groups',
   'checkmark.circle.fill': 'check-circle',
+  'chart.bar.fill': 'bar-chart',
+  'checkmark.seal.fill': 'verified',
+  'exclamationmark.triangle.fill': 'warning',
 };
 
 export type IconSymbolName = keyof typeof MAPPING;
