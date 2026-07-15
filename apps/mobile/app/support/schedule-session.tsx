@@ -83,7 +83,7 @@ export default function ScheduleSessionScreen() {
       return;
     }
 
-    if (!form.targetUserId && isCoachAdmin) {
+    if (!form.targetUserId) {
       Alert.alert("Missing User", "Please select a user to schedule with.");
       return;
     }
@@ -113,7 +113,7 @@ export default function ScheduleSessionScreen() {
       } : {
         unitId: 1,
         academicYearId: 1,
-        providerId: form.targetUserId || session?.user.id, 
+        providerId: form.targetUserId, 
         scheduledAt,
         location: form.location,
         description: form.description,
@@ -163,19 +163,25 @@ export default function ScheduleSessionScreen() {
             <View style={styles.formGroup}>
               <Text style={styles.label}>Scheduling with</Text>
               {form.targetUserName ? (
-                <Pressable style={styles.selectedUserCard} onPress={openUserModal}>
+                <Pressable style={styles.selectedUserCard} onPress={isCoachAdmin ? openUserModal : undefined}>
                   <View style={styles.avatarPlaceholder}>
                     <Text style={styles.avatarInitial}>{form.targetUserName.charAt(0).toUpperCase()}</Text>
                   </View>
                   <Text style={styles.selectedUserName}>{form.targetUserName}</Text>
-                  <IconSymbol name="checkmark.circle.fill" size={20} color="#10B981" />
+                  {isCoachAdmin && <IconSymbol name="checkmark.circle.fill" size={20} color="#10B981" />}
                 </Pressable>
               ) : (
-                <Pressable style={styles.selectUserBtn} onPress={openUserModal}>
-                  <IconSymbol name="person.fill" size={20} color="#A93C40" />
-                  <Text style={styles.selectUserText}>Select a user from Students</Text>
-                  <IconSymbol name="chevron.right" size={16} color="#9BA3AE" />
-                </Pressable>
+                isCoachAdmin ? (
+                  <Pressable style={styles.selectUserBtn} onPress={openUserModal}>
+                    <IconSymbol name="person.fill" size={20} color="#A93C40" />
+                    <Text style={styles.selectUserText}>Select a user from Students</Text>
+                    <IconSymbol name="chevron.right" size={16} color="#9BA3AE" />
+                  </Pressable>
+                ) : (
+                  <View style={[styles.selectUserBtn, { opacity: 0.5 }]}>
+                    <Text style={styles.selectUserText}>No user selected.</Text>
+                  </View>
+                )
               )}
             </View>
           )}

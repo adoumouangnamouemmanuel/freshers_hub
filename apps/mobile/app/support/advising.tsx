@@ -83,8 +83,8 @@ export default function AdvisingScreen() {
                 <Text style={styles.sessionLocation}>
                   <IconSymbol name="mappin.and.ellipse" size={14} color="#6B7280" /> {session.location || "Advisor Office"}
                 </Text>
-                <View style={[styles.statusChip, { backgroundColor: session.status === 'booked' ? '#25D36615' : '#F0F2F5' }]}>
-                  <Text style={[styles.sessionStatus, { color: session.status === 'booked' ? '#25D366' : '#6B7280' }]}>
+                <View style={[styles.statusChip, { backgroundColor: session.status === 'scheduled' ? '#25D36615' : '#F0F2F5' }]}>
+                  <Text style={[styles.sessionStatus, { color: session.status === 'scheduled' ? '#25D366' : '#6B7280' }]}>
                     {session.status.toUpperCase()}
                   </Text>
                 </View>

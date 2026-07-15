@@ -47,7 +47,7 @@ async function bookSession(req, res) {
       INSERT INTO sessions 
         (unit_id, academic_year_id, student_id, provider_id, with_type, scheduled_at, location, description, is_mandatory, status)
       VALUES 
-        ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'booked')
+        ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'scheduled')
       RETURNING *
     `, [unitId, academicYearId, req.user.id, providerId, withType, scheduledAt, location, description, isMandatory || false]);
 
@@ -79,9 +79,9 @@ async function updateSessionStatus(req, res) {
     const { rows } = await client.query(`
       UPDATE sessions
       SET status = $1, updated_at = now()
-      WHERE id = $2
+      WHERE id = $2 AND (student_id = $3 OR provider_id = $3)
       RETURNING *
-    `, [status, id]);
+    `, [status, id, req.user.id]);
 
     if (rows.length === 0) {
       await client.query("ROLLBACK");
@@ -112,9 +112,9 @@ async function updateSession(req, res) {
           description = COALESCE($2, description),
           scheduled_at = COALESCE($3, scheduled_at),
           updated_at = now()
-      WHERE id = $4
+      WHERE id = $4 AND (student_id = $5 OR provider_id = $5)
       RETURNING *
-    `, [location, description, scheduledAt, id]);
+    `, [location, description, scheduledAt, id, req.user.id]);
 
     if (rows.length === 0) {
       return res.status(404).json({ error: "Session not found" });
@@ -134,8 +134,8 @@ async function deleteSession(req, res) {
   const client = await pool.connect();
   try {
     const { rowCount } = await client.query(`
-      DELETE FROM sessions WHERE id = $1
-    `, [id]);
+      DELETE FROM sessions WHERE id = $1 AND (student_id = $2 OR provider_id = $2)
+    `, [id, req.user.id]);
 
     if (rowCount === 0) {
       return res.status(404).json({ error: "Session not found" });
@@ -233,6 +233,27 @@ async function logContactClick(req, res) {
   }
 }
 
+// Get staff members for a specific unit (e.g., counselling, advising)
+async function getStaffByUnit(req, res) {
+  const { unitName } = req.params;
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query(`
+      SELECT DISTINCT u.id, u.full_name as name, u.email, u.phone, u.avatar_url
+      FROM users u
+      JOIN user_roles ur ON u.id = ur.user_id
+      JOIN units un ON ur.unit_id = un.id
+      WHERE un.name = $1 AND u.is_active = true
+    `, [unitName]);
+    res.json(rows);
+  } catch (err) {
+    console.error("Error getting staff by unit:", err);
+    res.status(500).json({ error: "Internal server error" });
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   getSessions,
   bookSession,
@@ -243,4 +264,5 @@ module.exports = {
   getAssignedFreshers,
   getBuddyPairing,
   logContactClick,
+  getStaffByUnit,
 };

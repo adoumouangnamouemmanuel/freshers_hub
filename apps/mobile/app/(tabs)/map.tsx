@@ -12,10 +12,12 @@ import {
   Dimensions,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useLocalSearchParams } from "expo-router";
 import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { MOCK_OFFICES } from "@/lib/mock-data";
+import { MOCK_OFFICES, CATEGORIES, DIRECTORY } from "@/lib/mock-data";
 
 const { width } = Dimensions.get("window");
 
@@ -26,199 +28,6 @@ const ASHESI_REGION = {
   longitudeDelta: 0.004,
 };
 
-// Map Categories Spec
-const CATEGORIES = [
-  { id: "academic", name: "Academic", icon: "building.2.fill", color: "#3B82F6", essential: true },
-  { id: "dining", name: "Dining", icon: "fork.knife", color: "#EC4899", essential: true },
-  { id: "health", name: "Health Center", icon: "cross.case.fill", color: "#EF4444", essential: true },
-  { id: "hostel", name: "Hostels", icon: "bed.double.fill", color: "#F59E0B", essential: false },
-  { id: "lab", name: "Labs", icon: "hammer.fill", color: "#10B981", essential: false },
-  { id: "sports", name: "Sports", icon: "figure.2.arms.open", color: "#6366F1", essential: false },
-  { id: "cafeteria", name: "Cafeterias", icon: "fork.knife", color: "#F472B6", essential: false },
-  { id: "shop", name: "Shops", icon: "briefcase.fill", color: "#8B5CF6", essential: false },
-  { id: "office", name: "Offices", icon: "briefcase.fill", color: "#14B8A6", essential: false },
-];
-
-const DIRECTORY = [
-  // Buildings (Outdoor coordinates)
-  {
-    id: "b1",
-    name: "Norton Motulsky Hall",
-    shortName: "Norton",
-    category: "academic",
-    coordinate: { latitude: 5.7600, longitude: -0.2195 },
-    icon: "building.2.fill",
-    emoji: "🏢",
-    description: "Main academic building housing classrooms, faculty offices, and lecture halls.",
-    hours: "Mon - Sat, 7:00 AM - 10:00 PM",
-  },
-  {
-    id: "b2",
-    name: "Radichel Hall",
-    shortName: "Radichel",
-    category: "academic",
-    coordinate: { latitude: 5.7595, longitude: -0.2199 },
-    icon: "building.2.fill",
-    emoji: "🏢",
-    description: "Multi-purpose building featuring student lounges, administrative offices, and cafeterias.",
-    hours: "Mon - Sun, 6:00 AM - 11:00 PM",
-  },
-  {
-    id: "b3",
-    name: "Warren Library",
-    shortName: "Library",
-    category: "academic",
-    coordinate: { latitude: 5.7598, longitude: -0.2202 },
-    icon: "book.fill",
-    emoji: "📚",
-    description: "The main campus library equipped with learning spaces, research resources, and the IT helpdesk.",
-    hours: "Mon - Fri, 8:00 AM - 12:00 AM • Sat - Sun, 10:00 AM - 10:00 PM",
-  },
-  {
-    id: "b4",
-    name: "King Engineering Building",
-    shortName: "King Eng",
-    category: "academic",
-    coordinate: { latitude: 5.7602, longitude: -0.2192 },
-    icon: "building.2.fill",
-    emoji: "💻",
-    description: "Engineering hub with state-of-the-art labs, design workspaces, and maker spaces.",
-    hours: "Mon - Sat, 7:00 AM - 10:00 PM",
-  },
-  {
-    id: "b5",
-    name: "Wangari Maathai Hall",
-    shortName: "Wangari",
-    category: "hostel",
-    coordinate: { latitude: 5.7590, longitude: -0.2190 },
-    icon: "bed.double.fill",
-    emoji: "🛏️",
-    description: "Student residential facility named in honor of environmentalist Wangari Maathai.",
-    hours: "24/7",
-  },
-  {
-    id: "b6",
-    name: "Akayet Hostel",
-    shortName: "Akayet",
-    category: "hostel",
-    coordinate: { latitude: 5.7585, longitude: -0.2185 },
-    icon: "bed.double.fill",
-    emoji: "🛏️",
-    description: "On-campus student residential housing block.",
-    hours: "24/7",
-  },
-  {
-    id: "b7",
-    name: "Natembea Health Center",
-    shortName: "Health Ctr",
-    category: "health",
-    coordinate: { latitude: 5.7610, longitude: -0.2205 },
-    icon: "cross.case.fill",
-    emoji: "🏥",
-    description: "Natembea Health Clinic providing medical services, counseling, and 24/7 emergency support.",
-    hours: "24/7 for Emergencies • Clinic: 8:00 AM - 6:00 PM",
-    linked_office_id: "health",
-  },
-  {
-    id: "b8",
-    name: "Ashesi Sports Pitch",
-    shortName: "Pitch",
-    category: "sports",
-    coordinate: { latitude: 5.7615, longitude: -0.2180 },
-    icon: "figure.2.arms.open",
-    emoji: "⚽",
-    description: "Football field and athletic track for recreation, sports events, and physical education.",
-    hours: "Daily, 6:00 AM - 7:00 PM",
-  },
-  {
-    id: "b9",
-    name: "Campus Gymnasium",
-    shortName: "Gym",
-    category: "sports",
-    coordinate: { latitude: 5.7608, longitude: -0.2178 },
-    icon: "figure.2.arms.open",
-    emoji: "🏋️",
-    description: "Equipped fitness center and gym for workouts, weight training, and cardio.",
-    hours: "Mon - Sat, 5:30 AM - 9:30 PM",
-  },
-  {
-    id: "b10",
-    name: "Hive Dining Hall",
-    shortName: "Hive",
-    category: "dining",
-    coordinate: { latitude: 5.7593, longitude: -0.2201 },
-    icon: "fork.knife",
-    emoji: "🍽️",
-    description: "The primary dining facility offering breakfast, lunch, dinner, and snack options.",
-    hours: "Daily, 7:00 AM - 9:00 PM",
-  },
-  
-  // Indoor Locations (Classrooms, Offices, Labs - resolve coordinate from parentId)
-  {
-    id: "c1",
-    name: "Room 214",
-    category: "academic",
-    parentId: "b1",
-    building: "Norton Motulsky Hall",
-    floor: "2nd Floor",
-    icon: "graduationcap.fill",
-    description: "Large lecture hall equipped with audiovisual systems, used for classes and seminars.",
-  },
-  {
-    id: "c2",
-    name: "Room 218",
-    category: "academic",
-    parentId: "b1",
-    building: "Norton Motulsky Hall",
-    floor: "2nd Floor",
-    icon: "graduationcap.fill",
-    description: "Standard classroom hosting lectures and tutorials.",
-  },
-  {
-    id: "c3",
-    name: "Design Lab",
-    category: "lab",
-    parentId: "b4",
-    building: "King Engineering Building",
-    floor: "Ground Floor",
-    icon: "hammer.fill",
-    description: "Engineering design laboratory for rapid prototyping and mechanical testing.",
-  },
-  {
-    id: "o1",
-    name: "ODIP Office",
-    category: "office",
-    parentId: "b2",
-    building: "Radichel Hall",
-    floor: "2nd Floor",
-    icon: "earth.americas.fill",
-    description: "Office of Diversity and International Programs. Assisting with visas, buddy up programs, and cultural exchange.",
-    linked_office_id: "odip",
-  },
-  {
-    id: "o2",
-    name: "Career Services Center",
-    category: "office",
-    parentId: "b1",
-    building: "Norton Motulsky Hall",
-    floor: "Ground Floor",
-    icon: "briefcase.fill",
-    description: "Career advice, CV reviews, internships, and recruiter network placements.",
-    linked_office_id: "career",
-  },
-  {
-    id: "o3",
-    name: "IT Support Desk",
-    category: "office",
-    parentId: "b3",
-    building: "Warren Library",
-    floor: "Ground Floor",
-    icon: "heart.text.square.fill",
-    description: "Technical assistance for student laptops, printing accounts, and Wi-Fi networks.",
-    linked_office_id: "it",
-  },
-];
-
 type LocationItem = typeof DIRECTORY[0];
 
 export default function MapScreen() {
@@ -228,6 +37,10 @@ export default function MapScreen() {
   const [selectedItem, setSelectedItem] = useState<LocationItem | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
+  const [savedPlaces, setSavedPlaces] = useState<LocationItem[]>([]);
+  const [recentPlaces, setRecentPlaces] = useState<LocationItem[]>([]);
+  const [showBookmarks, setShowBookmarks] = useState(false);
+  const { focusId } = useLocalSearchParams<{ focusId: string }>();
   
   // Location States
   const [userCoords, setUserCoords] = useState<Location.LocationObjectCoords | null>(null);
@@ -291,6 +104,47 @@ export default function MapScreen() {
     })();
   }, []);
 
+  useEffect(() => {
+    // Load saved and recent places
+    AsyncStorage.getItem("@map_saved").then(val => {
+      if (val) setSavedPlaces(JSON.parse(val));
+    });
+    AsyncStorage.getItem("@map_recent").then(val => {
+      if (val) setRecentPlaces(JSON.parse(val));
+    });
+
+    // Highlight user's assigned hostel (Simulated as b5 for Fresher)
+    setTimeout(() => {
+      const myHostel = DIRECTORY.find(d => d.id === "b5");
+      if (myHostel) {
+        focusItem(myHostel, false);
+      }
+    }, 1000);
+  }, []);
+
+  useEffect(() => {
+    if (focusId) {
+      setTimeout(() => {
+        const itemToFocus = DIRECTORY.find(d => d.id === focusId);
+        if (itemToFocus) {
+          focusItem(itemToFocus, true);
+        }
+      }, 500);
+    }
+  }, [focusId]);
+
+  const toggleSavePlace = async (item: LocationItem) => {
+    const isSaved = savedPlaces.some(p => p.id === item.id);
+    let newSaved;
+    if (isSaved) {
+      newSaved = savedPlaces.filter(p => p.id !== item.id);
+    } else {
+      newSaved = [...savedPlaces, item];
+    }
+    setSavedPlaces(newSaved);
+    await AsyncStorage.setItem("@map_saved", JSON.stringify(newSaved));
+  };
+
   const getCoordinate = (item: LocationItem) => {
     if (item.coordinate) return item.coordinate;
     const parent = DIRECTORY.find((d) => d.id === item.parentId);
@@ -309,10 +163,10 @@ export default function MapScreen() {
     const query = searchQuery.toLowerCase();
     return DIRECTORY.filter(
       (item) =>
-        item.name.toLowerCase().includes(query) ||
-        item.category.toLowerCase().includes(query) ||
-        (item.building && item.building.toLowerCase().includes(query)) ||
-        (item.description && item.description.toLowerCase().includes(query))
+        item.name?.toLowerCase().includes(query) ||
+        item.category?.toLowerCase().includes(query) ||
+        (item.building && item.building?.toLowerCase().includes(query)) ||
+        (item.description && item.description?.toLowerCase().includes(query))
     );
   }, [searchQuery]);
 
@@ -358,11 +212,20 @@ export default function MapScreen() {
     }
   };
 
-  const focusItem = (item: LocationItem) => {
+  const focusItem = (item: LocationItem, addToRecent = true) => {
     setSelectedItem(item);
     setSearchQuery("");
     setIsSearching(false);
     Keyboard.dismiss();
+
+    if (addToRecent) {
+      setRecentPlaces(prev => {
+        const filtered = prev.filter(p => p.id !== item.id);
+        const next = [item, ...filtered].slice(0, 10);
+        AsyncStorage.setItem("@map_recent", JSON.stringify(next));
+        return next;
+      });
+    }
 
     const coord = getCoordinate(item);
     if (coord) {
@@ -505,12 +368,13 @@ export default function MapScreen() {
 
       {/* Top Overlay Interface */}
       <View style={[styles.topOverlay, { paddingTop: Math.max(insets.top, 16) }]}>
-        {/* Search Bar */}
-        <View style={styles.searchWrapper}>
-          <IconSymbol name="magnifyingglass" size={20} color="#6B7280" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Find classrooms, hostels, dining..."
+        {/* Search Bar Row */}
+        <View style={styles.searchRow}>
+          <View style={styles.searchWrapper}>
+            <IconSymbol name="magnifyingglass" size={20} color="#6B7280" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Find classrooms, hostels, dining..."
             placeholderTextColor="#9BA3AE"
             value={searchQuery}
             onChangeText={(text) => {
@@ -524,7 +388,47 @@ export default function MapScreen() {
               <IconSymbol name="xmark.circle.fill" size={18} color="#9BA3AE" />
             </Pressable>
           )}
+          </View>
+          <Pressable 
+            style={[styles.bookmarkBtn, showBookmarks && styles.bookmarkBtnActive]} 
+            onPress={() => setShowBookmarks(!showBookmarks)}
+          >
+            <IconSymbol name="bookmark.fill" size={20} color={showBookmarks ? "#FFFFFF" : "#1A2B4A"} />
+          </Pressable>
         </View>
+
+        {/* Bookmarks & Recent Dropdown */}
+        {showBookmarks && !isSearching && (
+          <View style={styles.bookmarksSheet}>
+            <Text style={styles.bookmarksTitle}>Saved Places</Text>
+            {savedPlaces.length === 0 ? (
+              <Text style={styles.emptyText}>No saved places yet.</Text>
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+                {savedPlaces.map(p => (
+                  <Pressable key={p.id} style={styles.recentItemCard} onPress={() => focusItem(p)}>
+                    <Text style={styles.recentItemEmoji}>{p.emoji || "📍"}</Text>
+                    <Text style={styles.recentItemName} numberOfLines={1}>{p.shortName || p.name}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            )}
+            
+            <Text style={styles.bookmarksTitle}>Recently Viewed</Text>
+            {recentPlaces.length === 0 ? (
+              <Text style={styles.emptyText}>No recent activity.</Text>
+            ) : (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                {recentPlaces.map(p => (
+                  <Pressable key={p.id} style={styles.recentItemCard} onPress={() => focusItem(p)}>
+                    <Text style={styles.recentItemEmoji}>{p.emoji || "📍"}</Text>
+                    <Text style={styles.recentItemName} numberOfLines={1}>{p.shortName || p.name}</Text>
+                  </Pressable>
+                ))}
+              </ScrollView>
+            )}
+          </View>
+        )}
 
         {/* Search Results Dropdown */}
         {isSearching && searchResults.length > 0 && (
@@ -614,9 +518,14 @@ export default function MapScreen() {
                   {selectedItem.building && `• ${selectedItem.building}`}
                 </Text>
               </View>
-              <Pressable style={styles.closeBtn} onPress={() => setSelectedItem(null)}>
-                <IconSymbol name="xmark" size={16} color="#1A2B4A" />
-              </Pressable>
+              <View style={styles.titleActionsRow}>
+                <Pressable onPress={() => toggleSavePlace(selectedItem)} style={styles.saveBtn}>
+                  <IconSymbol name={savedPlaces.some(p => p.id === selectedItem.id) ? "bookmark.fill" : "bookmark"} size={20} color="#A93C40" />
+                </Pressable>
+                <Pressable style={styles.closeBtn} onPress={() => setSelectedItem(null)}>
+                  <IconSymbol name="xmark" size={16} color="#1A2B4A" />
+                </Pressable>
+              </View>
             </View>
 
             <ScrollView
@@ -740,6 +649,11 @@ const styles = StyleSheet.create({
     zIndex: 20,
     gap: 8,
   },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   searchWrapper: {
     flexDirection: "row",
     alignItems: "center",
@@ -752,6 +666,62 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 3,
+  },
+  bookmarkBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  bookmarkBtnActive: {
+    backgroundColor: "#A93C40",
+  },
+  bookmarksSheet: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  bookmarksTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1A2B4A",
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 13,
+    color: "#9BA3AE",
+    fontStyle: "italic",
+    marginBottom: 12,
+  },
+  recentItemCard: {
+    backgroundColor: "#F3F4F6",
+    borderRadius: 12,
+    padding: 12,
+    marginRight: 8,
+    alignItems: "center",
+    width: 80,
+  },
+  recentItemEmoji: {
+    fontSize: 20,
+    marginBottom: 4,
+  },
+  recentItemName: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#4B5563",
+    textAlign: "center",
   },
   searchInput: {
     flex: 1,
@@ -868,13 +838,22 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
+    padding: 20,
+    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
-    paddingBottom: 10,
-    marginBottom: 10,
   },
   titleWrapper: {
     flex: 1,
+    paddingRight: 12,
+  },
+  titleActionsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  saveBtn: {
+    padding: 4,
   },
   detailTitle: {
     fontSize: 18,

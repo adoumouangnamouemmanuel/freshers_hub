@@ -15,6 +15,7 @@ import { useAuth } from "@/context/auth-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { apiRequest } from "@/lib/api";
 import { useEffect, useState, useMemo } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Post = {
   id: string;
@@ -31,6 +32,7 @@ type Post = {
   eventTime?: string;
   eventLocation?: string;
   eventOrganizer?: string;
+  dressCode?: string;
   eventCapacity?: number;
   rsvpEnabled?: boolean;
   eventStatus?: string;
@@ -46,8 +48,8 @@ function PostCard({ post, onUpdate }: { post: Post; onUpdate: () => void }) {
   
   const isLong = post.content.length > 120;
   const displayContent = !isLong || expanded ? post.content : post.content.slice(0, 120) + "...";
-  const isAlert = post.category.toLowerCase() === "alert";
-  const isEvent = post.category.toLowerCase() === "event" && post.eventId;
+  const isAlert = post.category?.toLowerCase() === "alert";
+  const isEvent = post.category?.toLowerCase() === "event" && post.eventId;
   const isOwner = session?.user.id === post.authorId || session?.user.roles.some((r: any) => r.name === "admin");
 
   const handleRsvp = async (status: string) => {
@@ -116,6 +118,18 @@ function PostCard({ post, onUpdate }: { post: Post; onUpdate: () => void }) {
               <Text style={styles.eventDetailsText}>{post.eventLocation}</Text>
             </View>
           )}
+          {!!post.eventOrganizer && (
+            <View style={styles.eventDetailsRow}>
+              <IconSymbol name="person.fill" size={14} color="#6B7280" />
+              <Text style={styles.eventDetailsText}>By {post.eventOrganizer}</Text>
+            </View>
+          )}
+          {!!post.dressCode && (
+            <View style={styles.eventDetailsRow}>
+              <IconSymbol name="figure.stand" size={14} color="#6B7280" />
+              <Text style={styles.eventDetailsText}>Dress code: {post.dressCode}</Text>
+            </View>
+          )}
           
           <View style={styles.eventFooter}>
             <Text style={styles.attendeeCount}>
@@ -151,6 +165,20 @@ export default function FeedScreen() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [welcomeDismissed, setWelcomeDismissed] = useState(true);
+
+  useEffect(() => {
+    AsyncStorage.getItem("@welcome_dismissed").then(val => {
+      if (val !== "true") {
+        setWelcomeDismissed(false);
+      }
+    });
+  }, []);
+
+  const dismissWelcome = async () => {
+    setWelcomeDismissed(true);
+    await AsyncStorage.setItem("@welcome_dismissed", "true");
+  };
 
   const fetchPosts = async () => {
     try {
@@ -195,7 +223,7 @@ export default function FeedScreen() {
   const [viewMode, setViewMode] = useState("list");
 
   const filteredPosts = posts.filter(p => {
-    if (activeCategory !== "All" && p.category.toLowerCase() !== activeCategory.toLowerCase()) return false;
+    if (activeCategory !== "All" && p.category?.toLowerCase() !== activeCategory.toLowerCase()) return false;
     return true;
   });
 
@@ -242,8 +270,25 @@ export default function FeedScreen() {
               </Pressable>
             ))}
           </ScrollView>
-
         </View>
+
+        {/* Welcome Card for Freshers */}
+        {!welcomeDismissed && (
+          <View style={styles.welcomeCard}>
+            <View style={styles.welcomeHeader}>
+              <Text style={styles.welcomeTitle}>Welcome to Ashesi!</Text>
+              <Pressable onPress={dismissWelcome} style={styles.welcomeCloseBtn}>
+                <IconSymbol name="xmark" size={16} color="#6B7280" />
+              </Pressable>
+            </View>
+            <Text style={styles.welcomeDesc}>
+              This is your Fresher Hub. Swipe through the Support tab for coaching and counselling, check the Map to find your way around, and browse Clubs to get involved.
+            </Text>
+            <Pressable style={styles.welcomeActionBtn} onPress={() => router.push("/(tabs)/support")}>
+              <Text style={styles.welcomeActionText}>Explore Support Hub</Text>
+            </Pressable>
+          </View>
+        )}
 
         {isCoachAdmin && (
           <View style={styles.section}>
@@ -574,6 +619,53 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontWeight: "700",
     fontSize: 13,
+  },
+
+  welcomeCard: {
+    backgroundColor: "#E0E7FF",
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: "#C7D2FE",
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  welcomeHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    marginBottom: 8,
+  },
+  welcomeTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#1A2B4A",
+    flex: 1,
+  },
+  welcomeCloseBtn: {
+    padding: 4,
+    marginLeft: 12,
+  },
+  welcomeDesc: {
+    fontSize: 15,
+    color: "#4B5563",
+    lineHeight: 22,
+    marginBottom: 16,
+  },
+  welcomeActionBtn: {
+    backgroundColor: "#4338CA",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    alignSelf: "flex-start",
+  },
+  welcomeActionText: {
+    color: "#FFFFFF",
+    fontWeight: "700",
+    fontSize: 14,
   },
 
   postCard: {

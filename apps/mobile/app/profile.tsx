@@ -1,4 +1,6 @@
-import { View, Text, StyleSheet, Pressable, ScrollView } from "react-native";
+import { View, Text, StyleSheet, Pressable, ScrollView, Switch } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/auth-context";
@@ -8,6 +10,23 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { session, signOut } = useAuth();
   const insets = useSafeAreaInsets();
+
+  const [eventNotifs, setEventNotifs] = useState(true);
+  const [clubNotifs, setClubNotifs] = useState(true);
+
+  useEffect(() => {
+    AsyncStorage.getItem("@notifs_events").then(val => { if (val !== null) setEventNotifs(val === "true") });
+    AsyncStorage.getItem("@notifs_clubs").then(val => { if (val !== null) setClubNotifs(val === "true") });
+  }, []);
+
+  const toggleEventNotifs = async (val: boolean) => {
+    setEventNotifs(val);
+    await AsyncStorage.setItem("@notifs_events", String(val));
+  };
+  const toggleClubNotifs = async (val: boolean) => {
+    setClubNotifs(val);
+    await AsyncStorage.setItem("@notifs_clubs", String(val));
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -62,16 +81,22 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Settings</Text>
-          <Pressable style={styles.actionRow}>
-            <IconSymbol name="heart.text.square.fill" size={20} color="#6B7280" />
-            <Text style={styles.actionText}>Notification Preferences</Text>
-          </Pressable>
+          <Text style={styles.cardTitle}>Notification Preferences</Text>
+          <View style={styles.switchRow}>
+            <View style={styles.switchLabelWrap}>
+              <Text style={styles.switchLabel}>Event Reminders</Text>
+              <Text style={styles.switchDesc}>Get notified before events start</Text>
+            </View>
+            <Switch value={eventNotifs} onValueChange={toggleEventNotifs} trackColor={{ true: "#A93C40", false: "#E5E7EB" }} />
+          </View>
           <View style={styles.divider} />
-          <Pressable style={styles.actionRow}>
-            <IconSymbol name="map.fill" size={20} color="#6B7280" />
-            <Text style={styles.actionText}>Privacy Settings</Text>
-          </Pressable>
+          <View style={styles.switchRow}>
+            <View style={styles.switchLabelWrap}>
+              <Text style={styles.switchLabel}>Club Activity</Text>
+              <Text style={styles.switchDesc}>Updates from clubs you joined</Text>
+            </View>
+            <Switch value={clubNotifs} onValueChange={toggleClubNotifs} trackColor={{ true: "#A93C40", false: "#E5E7EB" }} />
+          </View>
         </View>
 
         <Pressable style={styles.signOutBtn} onPress={handleSignOut}>
@@ -204,15 +229,24 @@ const styles = StyleSheet.create({
     backgroundColor: "#F3F4F6",
     marginVertical: 16,
   },
-  actionRow: {
+  switchRow: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
-    gap: 12,
   },
-  actionText: {
+  switchLabelWrap: {
+    flex: 1,
+    paddingRight: 16,
+  },
+  switchLabel: {
     fontSize: 15,
-    color: "#4B5563",
-    fontWeight: "500",
+    fontWeight: "600",
+    color: "#1A2B4A",
+    marginBottom: 4,
+  },
+  switchDesc: {
+    fontSize: 13,
+    color: "#6B7280",
   },
   signOutBtn: {
     backgroundColor: "#FFFFFF",

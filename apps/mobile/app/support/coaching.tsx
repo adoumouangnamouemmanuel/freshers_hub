@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, ScrollView, Animated } from "react-native";
 import { useAuth } from "../../context/auth-context";
 import { IconSymbol } from "../../components/ui/icon-symbol";
+import { router } from "expo-router";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -81,7 +82,11 @@ export default function CoachingScreen() {
             </View>
           </View>
 
-          <TouchableOpacity style={styles.primaryButton} activeOpacity={0.8}>
+          <TouchableOpacity 
+            style={styles.primaryButton} 
+            activeOpacity={0.8}
+            onPress={() => router.push(`/support/schedule-session?userId=${assignedCoach.peer_coach_id}&name=${encodeURIComponent(assignedCoach.coach_name)}` as any)}
+          >
             <IconSymbol name="calendar" size={18} color="#FFFFFF" />
             <Text style={styles.primaryButtonText}>Book a Session</Text>
           </TouchableOpacity>
@@ -101,8 +106,8 @@ export default function CoachingScreen() {
       </View>
       
       <View style={styles.sessionsList}>
-        {sessions.filter(s => s.status === 'booked').length > 0 ? (
-          sessions.filter(s => s.status === 'booked').map((session) => (
+        {sessions.filter(s => s.status === 'scheduled').length > 0 ? (
+          sessions.filter(s => s.status === 'scheduled').map((session) => (
             <View key={session.id} style={styles.sessionCard}>
               <View style={styles.sessionDateBadge}>
                 <Text style={styles.sessionDateBadgeMonth}>
@@ -120,7 +125,7 @@ export default function CoachingScreen() {
                   <IconSymbol name="mappin.and.ellipse" size={14} color="#6B7280" /> {session.location || "Location TBD"}
                 </Text>
                 <View style={styles.statusChip}>
-                  <Text style={styles.sessionStatus}>BOOKED</Text>
+                  <Text style={styles.sessionStatus}>SCHEDULED</Text>
                 </View>
               </View>
             </View>

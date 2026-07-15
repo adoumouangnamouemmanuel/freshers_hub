@@ -14,7 +14,7 @@ import {
 import { academicYears, units, users } from "./identity";
 
 export const sessionStatusEnum = pgEnum("session_status", [
-  "booked",
+  "scheduled",
   "completed",
   "cancelled",
   "rescheduled",
@@ -72,7 +72,7 @@ export const sessions = pgTable("sessions", {
   withType: sessionWithEnum("with_type"),
   scheduledAt: timestamp("scheduled_at", { withTimezone: true }).notNull(),
   location: text("location"),
-  status: sessionStatusEnum("status").notNull().default("booked"),
+  status: sessionStatusEnum("status").notNull().default("scheduled"),
   isMandatory: boolean("is_mandatory").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

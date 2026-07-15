@@ -18,6 +18,8 @@ router.get("/coaches/freshers", supportController.getAssignedFreshers);
 
 router.get("/buddy", supportController.getBuddyPairing);
 
+router.get("/staff/:unitName", supportController.getStaffByUnit);
+
 router.post("/contact", supportController.logContactClick);
 
 // Admin Routes

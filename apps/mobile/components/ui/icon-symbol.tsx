@@ -74,6 +74,9 @@ const MAPPING = {
   'ellipsis.circle': 'more-horiz',
   'pencil': 'edit',
   'nosign': 'block',
+  'bookmark.fill': 'bookmark',
+  'bookmark': 'bookmark-border',
+  'figure.stand': 'accessibility',
 };
 
 export type IconSymbolName = keyof typeof MAPPING;

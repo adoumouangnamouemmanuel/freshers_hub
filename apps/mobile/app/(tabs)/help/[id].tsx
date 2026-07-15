@@ -146,6 +146,12 @@ export default function OfficeDetailScreen() {
                   <Text style={styles.infoLabel}>Location</Text>
                   <Text style={styles.infoValue}>{office.location}</Text>
                 </View>
+                <Pressable 
+                  style={styles.mapLinkBtn}
+                  onPress={() => router.push({ pathname: "/(tabs)/map", params: { focusId: office.mapId || office.id } })}
+                >
+                  <Text style={styles.mapLinkText}>View on Map</Text>
+                </Pressable>
               </View>
 
               <View style={[styles.infoRow, { borderTopWidth: 1, borderColor: "#F1F3F5", paddingTop: 16, marginTop: 16 }]}>
@@ -381,6 +387,17 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "600",
     color: TEXT_COLOR,
+  },
+  mapLinkBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: `${PRIMARY_COLOR}15`,
+    borderRadius: 8,
+  },
+  mapLinkText: {
+    color: PRIMARY_COLOR,
+    fontSize: 12,
+    fontWeight: "700",
   },
 
   // Sections

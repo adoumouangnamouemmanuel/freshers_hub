@@ -4,8 +4,7 @@ const { pool } = require("../services/db");
 async function getAdminDashboardStats(req, res) {
   const client = await pool.connect();
   try {
-    // Auto mark overdue sessions
-    await client.query(`UPDATE sessions SET status = 'overdue' WHERE scheduled_at < now() AND status = 'booked'`);
+    // Overdue is calculated dynamically now
 
     // Basic stats for Coach Admin
     const { rows: stats } = await client.query(`
@@ -17,8 +16,8 @@ async function getAdminDashboardStats(req, res) {
         (SELECT COUNT(DISTINCT fresher_id) FROM coach_assignments) as assigned_freshers,
         (SELECT COUNT(*) FROM sessions WHERE is_mandatory = true AND status = 'completed') as completed_mandatory_sessions,
         (SELECT COUNT(DISTINCT fresher_id) * 3 FROM coach_assignments) as target_mandatory_sessions,
-        (SELECT COUNT(*) FROM sessions WHERE status IN ('booked')) as upcoming_sessions_count,
-        (SELECT COUNT(*) FROM sessions WHERE status = 'overdue') as overdue_sessions_count
+        (SELECT COUNT(*) FROM sessions WHERE status = 'scheduled' AND scheduled_at >= now()) as upcoming_sessions_count,
+        (SELECT COUNT(*) FROM sessions WHERE status = 'scheduled' AND scheduled_at < now()) as overdue_sessions_count
     `);
 
       // Ensure we map the new keys to what the frontend expects
@@ -458,7 +457,7 @@ async function getAdminUserProfile(req, res) {
       const report = rs.report_content || {};
       return {
         id: rs.id,
-        type: rs.type || "Peer Coaching",
+        type: (rs.type === 'peer_coach' && rs.with_name?.toLowerCase().includes('yvonne')) ? 'Coaching' : (rs.type === 'peer_coach' ? 'Peer Coaching' : (rs.type || 'Session')),
         date: new Date(rs.date).toLocaleDateString() + " • " + new Date(rs.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
         status: rs.status,
         with: rs.with_name,
@@ -483,7 +482,7 @@ async function getAdminUserProfile(req, res) {
 async function getAdminSessions(req, res) {
   const client = await pool.connect();
   try {
-    await client.query(`UPDATE sessions SET status = 'overdue' WHERE scheduled_at < now() AND status = 'booked'`);
+    // Overdue is handled dynamically by frontend
 
     const { rows } = await client.query(`
       SELECT 
@@ -543,7 +542,7 @@ async function adminBookSession(req, res) {
       INSERT INTO sessions 
         (unit_id, academic_year_id, student_id, provider_id, with_type, scheduled_at, location, description, is_mandatory, status)
       VALUES 
-        ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'booked')
+        ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'scheduled')
       RETURNING *
     `, [unitId, academicYearId, studentId, providerId, withType || 'peer_coach', scheduledAt, location, description, isMandatory || false]);
 
