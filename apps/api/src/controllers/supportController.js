@@ -11,6 +11,7 @@ async function getSessions(req, res) {
       SELECT 
         s.id, s.unit_id, s.academic_year_id, s.student_id, s.provider_id, 
         s.with_type as type, s.scheduled_at as date, s.location, s.description, s.status, s.is_mandatory,
+        EXISTS (SELECT 1 FROM session_reports sr WHERE sr.session_id = s.id) AS has_report,
         u1.full_name AS student_name, u1.avatar_url AS student_avatar,
         u2.full_name AS provider_name, u2.avatar_url AS provider_avatar
       FROM sessions s
@@ -41,9 +42,12 @@ async function getSessions(req, res) {
 
 // Book a new session
 async function bookSession(req, res) {
-  const { unitId, academicYearId, providerId, withType, scheduledAt, location, isMandatory, description } = req.body;
+  const { unitId, academicYearId, providerId, studentId, withType, scheduledAt, location, isMandatory, description } = req.body;
   
-  if (!unitId || !academicYearId || !providerId || !scheduledAt) {
+  const finalStudentId = studentId || req.user.id;
+  const finalProviderId = providerId || req.user.id;
+
+  if (!unitId || !academicYearId || !finalProviderId || !finalStudentId || !scheduledAt) {
     return res.status(400).json({ error: "Missing required fields" });
   }
 
@@ -58,7 +62,7 @@ async function bookSession(req, res) {
       VALUES 
         ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'scheduled')
       RETURNING *
-    `, [unitId, academicYearId, req.user.id, providerId, withType, scheduledAt, location, description, isMandatory || false]);
+    `, [unitId, academicYearId, finalStudentId, finalProviderId, withType, scheduledAt, location, description, isMandatory || false]);
 
     await client.query("COMMIT");
     res.status(201).json(rows[0]);
@@ -263,6 +267,48 @@ async function getStaffByUnit(req, res) {
   }
 }
 
+// Submit a session report
+async function submitSessionReport(req, res) {
+  const { id } = req.params; // session_id
+  const { content } = req.body;
+
+  if (!content) {
+    return res.status(400).json({ error: "Missing report content" });
+  }
+
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    
+    // Verify session belongs to the user and they are the provider
+    const { rows: sessionRows } = await client.query(
+      "SELECT id FROM sessions WHERE id = $1 AND provider_id = $2",
+      [id, req.user.id]
+    );
+
+    if (sessionRows.length === 0) {
+      await client.query("ROLLBACK");
+      return res.status(403).json({ error: "Permission denied or session not found" });
+    }
+
+    const { rows } = await client.query(`
+      INSERT INTO session_reports (session_id, provider_id, content)
+      VALUES ($1, $2, $3)
+      ON CONFLICT (session_id) DO UPDATE SET content = EXCLUDED.content, submitted_at = now()
+      RETURNING *
+    `, [id, req.user.id, content]);
+
+    await client.query("COMMIT");
+    res.status(201).json(rows[0]);
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("Error submitting report:", err);
+    res.status(500).json({ error: "Internal server error" });
+  } finally {
+    client.release();
+  }
+}
+
 module.exports = {
   getSessions,
   bookSession,
@@ -274,4 +320,5 @@ module.exports = {
   getBuddyPairing,
   logContactClick,
   getStaffByUnit,
+  submitSessionReport,
 };

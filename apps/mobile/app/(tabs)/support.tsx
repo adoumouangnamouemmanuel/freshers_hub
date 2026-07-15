@@ -7,6 +7,8 @@ import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { useAuth } from "@/context/auth-context";
 import { apiRequest } from "@/lib/api";
 
+import { isCoach } from "@/lib/permissions";
+
 export default function SupportScreen() {
   const router = useRouter();
   const { session } = useAuth();
@@ -16,6 +18,8 @@ export default function SupportScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   
+  const isPeerCoach = session?.user?.roles ? isCoach(session.user.roles) : false;
+
   const [assignedCoach, setAssignedCoach] = useState<any>(null);
   const [buddy, setBuddy] = useState<any>(null);
   const [counsellors, setCounsellors] = useState<any[]>([]);
@@ -150,79 +154,83 @@ export default function SupportScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#1A2B4A" />}
       >
-        {/* Peer Coaching */}
-        <View style={styles.sectionHeader}>
-          <View style={[styles.sectionIcon, { backgroundColor: "#EFF6FF" }]}>
-            <Ionicons name="people" size={24} color="#3B82F6" />
-          </View>
-          <Text style={styles.sectionTitle}>Peer Coaching</Text>
-        </View>
+        {!isPeerCoach && (
+          <>
+            {/* Peer Coaching */}
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionIcon, { backgroundColor: "#EFF6FF" }]}>
+                <Ionicons name="people" size={24} color="#3B82F6" />
+              </View>
+              <Text style={styles.sectionTitle}>Peer Coaching</Text>
+            </View>
 
-        {assignedCoach ? (
-          <View style={styles.premiumCard}>
-            <View style={styles.coachProfile}>
-              {assignedCoach.avatar_url ? (
-                <Image source={{ uri: assignedCoach.avatar_url }} style={styles.largeAvatar} />
-              ) : (
-                <View style={[styles.largeAvatar, styles.avatarPlaceholder, { backgroundColor: "#EFF6FF" }]}>
-                  <Text style={[styles.avatarText, { color: "#3B82F6" }]}>{assignedCoach.coach_name?.charAt(0) || "C"}</Text>
+            {assignedCoach ? (
+              <View style={styles.premiumCard}>
+                <View style={styles.coachProfile}>
+                  {assignedCoach.avatar_url ? (
+                    <Image source={{ uri: assignedCoach.avatar_url }} style={styles.largeAvatar} />
+                  ) : (
+                    <View style={[styles.largeAvatar, styles.avatarPlaceholder, { backgroundColor: "#EFF6FF" }]}>
+                      <Text style={[styles.avatarText, { color: "#3B82F6" }]}>{assignedCoach.coach_name?.charAt(0) || "C"}</Text>
+                    </View>
+                  )}
+                  <View style={styles.coachInfo}>
+                    <Text style={styles.coachName}>{assignedCoach.coach_name}</Text>
+                    <Text style={styles.coachRole}>Assigned Peer Coach</Text>
+                  </View>
                 </View>
-              )}
-              <View style={styles.coachInfo}>
-                <Text style={styles.coachName}>{assignedCoach.coach_name}</Text>
-                <Text style={styles.coachRole}>Assigned Peer Coach</Text>
-              </View>
-            </View>
 
-            <View style={styles.progressSection}>
-              <View style={styles.progressHeaderRow}>
-                <Text style={styles.progressLabel}>Mandatory Sessions Completed</Text>
-                <Text style={styles.progressValue}>{completedSessions} / {totalMandatory}</Text>
-              </View>
-              <View style={styles.progressBarBg}>
-                <View style={[styles.progressBarFill, { width: `${completionRate}%`, backgroundColor: "#3B82F6" }]} />
-              </View>
-            </View>
+                <View style={styles.progressSection}>
+                  <View style={styles.progressHeaderRow}>
+                    <Text style={styles.progressLabel}>Mandatory Sessions Completed</Text>
+                    <Text style={styles.progressValue}>{completedSessions} / {totalMandatory}</Text>
+                  </View>
+                  <View style={styles.progressBarBg}>
+                    <View style={[styles.progressBarFill, { width: `${completionRate}%`, backgroundColor: "#3B82F6" }]} />
+                  </View>
+                </View>
 
-            <View style={styles.staffActions}>
-              <View style={styles.socialRow}>
-                <TouchableOpacity style={[styles.socialBtn, { backgroundColor: "#E8FBF0" }]} onPress={() => handleWhatsApp(assignedCoach.phone)}>
-                  <FontAwesome name="whatsapp" size={22} color="#25D366" />
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.socialBtn, { backgroundColor: "#F3F4F6" }]} onPress={() => handleCall(assignedCoach.phone)}>
-                  <Ionicons name="call" size={20} color="#4B5563" />
-                </TouchableOpacity>
+                <View style={styles.staffActions}>
+                  <View style={styles.socialRow}>
+                    <TouchableOpacity style={[styles.socialBtn, { backgroundColor: "#E8FBF0" }]} onPress={() => handleWhatsApp(assignedCoach.phone)}>
+                      <FontAwesome name="whatsapp" size={22} color="#25D366" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.socialBtn, { backgroundColor: "#F3F4F6" }]} onPress={() => handleCall(assignedCoach.phone)}>
+                      <Ionicons name="call" size={20} color="#4B5563" />
+                    </TouchableOpacity>
+                  </View>
+                  <TouchableOpacity style={styles.primaryBtn} onPress={() => router.push(`/support/schedule-session?userId=${assignedCoach.peer_coach_id}&name=${encodeURIComponent(assignedCoach.coach_name)}` as any)}>
+                    <Text style={styles.primaryBtnText}>Book a Session</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-              <TouchableOpacity style={styles.primaryBtn} onPress={() => router.push(`/support/schedule-session?userId=${assignedCoach.peer_coach_id}&name=${encodeURIComponent(assignedCoach.coach_name)}` as any)}>
-                <Text style={styles.primaryBtnText}>Book a Session</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.emptyCard}>
-            <Ionicons name="time" size={32} color="#9CA3AF" style={{ marginBottom: 12 }} />
-            <Text style={styles.emptyCardTitle}>Coach Assignment Pending</Text>
-            <Text style={styles.emptyCardDesc}>Your peer coach will be assigned shortly. Check back later.</Text>
-          </View>
+            ) : (
+              <View style={styles.emptyCard}>
+                <Ionicons name="time" size={32} color="#9CA3AF" style={{ marginBottom: 12 }} />
+                <Text style={styles.emptyCardTitle}>Coach Assignment Pending</Text>
+                <Text style={styles.emptyCardDesc}>Your peer coach will be assigned shortly. Check back later.</Text>
+              </View>
+            )}
+
+            <TouchableOpacity 
+              style={styles.yvonneBtn} 
+              onPress={() => router.push(`/support/schedule-session?userId=44444444-4444-4444-4444-444444444444&name=${encodeURIComponent('Yvonne Ansah')}` as any)}
+            >
+              <View style={styles.yvonneBtnContent}>
+                <View style={styles.yvonneAvatar}>
+                  <Text style={styles.yvonneAvatarText}>Y</Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.yvonneName}>Coach Yvonne</Text>
+                  <Text style={styles.yvonneRole}>Head Coach</Text>
+                </View>
+                <View style={styles.yvonneBookBtn}>
+                  <Text style={styles.yvonneBookText}>Book</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          </>
         )}
-
-        <TouchableOpacity 
-          style={styles.yvonneBtn} 
-          onPress={() => router.push(`/support/schedule-session?userId=44444444-4444-4444-4444-444444444444&name=${encodeURIComponent('Yvonne Ansah')}` as any)}
-        >
-          <View style={styles.yvonneBtnContent}>
-            <View style={styles.yvonneAvatar}>
-              <Text style={styles.yvonneAvatarText}>Y</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.yvonneName}>Coach Yvonne</Text>
-              <Text style={styles.yvonneRole}>Head Coach</Text>
-            </View>
-            <View style={styles.yvonneBookBtn}>
-              <Text style={styles.yvonneBookText}>Book</Text>
-            </View>
-          </View>
-        </TouchableOpacity>
 
         {/* Counselling */}
         <View style={styles.sectionHeader}>
@@ -271,43 +279,47 @@ export default function SupportScreen() {
           )}
         </View>
 
-        {/* Buddy Up */}
-        <View style={styles.sectionHeader}>
-          <View style={[styles.sectionIcon, { backgroundColor: "#D1FAE5" }]}>
-            <Ionicons name="earth" size={24} color="#059669" />
-          </View>
-          <Text style={styles.sectionTitle}>Buddy Up (ODIP)</Text>
-        </View>
-
-        {buddy ? (
-          <View style={[styles.premiumCard, { borderColor: "#D1FAE5", borderWidth: 1, backgroundColor: "#F0FDF4" }]}>
-            <View style={styles.coachProfile}>
-              {buddy.avatar_url ? (
-                <Image source={{ uri: buddy.avatar_url }} style={styles.largeAvatar} />
-              ) : (
-                <View style={[styles.largeAvatar, styles.avatarPlaceholder, { backgroundColor: "#D1FAE5" }]}>
-                  <Text style={[styles.avatarText, { color: "#059669" }]}>{buddy.buddy_name?.charAt(0) || "B"}</Text>
-                </View>
-              )}
-              <View style={styles.coachInfo}>
-                <Text style={styles.coachName}>{buddy.buddy_name}</Text>
-                <Text style={styles.coachRole}>Your Assigned Buddy</Text>
+        {!isPeerCoach && (
+          <>
+            {/* Buddy Up */}
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionIcon, { backgroundColor: "#D1FAE5" }]}>
+                <Ionicons name="earth" size={24} color="#059669" />
               </View>
+              <Text style={styles.sectionTitle}>Buddy Up (ODIP)</Text>
             </View>
 
-            <View style={styles.staffActions}>
-              <TouchableOpacity style={[styles.socialBtn, { backgroundColor: "#DCFCE7", flex: 1, flexDirection: "row", gap: 8 }]} onPress={() => handleWhatsApp(buddy.phone)}>
-                <FontAwesome name="whatsapp" size={22} color="#25D366" />
-                <Text style={{ fontWeight: "700", color: "#166534" }}>Message Buddy</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.emptyCard}>
-            <Ionicons name="calendar-outline" size={32} color="#9CA3AF" style={{ marginBottom: 12 }} />
-            <Text style={styles.emptyCardTitle}>Upcoming Assignment</Text>
-            <Text style={styles.emptyCardDesc}>Your ODIP buddy will be assigned soon to help you navigate campus life!</Text>
-          </View>
+            {buddy ? (
+              <View style={[styles.premiumCard, { borderColor: "#D1FAE5", borderWidth: 1, backgroundColor: "#F0FDF4" }]}>
+                <View style={styles.coachProfile}>
+                  {buddy.avatar_url ? (
+                    <Image source={{ uri: buddy.avatar_url }} style={styles.largeAvatar} />
+                  ) : (
+                    <View style={[styles.largeAvatar, styles.avatarPlaceholder, { backgroundColor: "#D1FAE5" }]}>
+                      <Text style={[styles.avatarText, { color: "#059669" }]}>{buddy.buddy_name?.charAt(0) || "B"}</Text>
+                    </View>
+                  )}
+                  <View style={styles.coachInfo}>
+                    <Text style={styles.coachName}>{buddy.buddy_name}</Text>
+                    <Text style={styles.coachRole}>Your Assigned Buddy</Text>
+                  </View>
+                </View>
+
+                <View style={styles.staffActions}>
+                  <TouchableOpacity style={[styles.socialBtn, { backgroundColor: "#DCFCE7", flex: 1, flexDirection: "row", gap: 8 }]} onPress={() => handleWhatsApp(buddy.phone)}>
+                    <FontAwesome name="whatsapp" size={22} color="#25D366" />
+                    <Text style={{ fontWeight: "700", color: "#166534" }}>Message Buddy</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <View style={styles.emptyCard}>
+                <Ionicons name="calendar-outline" size={32} color="#9CA3AF" style={{ marginBottom: 12 }} />
+                <Text style={styles.emptyCardTitle}>Upcoming Assignment</Text>
+                <Text style={styles.emptyCardDesc}>Your ODIP buddy will be assigned soon to help you navigate campus life!</Text>
+              </View>
+            )}
+          </>
         )}
         
       </ScrollView>

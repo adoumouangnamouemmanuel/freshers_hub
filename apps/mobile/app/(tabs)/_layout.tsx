@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuth } from '@/context/auth-context';
-import { isClubLead, isCoachAdmin } from '@/lib/permissions';
+import { isClubLead, isCoachAdmin, isCoach } from '@/lib/permissions';
 
 const ACTIVE_TINT   = '#1f1a17';
 const INACTIVE_TINT = '#a89b8f';
@@ -19,6 +19,7 @@ export default function TabLayout() {
   
   const showClubAdmin = session?.user?.roles ? isClubLead(session.user.roles) : false;
   const showCoachAdmin = session?.user?.roles ? isCoachAdmin(session.user.roles) : false;
+  const showPeerCoach = session?.user?.roles ? isCoach(session.user.roles) : false;
 
   return (
     <Tabs
@@ -57,6 +58,16 @@ export default function TabLayout() {
           href: showCoachAdmin ? null : '/(tabs)/map',
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="map.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="my-coaching"
+        options={{
+          title: 'Coaching',
+          href: showPeerCoach ? '/(tabs)/my-coaching' : null,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={26} name="person.3.fill" color={color} />
           ),
         }}
       />

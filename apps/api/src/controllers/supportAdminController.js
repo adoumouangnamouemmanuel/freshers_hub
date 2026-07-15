@@ -441,20 +441,29 @@ async function getAdminUserProfile(req, res) {
       userProfile.assigned_coach = coachResult.length > 0 ? coachResult[0] : null;
     }
 
+    let sessionFilter = `WHERE (s.student_id = $1 OR s.provider_id = $1)`;
+    const params = [id];
+
+    if (req.user.roles.includes("peer_coach") && !req.user.roles.includes("coach_admin") && !req.user.roles.includes("admin")) {
+      sessionFilter += ` AND (s.student_id = $2 OR s.provider_id = $2)`;
+      params.push(req.user.id);
+    } else if (req.user.roles.includes("coach_admin") || req.user.roles.includes("admin")) {
+      sessionFilter += ` AND s.with_type IN ('coaching', 'peer_coach')`;
+    }
+
     // Fetch recent sessions
     const { rows: recentSessions } = await client.query(`
-      SELECT s.id, s.with_type as type, s.scheduled_at as date, s.status, s.location,
+      SELECT s.id, s.with_type as type, s.scheduled_at as date, s.status, s.location, s.provider_id, s.student_id,
              u.full_name as with_name, r.content as report_content
       FROM sessions s
       LEFT JOIN session_reports r ON s.id = r.session_id
       LEFT JOIN users u ON (s.student_id = u.id AND s.provider_id = $1) OR (s.provider_id = u.id AND s.student_id = $1)
-      WHERE s.student_id = $1 OR s.provider_id = $1
+      ${sessionFilter}
       ORDER BY s.scheduled_at DESC
       LIMIT 10
-    `, [id]);
+    `, params);
     
     userProfile.recent_sessions = recentSessions.map(rs => {
-      const report = rs.report_content || {};
       return {
         id: rs.id,
         type: (rs.type === 'peer_coach' && rs.with_name?.toLowerCase().includes('yvonne')) ? 'Coaching' : (rs.type === 'peer_coach' ? 'Peer Coaching' : (rs.type || 'Session')),
@@ -462,11 +471,14 @@ async function getAdminUserProfile(req, res) {
         status: rs.status,
         with: rs.with_name,
         location: rs.location || "TBD",
-        report: {
-          topic: report.topic || "N/A",
-          actions: report.actions || report.action_items || "N/A",
-          mood: report.mood || "N/A"
-        }
+        provider_id: rs.provider_id,
+        student_id: rs.student_id,
+        has_report: !!rs.report_content,
+        report: rs.report_content ? {
+          topic: rs.report_content.topic || "N/A",
+          actions: rs.report_content.action_items || rs.report_content.actions || "N/A",
+          mood: rs.report_content.wellbeing_notes || rs.report_content.mood || "N/A"
+        } : null
       };
     });
 

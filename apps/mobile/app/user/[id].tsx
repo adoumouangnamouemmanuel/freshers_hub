@@ -159,6 +159,15 @@ export default function UserProfileScreen() {
             <Pressable style={[styles.actionCircle, { backgroundColor: "#25D366" }]} onPress={() => openApp('whatsapp')}>
               <FontAwesome name="whatsapp" size={24} color="#FFFFFF" />
             </Pressable>
+            
+            {session?.user?.roles?.some(role => role.name === "peer_coach") && profile.id !== session?.user?.id && (
+              <Pressable 
+                style={[styles.actionCircle, { backgroundColor: "#1A2B4A", flex: 1, borderRadius: 16, paddingHorizontal: 16 }]} 
+                onPress={() => router.push(`/support/schedule-session?userId=${profile.id}&name=${encodeURIComponent(profile.full_name)}&asCoach=true` as any)}
+              >
+                <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 15 }}>Schedule Session</Text>
+              </Pressable>
+            )}
           </View>
         </Animated.View>
 
@@ -211,7 +220,7 @@ export default function UserProfileScreen() {
           </Animated.View>
         )}
 
-        {!isCoach && assignedCoach && (
+        {!isCoach && assignedCoach && !session?.user?.roles?.some(role => role.name === "peer_coach") && (
           <Animated.View entering={FadeInDown.delay(220).duration(500)} style={styles.detailsCard}>
             <Text style={styles.cardTitle}>Assigned Peer Coach</Text>
             <View style={styles.infoRow}>
@@ -252,16 +261,26 @@ export default function UserProfileScreen() {
                   <View style={styles.expandedSessionContent}>
                     <Text style={styles.sessionDetailText}><Text style={{fontWeight: '700'}}>With:</Text> {session.with}</Text>
                     <Text style={styles.sessionDetailText}><Text style={{fontWeight: '700'}}>Location:</Text> {session.location}</Text>
-                    <View style={styles.sessionReportBox}>
-                      <Text style={styles.sessionReportTitle}>Topic Discussed</Text>
-                      <Text style={styles.sessionReportText}>{session.report.topic}</Text>
-                      
-                      <Text style={[styles.sessionReportTitle, { marginTop: 8 }]}>Action Items</Text>
-                      <Text style={styles.sessionReportText}>{session.report.actions}</Text>
+                    
+                    {session.status === 'completed' && session.provider_id === session?.user?.id && !session.has_report ? (
+                      <Pressable 
+                        style={styles.submitReportBtn}
+                        onPress={() => router.push(`/my-coaching/report?sessionId=${session.id}&fresherName=${encodeURIComponent(profile.full_name)}` as any)}
+                      >
+                        <Text style={styles.submitReportBtnText}>Submit Report</Text>
+                      </Pressable>
+                    ) : session.report ? (
+                      <View style={styles.sessionReportBox}>
+                        <Text style={styles.sessionReportTitle}>Topic Discussed</Text>
+                        <Text style={styles.sessionReportText}>{session.report.topic}</Text>
+                        
+                        <Text style={[styles.sessionReportTitle, { marginTop: 8 }]}>Action Items</Text>
+                        <Text style={styles.sessionReportText}>{session.report.actions}</Text>
 
-                      <Text style={[styles.sessionReportTitle, { marginTop: 8 }]}>Student Mood/Status</Text>
-                      <Text style={styles.sessionReportText}>{session.report.mood}</Text>
-                    </View>
+                        <Text style={[styles.sessionReportTitle, { marginTop: 8 }]}>Student Mood/Status</Text>
+                        <Text style={styles.sessionReportText}>{session.report.mood}</Text>
+                      </View>
+                    ) : null}
                   </View>
                 )}
                 {idx < (profile.recent_sessions || []).length - 1 && <View style={styles.divider} />}
@@ -489,7 +508,9 @@ const styles = StyleSheet.create({
     borderLeftColor: "#A93C40"
   },
   sessionReportTitle: { fontSize: 12, fontWeight: "700", color: "#A93C40", marginBottom: 4 },
-  sessionReportText: { fontSize: 13, color: "#4B5563", lineHeight: 18 },
+  sessionReportText: { fontSize: 14, color: "#4B5563", marginTop: 2, lineHeight: 20 },
+  submitReportBtn: { backgroundColor: "#1A2B4A", paddingVertical: 12, borderRadius: 12, alignItems: "center", marginTop: 12 },
+  submitReportBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 14 },
 
   fabContainer: {
     position: "absolute",

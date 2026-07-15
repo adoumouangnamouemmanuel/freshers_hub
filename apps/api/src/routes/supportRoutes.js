@@ -12,6 +12,7 @@ router.post("/sessions", supportController.bookSession);
 router.put("/sessions/:id/status", supportController.updateSessionStatus);
 router.put("/sessions/:id", supportController.updateSession);
 router.delete("/sessions/:id", supportController.deleteSession);
+router.post("/sessions/:id/report", supportController.submitSessionReport);
 
 router.get("/coaches/assigned", supportController.getCoachAssignments);
 router.get("/coaches/freshers", supportController.getAssignedFreshers);

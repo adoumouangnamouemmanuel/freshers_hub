@@ -12,8 +12,9 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
 export default function ScheduleSessionScreen() {
   const router = useRouter();
-  const { userId, name, sessionId, editDate, editLocation, editDescription, editStudentId, editStudentName } = useLocalSearchParams();
+  const { userId, name, sessionId, editDate, editLocation, editDescription, editStudentId, editStudentName, asCoach } = useLocalSearchParams();
   const isEditMode = !!sessionId;
+  const isAsCoach = asCoach === "true";
   const { session } = useAuth();
   const token = session?.accessToken;
   const insets = useSafeAreaInsets();
@@ -101,7 +102,7 @@ export default function ScheduleSessionScreen() {
         location: form.location,
         description: form.description,
         scheduledAt,
-      } : isCoachAdmin ? {
+      } : isCoachAdmin || isAsCoach ? {
         unitId: 1,
         academicYearId: 1,
         studentId: form.targetUserId,
