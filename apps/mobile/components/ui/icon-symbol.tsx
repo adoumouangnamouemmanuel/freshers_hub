@@ -57,6 +57,23 @@ const MAPPING = {
   'chart.bar.fill': 'bar-chart',
   'checkmark.seal.fill': 'verified',
   'exclamationmark.triangle.fill': 'warning',
+  'info.circle.fill': 'info',
+  'flag.fill': 'flag',
+  'flag': 'outlined-flag',
+  'doc.text.fill': 'description',
+  'shield.fill': 'security',
+  'person.fill': 'person',
+  'trash': 'delete',
+  'trash.fill': 'delete',
+  'person.text.rectangle.fill': 'badge',
+  'building.columns.fill': 'account-balance',
+  'person.crop.circle.badge.xmark': 'person-off',
+  'calendar.badge.exclamationmark': 'event-busy',
+  'arrow.right': 'arrow-forward',
+  'clock.fill': 'schedule',
+  'ellipsis.circle': 'more-horiz',
+  'pencil': 'edit',
+  'nosign': 'block',
 };
 
 export type IconSymbolName = keyof typeof MAPPING;

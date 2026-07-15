@@ -103,10 +103,30 @@ export default function TabLayout() {
       <Tabs.Screen
         name="coaching-admin"
         options={{
-          title: 'Admin',
+          title: 'Dashboard',
           href: showCoachAdmin ? '/(tabs)/coaching-admin' : null,
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="chart.bar.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="schedule"
+        options={{
+          title: 'Schedule',
+          href: showCoachAdmin ? '/(tabs)/schedule' : null,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={26} name="calendar" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="students"
+        options={{
+          title: 'Students',
+          href: showCoachAdmin ? '/(tabs)/students' : null,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={26} name="person.3.fill" color={color} />
           ),
         }}
       />

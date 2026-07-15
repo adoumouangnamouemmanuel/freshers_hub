@@ -5,14 +5,14 @@ async function getSessions(req, res) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    await client.query("SET LOCAL app.current_user_id = $1", [req.user.id]);
+    await client.query("SELECT set_config('app.current_user_id', $1, true)", [req.user.id]);
 
     const { rows } = await client.query(`
       SELECT 
         s.id, s.unit_id, s.academic_year_id, s.student_id, s.provider_id, 
-        s.with_type, s.scheduled_at, s.location, s.status, s.is_mandatory,
-        u1.full_name AS student_name,
-        u2.full_name AS provider_name
+        s.with_type as type, s.scheduled_at as date, s.location, s.description, s.status, s.is_mandatory,
+        u1.full_name AS student_name, u1.avatar_url AS student_avatar,
+        u2.full_name AS provider_name, u2.avatar_url AS provider_avatar
       FROM sessions s
       JOIN users u1 ON s.student_id = u1.id
       JOIN users u2 ON s.provider_id = u2.id
@@ -32,7 +32,7 @@ async function getSessions(req, res) {
 
 // Book a new session
 async function bookSession(req, res) {
-  const { unitId, academicYearId, providerId, withType, scheduledAt, location, isMandatory } = req.body;
+  const { unitId, academicYearId, providerId, withType, scheduledAt, location, isMandatory, description } = req.body;
   
   if (!unitId || !academicYearId || !providerId || !scheduledAt) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -41,15 +41,15 @@ async function bookSession(req, res) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    await client.query("SET LOCAL app.current_user_id = $1", [req.user.id]);
+    await client.query("SELECT set_config('app.current_user_id', $1, true)", [req.user.id]);
 
     const { rows } = await client.query(`
       INSERT INTO sessions 
-        (unit_id, academic_year_id, student_id, provider_id, with_type, scheduled_at, location, is_mandatory, status)
+        (unit_id, academic_year_id, student_id, provider_id, with_type, scheduled_at, location, description, is_mandatory, status)
       VALUES 
-        ($1, $2, $3, $4, $5, $6, $7, $8, 'booked')
+        ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'booked')
       RETURNING *
-    `, [unitId, academicYearId, req.user.id, providerId, withType, scheduledAt, location, isMandatory || false]);
+    `, [unitId, academicYearId, req.user.id, providerId, withType, scheduledAt, location, description, isMandatory || false]);
 
     await client.query("COMMIT");
     res.status(201).json(rows[0]);
@@ -74,7 +74,7 @@ async function updateSessionStatus(req, res) {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    await client.query("SET LOCAL app.current_user_id = $1", [req.user.id]);
+    await client.query("SELECT set_config('app.current_user_id', $1, true)", [req.user.id]);
 
     const { rows } = await client.query(`
       UPDATE sessions
@@ -93,6 +93,57 @@ async function updateSessionStatus(req, res) {
   } catch (err) {
     await client.query("ROLLBACK");
     console.error("Error updating session:", err);
+    res.status(500).json({ error: "Internal server error" });
+  } finally {
+    client.release();
+  }
+}
+
+// Update session details (location, description, scheduledAt)
+async function updateSession(req, res) {
+  const { id } = req.params;
+  const { location, description, scheduledAt } = req.body;
+
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query(`
+      UPDATE sessions
+      SET location = COALESCE($1, location),
+          description = COALESCE($2, description),
+          scheduled_at = COALESCE($3, scheduled_at),
+          updated_at = now()
+      WHERE id = $4
+      RETURNING *
+    `, [location, description, scheduledAt, id]);
+
+    if (rows.length === 0) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    console.error("Error updating session:", err);
+    res.status(500).json({ error: "Internal server error" });
+  } finally {
+    client.release();
+  }
+}
+
+// Delete session
+async function deleteSession(req, res) {
+  const { id } = req.params;
+  const client = await pool.connect();
+  try {
+    const { rowCount } = await client.query(`
+      DELETE FROM sessions WHERE id = $1
+    `, [id]);
+
+    if (rowCount === 0) {
+      return res.status(404).json({ error: "Session not found" });
+    }
+
+    res.json({ success: true, message: "Session deleted" });
+  } catch (err) {
+    console.error("Error deleting session:", err);
     res.status(500).json({ error: "Internal server error" });
   } finally {
     client.release();
@@ -186,6 +237,8 @@ module.exports = {
   getSessions,
   bookSession,
   updateSessionStatus,
+  updateSession,
+  deleteSession,
   getCoachAssignments,
   getAssignedFreshers,
   getBuddyPairing,

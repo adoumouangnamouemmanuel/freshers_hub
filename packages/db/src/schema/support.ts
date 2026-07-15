@@ -103,7 +103,45 @@ export const sessionReports = pgTable("session_reports", {
     .references(() => users.id),
   templateId: uuid("template_id").references(() => reportTemplates.id),
   content: jsonb("content").notNull(),
+  needsFollowUp: boolean("needs_follow_up").notNull().default(false),
+  followedUpAt: timestamp("followed_up_at", { withTimezone: true }),
   submittedAt: timestamp("submitted_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const complianceFollowUps = pgTable("compliance_follow_ups", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  academicYearId: integer("academic_year_id")
+    .notNull()
+    .references(() => academicYears.id),
+  fresherId: uuid("fresher_id")
+    .notNull()
+    .references(() => users.id),
+  followedUpBy: uuid("followed_up_by")
+    .notNull()
+    .references(() => users.id),
+  notes: text("notes"),
+  followedUpAt: timestamp("followed_up_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+export const announcementAudienceEnum = pgEnum("announcement_audience", [
+  "school_wide",
+  "coaching_unit",
+]);
+
+export const announcements = pgTable("announcements", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  authorId: uuid("author_id")
+    .notNull()
+    .references(() => users.id),
+  targetAudience: announcementAudienceEnum("target_audience").notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull(),
+  postId: uuid("post_id"),
+  createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
 });

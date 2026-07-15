@@ -144,6 +144,7 @@ function PostCard({ post, onUpdate }: { post: Post; onUpdate: () => void }) {
 export default function FeedScreen() {
   const router = useRouter();
   const { session } = useAuth();
+  const isCoachAdmin = session?.user.roles.some((r: any) => r.name === "coach_admin" || r.name === "admin");
   const insets = useSafeAreaInsets();
 
   const [posts, setPosts] = useState<Post[]>([]);
@@ -244,38 +245,74 @@ export default function FeedScreen() {
 
         </View>
 
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Access</Text>
-          <View style={styles.actionGrid}>
-            <Pressable
-              style={styles.actionTile}
-              onPress={() => router.push("/(tabs)/help")}
-            >
-              <View style={[styles.actionIconBg, { backgroundColor: "#A93C4015" }]}>
-                <IconSymbol name="heart.text.square.fill" size={24} color="#A93C40" />
-              </View>
-              <Text style={styles.actionTileText}>Support</Text>
-            </Pressable>
+        {isCoachAdmin && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Daily Briefing</Text>
+            <View style={styles.actionGrid}>
+              <Pressable
+                style={styles.actionTile}
+                onPress={() => router.push("/(tabs)/coaching-admin/assignments" as any)}
+              >
+                <View style={[styles.actionIconBg, { backgroundColor: "#E0E7FF" }]}>
+                  <IconSymbol name="person.3.fill" size={24} color="#4338CA" />
+                </View>
+                <Text style={styles.actionTileText}>Assign Coaches</Text>
+              </Pressable>
 
-            <Pressable 
-              style={styles.actionTile}
-              onPress={() => router.push("/(tabs)/clubs")}
-            >
-              <View style={[styles.actionIconBg, { backgroundColor: "#C9933A15" }]}>
-                <IconSymbol name="person.2.fill" size={24} color="#C9933A" />
-              </View>
-              <Text style={styles.actionTileText}>Clubs</Text>
-            </Pressable>
+              <Pressable 
+                style={styles.actionTile}
+                onPress={() => router.push("/(tabs)/schedule" as any)}
+              >
+                <View style={[styles.actionIconBg, { backgroundColor: "#FEF3C7" }]}>
+                  <IconSymbol name="calendar" size={24} color="#D97706" />
+                </View>
+                <Text style={styles.actionTileText}>Today's Sessions</Text>
+              </Pressable>
 
-            <Pressable style={styles.actionTile}>
-              <View style={[styles.actionIconBg, { backgroundColor: "#1A2B4A15" }]}>
-                <IconSymbol name="map.fill" size={24} color="#1A2B4A" />
-              </View>
-              <Text style={styles.actionTileText}>Map</Text>
-            </Pressable>
+              <Pressable style={styles.actionTile} onPress={() => router.push("/support/schedule-session" as any)}>
+                <View style={[styles.actionIconBg, { backgroundColor: "#D1FAE5" }]}>
+                  <IconSymbol name="plus" size={24} color="#059669" />
+                </View>
+                <Text style={styles.actionTileText}>New Session</Text>
+              </Pressable>
+            </View>
           </View>
-        </View>
+        )}
+
+        {/* Quick Actions */}
+        {!isCoachAdmin && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Quick Access</Text>
+            <View style={styles.actionGrid}>
+              <Pressable
+                style={styles.actionTile}
+                onPress={() => router.push("/(tabs)/help")}
+              >
+                <View style={[styles.actionIconBg, { backgroundColor: "#A93C4015" }]}>
+                  <IconSymbol name="heart.text.square.fill" size={24} color="#A93C40" />
+                </View>
+                <Text style={styles.actionTileText}>Support</Text>
+              </Pressable>
+
+              <Pressable 
+                style={styles.actionTile}
+                onPress={() => router.push("/(tabs)/clubs")}
+              >
+                <View style={[styles.actionIconBg, { backgroundColor: "#C9933A15" }]}>
+                  <IconSymbol name="person.2.fill" size={24} color="#C9933A" />
+                </View>
+                <Text style={styles.actionTileText}>Clubs</Text>
+              </Pressable>
+
+              <Pressable style={styles.actionTile}>
+                <View style={[styles.actionIconBg, { backgroundColor: "#1A2B4A15" }]}>
+                  <IconSymbol name="map.fill" size={24} color="#1A2B4A" />
+                </View>
+                <Text style={styles.actionTileText}>Map</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
 
         {/* Feed Section */}
         <View style={styles.section}>
