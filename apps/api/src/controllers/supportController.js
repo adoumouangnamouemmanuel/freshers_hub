@@ -7,7 +7,7 @@ async function getSessions(req, res) {
     await client.query("BEGIN");
     await client.query("SELECT set_config('app.current_user_id', $1, true)", [req.user.id]);
 
-    const { rows } = await client.query(`
+    let queryStr = `
       SELECT 
         s.id, s.unit_id, s.academic_year_id, s.student_id, s.provider_id, 
         s.with_type as type, s.scheduled_at as date, s.location, s.description, s.status, s.is_mandatory,
@@ -16,8 +16,17 @@ async function getSessions(req, res) {
       FROM sessions s
       JOIN users u1 ON s.student_id = u1.id
       JOIN users u2 ON s.provider_id = u2.id
-      ORDER BY s.scheduled_at DESC
-    `);
+    `;
+    const params = [];
+
+    if (!req.user.roles || !req.user.roles.includes('coach_admin')) {
+      queryStr += ` WHERE s.student_id = $1 OR s.provider_id = $1`;
+      params.push(req.user.id);
+    }
+
+    queryStr += ` ORDER BY s.scheduled_at DESC`;
+
+    const { rows } = await client.query(queryStr, params);
 
     await client.query("COMMIT");
     res.json(rows);

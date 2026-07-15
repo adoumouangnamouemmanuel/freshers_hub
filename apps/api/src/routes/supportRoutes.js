@@ -1,5 +1,5 @@
 const express = require("express");
-const { requireAuth } = require("../middleware/authMiddleware");
+const { requireAuth, requireRoles } = require("../middleware/authMiddleware");
 const supportController = require("../controllers/supportController");
 const supportAdminController = require("../controllers/supportAdminController");
 
@@ -22,7 +22,10 @@ router.get("/staff/:unitName", supportController.getStaffByUnit);
 
 router.post("/contact", supportController.logContactClick);
 
-// Admin Routes
+// Admin Routes - Restrict to specific roles
+const adminMiddleware = requireRoles('admin', 'peer_coach');
+router.use("/admin", adminMiddleware);
+
 router.get("/admin/dashboard", supportAdminController.getAdminDashboardStats);
 router.get("/admin/coaches", supportAdminController.getAdminCoaches);
 router.post("/admin/coaches/promote", supportAdminController.promoteToCoach);

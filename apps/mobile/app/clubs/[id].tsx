@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View, ScrollView, ActivityIndicator, TouchableOpacity, Image, Share, RefreshControl } from "react-native";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from '@expo/vector-icons';
 import { apiRequest } from "@/lib/api";
@@ -63,10 +63,13 @@ export default function ClubDetailsScreen() {
   };
 
   const handleJoin = async () => {
-    // Mock join action since POST /groups/:id/join is not implemented yet
+    if (!id || !session?.accessToken) return;
     setJoining(true);
-    setTimeout(() => {
-      setJoining(false);
+    try {
+      await apiRequest(`/groups/${id}/join`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.accessToken}` }
+      });
       if (club && session?.user) {
         setClub({
           ...club,
@@ -74,7 +77,33 @@ export default function ClubDetailsScreen() {
           members: [...club.members, { id: session.user.id, full_name: session.user.fullName || 'You', is_leader: false }]
         });
       }
-    }, 800);
+    } catch (err) {
+      console.error("Error joining club:", err);
+    } finally {
+      setJoining(false);
+    }
+  };
+
+  const handleLeave = async () => {
+    if (!id || !session?.accessToken) return;
+    setJoining(true);
+    try {
+      await apiRequest(`/groups/${id}/leave`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${session.accessToken}` }
+      });
+      if (club && session?.user) {
+        setClub({
+          ...club,
+          memberCount: Math.max(0, club.memberCount - 1),
+          members: club.members.filter(m => m.id !== session.user.id)
+        });
+      }
+    } catch (err) {
+      console.error("Error leaving club:", err);
+    } finally {
+      setJoining(false);
+    }
   };
 
   const handleShare = async () => {
@@ -109,32 +138,37 @@ export default function ClubDetailsScreen() {
   }
 
   return (
-    <View style={styles.screen}>
-      <ScrollView 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={{ paddingBottom: 120 }}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-      >
-        <View style={styles.coverWrapper}>
-          {club.image_url ? (
-            <Image source={{ uri: club.image_url }} style={styles.coverImage} />
-          ) : (
-            <View style={styles.coverPlaceholder}>
-              <Ionicons name="images-outline" size={48} color="#9CA3AF" />
-            </View>
-          )}
-          
-          <SafeAreaView edges={["top"]} style={styles.headerSafeArea}>
-            <View style={styles.topBar}>
-              <TouchableOpacity style={styles.topBtn} onPress={() => router.back()}>
-                <Ionicons name="arrow-back" size={24} color="#111827" />
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.topBtn} onPress={handleShare}>
-                <Ionicons name="share-outline" size={24} color="#111827" />
-              </TouchableOpacity>
-            </View>
-          </SafeAreaView>
-        </View>
+    <>
+      <Stack.Screen options={{ headerShown: false }} />
+      <View style={styles.screen}>
+        <ScrollView 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 120 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        >
+          <View style={styles.coverWrapper}>
+            {club.image_url ? (
+              <Image source={{ uri: club.image_url }} style={styles.coverImage} />
+            ) : (
+              <View style={styles.coverPlaceholder}>
+                <Ionicons name="images-outline" size={48} color="#9CA3AF" />
+              </View>
+            )}
+            
+            <SafeAreaView edges={["top"]} style={styles.headerSafeArea}>
+              <View style={styles.topBar}>
+                <TouchableOpacity style={styles.topBtn} onPress={() => router.back()}>
+                  <Ionicons name="arrow-back" size={24} color="#111827" />
+                </TouchableOpacity>
+                <View style={styles.headerTitleContainer}>
+                  <Text style={styles.headerTitle} numberOfLines={1}>{club.name}</Text>
+                </View>
+                <TouchableOpacity style={styles.topBtn} onPress={handleShare}>
+                  <Ionicons name="share-outline" size={24} color="#111827" />
+                </TouchableOpacity>
+              </View>
+            </SafeAreaView>
+          </View>
 
         <View style={styles.content}>
           <View style={styles.titleRow}>
@@ -205,20 +239,21 @@ export default function ClubDetailsScreen() {
 
       <View style={styles.bottomBar}>
         <TouchableOpacity 
-          style={[styles.actionBtn, isMember && styles.actionBtnActive]} 
-          onPress={isMember ? undefined : handleJoin}
-          disabled={isMember || joining}
+          style={[styles.actionBtn, isMember && styles.actionBtnLeave]} 
+          onPress={isMember ? handleLeave : handleJoin}
+          disabled={joining}
         >
           {joining ? (
-            <ActivityIndicator color="#FFFFFF" />
+            <ActivityIndicator color={isMember ? "#EF4444" : "#FFFFFF"} />
           ) : (
-            <Text style={[styles.actionBtnText, isMember && styles.actionBtnTextActive]}>
-              {isMember ? "Joined" : "Join Club"}
+            <Text style={[styles.actionBtnText, isMember && styles.actionBtnTextLeave]}>
+              {isMember ? "Leave Club" : "Join Club"}
             </Text>
           )}
         </TouchableOpacity>
       </View>
-    </View>
+      </View>
+    </>
   );
 }
 
@@ -229,48 +264,50 @@ const styles = StyleSheet.create({
   backBtnAlt: { backgroundColor: "#1A2B4A", paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
   backBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 16 },
   
-  coverWrapper: { width: "100%", height: 300, position: "relative" },
+  coverWrapper: { width: "100%", height: 340, position: "relative" },
   coverImage: { width: "100%", height: "100%" },
   coverPlaceholder: { width: "100%", height: "100%", backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
   
   headerSafeArea: { position: "absolute", top: 0, left: 0, right: 0 },
-  topBar: { flexDirection: "row", justifyContent: "space-between", paddingHorizontal: 20, paddingTop: 12 },
-  topBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: "rgba(255,255,255,0.9)", alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
+  topBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, backgroundColor: "rgba(255,255,255,0.85)", backdropFilter: "blur(10px)", borderBottomWidth: 1, borderBottomColor: "rgba(0,0,0,0.05)" },
+  topBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
+  headerTitleContainer: { flex: 1, alignItems: "center", paddingHorizontal: 12 },
+  headerTitle: { fontSize: 18, fontWeight: "800", color: "#111827" },
   
-  content: { flex: 1, backgroundColor: "#FFFFFF", borderTopLeftRadius: 32, borderTopRightRadius: 32, marginTop: -32, padding: 24 },
+  content: { flex: 1, backgroundColor: "#FFFFFF", borderTopLeftRadius: 32, borderTopRightRadius: 32, marginTop: -40, padding: 24, shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 10 },
   
   titleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
-  title: { fontSize: 28, fontWeight: "900", color: "#111827", flex: 1 },
+  title: { fontSize: 32, fontWeight: "900", color: "#111827", flex: 1, letterSpacing: -0.5 },
   
   metaRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 32 },
-  badge: { backgroundColor: "#F3F4F6", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
-  badgeText: { fontSize: 13, fontWeight: "700", color: "#4B5563", textTransform: "uppercase" },
+  badge: { backgroundColor: "rgba(26, 43, 74, 0.08)", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  badgeText: { fontSize: 13, fontWeight: "800", color: "#1A2B4A", textTransform: "uppercase", letterSpacing: 0.5 },
   metaItem: { flexDirection: "row", alignItems: "center", gap: 6 },
-  metaText: { fontSize: 14, fontWeight: "600", color: "#6B7280" },
+  metaText: { fontSize: 15, fontWeight: "700", color: "#4B5563" },
   
-  section: { marginBottom: 32 },
-  sectionTitle: { fontSize: 20, fontWeight: "800", color: "#111827", marginBottom: 16 },
-  description: { fontSize: 16, color: "#4B5563", lineHeight: 24 },
+  section: { marginBottom: 36 },
+  sectionTitle: { fontSize: 22, fontWeight: "900", color: "#111827", marginBottom: 16, letterSpacing: -0.5 },
+  description: { fontSize: 16, color: "#4B5563", lineHeight: 26, fontWeight: "400" },
   
-  memberCard: { flexDirection: "row", alignItems: "center", gap: 16, backgroundColor: "#F9FAFB", padding: 16, borderRadius: 20, marginBottom: 12 },
-  memberAvatar: { width: 56, height: 56, borderRadius: 28 },
-  memberAvatarPlaceholder: { width: 56, height: 56, borderRadius: 28, backgroundColor: "#E0E7FF", alignItems: "center", justifyContent: "center" },
-  memberAvatarText: { fontSize: 20, fontWeight: "800", color: "#4338CA" },
-  memberName: { fontSize: 16, fontWeight: "800", color: "#111827", marginBottom: 4 },
-  memberRole: { fontSize: 14, color: "#6B7280", fontWeight: "600" },
+  memberCard: { flexDirection: "row", alignItems: "center", gap: 16, backgroundColor: "#FFFFFF", padding: 16, borderRadius: 20, marginBottom: 12, borderWidth: 1, borderColor: "rgba(0,0,0,0.05)", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 1 },
+  memberAvatar: { width: 60, height: 60, borderRadius: 30 },
+  memberAvatarPlaceholder: { width: 60, height: 60, borderRadius: 30, backgroundColor: "#E0E7FF", alignItems: "center", justifyContent: "center" },
+  memberAvatarText: { fontSize: 22, fontWeight: "800", color: "#4338CA" },
+  memberName: { fontSize: 17, fontWeight: "800", color: "#111827", marginBottom: 4 },
+  memberRole: { fontSize: 14, color: "#A93C40", fontWeight: "700" },
   
-  membersScroll: { gap: 16 },
-  smallMemberCard: { alignItems: "center", width: 64, gap: 8 },
-  smallAvatar: { width: 64, height: 64, borderRadius: 32 },
+  membersScroll: { gap: 16, paddingRight: 20 },
+  smallMemberCard: { alignItems: "center", width: 68, gap: 8 },
+  smallAvatar: { width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: "#F3F4F6" },
   smallAvatarPlaceholder: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
-  smallAvatarText: { fontSize: 24, fontWeight: "700", color: "#9CA3AF" },
-  smallMemberName: { fontSize: 13, fontWeight: "600", color: "#4B5563", textAlign: "center" },
+  smallAvatarText: { fontSize: 24, fontWeight: "800", color: "#9CA3AF" },
+  smallMemberName: { fontSize: 13, fontWeight: "700", color: "#4B5563", textAlign: "center" },
   
-  emptyText: { fontSize: 14, color: "#9CA3AF", fontStyle: "italic" },
+  emptyText: { fontSize: 15, color: "#9CA3AF", fontStyle: "italic", fontWeight: "500" },
   
-  bottomBar: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "#FFFFFF", paddingHorizontal: 24, paddingTop: 16, paddingBottom: 32, borderTopWidth: 1, borderTopColor: "#F3F4F6" },
-  actionBtn: { backgroundColor: "#1A2B4A", height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center" },
-  actionBtnActive: { backgroundColor: "#F3F4F6" },
+  bottomBar: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "rgba(255,255,255,0.95)", backdropFilter: "blur(10px)", paddingHorizontal: 24, paddingTop: 16, paddingBottom: 36, borderTopWidth: 1, borderTopColor: "rgba(0,0,0,0.05)" },
+  actionBtn: { backgroundColor: "#1A2B4A", height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center", shadowColor: "#1A2B4A", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 4 },
+  actionBtnLeave: { backgroundColor: "#FEF2F2", shadowColor: "#EF4444", shadowOpacity: 0.1 },
   actionBtnText: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
-  actionBtnTextActive: { color: "#9CA3AF" },
+  actionBtnTextLeave: { color: "#EF4444" },
 });

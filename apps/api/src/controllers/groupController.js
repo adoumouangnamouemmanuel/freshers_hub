@@ -75,4 +75,49 @@ async function handleGetGroupById(req, res) {
   }
 }
 
-module.exports = { handleGetGroups, handleGetMyGroups, handleGetGroupById };
+async function handleJoinGroup(req, res) {
+  const userId = req.user.id;
+  const { id } = req.params;
+  const client = await pool.connect();
+  try {
+    // Check if group exists
+    const { rows: groupRows } = await client.query('SELECT id FROM groups WHERE id = $1', [id]);
+    if (groupRows.length === 0) {
+      return res.status(404).json({ error: "Group not found" });
+    }
+
+    await client.query(`
+      INSERT INTO group_members (group_id, user_id, is_leader) 
+      VALUES ($1, $2, false)
+      ON CONFLICT DO NOTHING
+    `, [id, userId]);
+    
+    res.json({ success: true, message: "Successfully joined group" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+}
+
+async function handleLeaveGroup(req, res) {
+  const userId = req.user.id;
+  const { id } = req.params;
+  const client = await pool.connect();
+  try {
+    await client.query(`
+      DELETE FROM group_members 
+      WHERE group_id = $1 AND user_id = $2
+    `, [id, userId]);
+    
+    res.json({ success: true, message: "Successfully left group" });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+}
+
+module.exports = { handleGetGroups, handleGetMyGroups, handleGetGroupById, handleJoinGroup, handleLeaveGroup };

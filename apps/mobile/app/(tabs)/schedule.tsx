@@ -4,9 +4,9 @@ import SessionsManager from "../../components/features/sessions/SessionsManager"
 export default function ScheduleScreen() {
   return (
     <SessionsManager 
-      endpoint="/support/admin/sessions" 
+      endpoint="/support/sessions" 
       title="Schedule" 
-      isAdminView={true} 
+      isAdminView={false} 
       hideBackButton={true} 
     />
   );

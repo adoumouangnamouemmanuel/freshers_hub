@@ -161,23 +161,21 @@ export default function ClubsScreen() {
                     <Ionicons name="images-outline" size={32} color="#9CA3AF" />
                   </View>
                 )}
-                <View style={styles.clubCardBody}>
+                <View style={styles.clubCardOverlay}>
                   <View style={styles.clubCardHeaderRow}>
-                    <Text style={styles.clubName} numberOfLines={1}>{club.name}</Text>
                     <View style={styles.categoryBadge}>
                       <Text style={styles.categoryBadgeText}>{club.category || 'General'}</Text>
                     </View>
-                  </View>
-                  <Text style={styles.clubDesc} numberOfLines={2}>
-                    {club.description || "Join this club to discover more about their activities and meet new friends."}
-                  </Text>
-                  
-                  <View style={styles.clubFooter}>
-                    <View style={styles.memberCountRow}>
-                      <Ionicons name="people" size={16} color="#6B7280" />
-                      <Text style={styles.memberCountText}>{club.memberCount || 0} Members</Text>
+                    <View style={styles.memberBadge}>
+                      <Ionicons name="people" size={14} color="#FFFFFF" />
+                      <Text style={styles.memberBadgeText}>{club.memberCount || 0}</Text>
                     </View>
-                    <Ionicons name="chevron-forward" size={20} color="#1A2B4A" />
+                  </View>
+                  <View style={styles.clubCardContent}>
+                    <Text style={styles.clubName} numberOfLines={1}>{club.name}</Text>
+                    <Text style={styles.clubDesc} numberOfLines={2}>
+                      {club.description || "Join this club to discover more about their activities and meet new friends."}
+                    </Text>
                   </View>
                 </View>
               </Pressable>
@@ -211,9 +209,9 @@ const styles = StyleSheet.create({
   sectionTitle: { fontSize: 20, fontWeight: "800", color: "#111827", paddingHorizontal: 20, marginBottom: 16 },
   
   horizontalScroll: { paddingHorizontal: 20, gap: 16 },
-  myClubCard: { width: 80, alignItems: "center", gap: 8 },
-  myClubImageWrapper: { width: 72, height: 72, borderRadius: 36, overflow: "hidden", borderWidth: 2, borderColor: "#E5E7EB" },
-  myClubImage: { width: "100%", height: "100%" },
+  myClubCard: { width: 84, alignItems: "center", gap: 8 },
+  myClubImageWrapper: { width: 72, height: 72, borderRadius: 36, overflow: "hidden", borderWidth: 3, borderColor: "#FFFFFF", shadowColor: "#1A2B4A", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 },
+  myClubImage: { width: "100%", height: "100%", backgroundColor: "#F3F4F6" },
   myClubIconPlaceholder: { width: "100%", height: "100%", backgroundColor: "#E0E7FF", alignItems: "center", justifyContent: "center" },
   myClubInitials: { fontSize: 24, fontWeight: "800", color: "#4338CA" },
   myClubName: { fontSize: 13, fontWeight: "600", color: "#4B5563", textAlign: "center" },
@@ -226,19 +224,19 @@ const styles = StyleSheet.create({
   categoryText: { fontSize: 14, fontWeight: "600", color: "#4B5563" },
   categoryTextActive: { color: "#FFFFFF" },
   
-  clubsList: { paddingHorizontal: 20, gap: 16 },
-  clubCard: { backgroundColor: "#FFFFFF", borderRadius: 20, overflow: "hidden", borderWidth: 1, borderColor: "rgba(0,0,0,0.03)", shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.04, shadowRadius: 12, elevation: 2 },
-  clubCardImage: { width: "100%", height: 140 },
-  clubCardImagePlaceholder: { width: "100%", height: 140, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
-  clubCardBody: { padding: 16 },
-  clubCardHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 },
-  clubName: { flex: 1, fontSize: 18, fontWeight: "800", color: "#111827", marginRight: 12 },
-  categoryBadge: { backgroundColor: "#F3F4F6", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
-  categoryBadgeText: { fontSize: 11, fontWeight: "700", color: "#4B5563", textTransform: "uppercase" },
-  clubDesc: { fontSize: 14, color: "#6B7280", lineHeight: 20, marginBottom: 16 },
-  clubFooter: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingTop: 12, borderTopWidth: 1, borderTopColor: "#F3F4F6" },
-  memberCountRow: { flexDirection: "row", alignItems: "center", gap: 6 },
-  memberCountText: { fontSize: 13, fontWeight: "600", color: "#6B7280" },
+  clubsList: { paddingHorizontal: 20, gap: 20 },
+  clubCard: { backgroundColor: "#1A2B4A", borderRadius: 24, overflow: "hidden", shadowColor: "#1A2B4A", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 6, height: 220 },
+  clubCardImage: { ...StyleSheet.absoluteFillObject, width: "100%", height: "100%" },
+  clubCardImagePlaceholder: { ...StyleSheet.absoluteFillObject, backgroundColor: "#E5E7EB", alignItems: "center", justifyContent: "center" },
+  clubCardOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", padding: 20, justifyContent: "space-between" },
+  clubCardHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  categoryBadge: { backgroundColor: "rgba(255,255,255,0.25)", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, backdropFilter: "blur(10px)" },
+  categoryBadgeText: { fontSize: 12, fontWeight: "800", color: "#FFFFFF", textTransform: "uppercase", letterSpacing: 0.5 },
+  memberBadge: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, gap: 4 },
+  memberBadgeText: { fontSize: 13, fontWeight: "700", color: "#FFFFFF" },
+  clubCardContent: { gap: 6 },
+  clubName: { fontSize: 24, fontWeight: "900", color: "#FFFFFF", letterSpacing: -0.5 },
+  clubDesc: { fontSize: 15, color: "rgba(255,255,255,0.9)", lineHeight: 22 },
   
   emptyState: { alignItems: "center", paddingVertical: 40 },
   emptyTitle: { fontSize: 18, fontWeight: "800", color: "#111827", marginTop: 12, marginBottom: 4 },
