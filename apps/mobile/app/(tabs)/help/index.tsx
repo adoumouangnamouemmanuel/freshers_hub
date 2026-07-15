@@ -11,7 +11,8 @@ import {
   TextInput,
   ActivityIndicator,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { MOCK_OFFICES } from "@/lib/mock-data";
@@ -97,6 +98,7 @@ function ListCard({
 
 export default function HelpScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<FAQ[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -127,15 +129,12 @@ export default function HelpScreen() {
   }, [query]);
 
   return (
-    <SafeAreaView style={styles.screen} edges={["top"]}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.headerBlock}>
-          <Text style={styles.header}>Support</Text>
-          <Text style={styles.subHeader}>
-            How can we help you today?
-          </Text>
-        </View>
-
+    <View style={styles.screen}>
+      <StatusBar style="light" />
+      <View style={[styles.headerContainer, { paddingTop: insets.top + 12 }]}>
+        <Text style={styles.header}>Support</Text>
+        <Text style={styles.subHeader}>How can we help you today?</Text>
+        
         <View style={styles.searchContainer}>
           <IconSymbol name="magnifyingglass" size={20} color="rgba(60, 60, 67, 0.6)" />
           <TextInput
@@ -148,6 +147,9 @@ export default function HelpScreen() {
             clearButtonMode="while-editing"
           />
         </View>
+      </View>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
 
         {query.trim().length > 0 ? (
           <View style={styles.searchResultsWrapper}>
@@ -212,30 +214,33 @@ export default function HelpScreen() {
         
         <View style={styles.bottomSpacer} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: "#fffaf3",
   },
-  headerBlock: {
+  headerContainer: {
     paddingHorizontal: 20,
-    marginTop: 12,
-    marginBottom: 20,
+    paddingBottom: 24,
+    backgroundColor: "#A93C40",
+    borderBottomWidth: 0,
   },
   header: {
-    fontSize: 34,
+    fontSize: 28,
     fontWeight: "900",
-    color: TEXT_COLOR,
+    color: "#FFFFFF",
     letterSpacing: -0.5,
     marginBottom: 4,
   },
   subHeader: {
     fontSize: 16,
-    color: "#5f6874",
+    color: "#FFFFFF",
+    opacity: 0.9,
+    marginBottom: 16,
   },
   section: {
     marginBottom: 32,
@@ -340,12 +345,15 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(118, 118, 128, 0.12)",
-    marginHorizontal: 20,
-    marginBottom: 24,
-    paddingHorizontal: 12,
-    height: 48,
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 44,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   searchInput: {
     flex: 1,

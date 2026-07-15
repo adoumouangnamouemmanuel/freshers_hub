@@ -14,6 +14,7 @@ import { Link } from "expo-router";
 import { useAuth } from "@/context/auth-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { apiRequest } from "@/lib/api";
+import { StatusBar } from "expo-status-bar";
 import { useEffect, useState, useMemo } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
@@ -229,6 +230,7 @@ export default function FeedScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
+      <StatusBar style="dark" />
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom + 20, 100) }]}

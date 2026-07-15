@@ -13,7 +13,7 @@ import {
   Switch
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { useRouter } from "expo-router";
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/auth-context";
@@ -31,6 +31,7 @@ export default function NewPostScreen() {
   const router = useRouter();
   const { session } = useAuth();
   const insets = useSafeAreaInsets();
+  const { preselectGroup } = useLocalSearchParams<{ preselectGroup?: string }>();
   
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -54,19 +55,29 @@ export default function NewPostScreen() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const categories = ["Announcement", "Event", "Alert"];
+  const categories = preselectGroup 
+    ? ["Announcement", "Event", "Discussion"] 
+    : ["Announcement", "Event", "Alert", "Discussion"];
   const isEvent = category === "Event";
 
   useEffect(() => {
-    // Fetch groups for targeting
+    // Fetch groups for targeting (only groups where user is leader)
     if (session?.accessToken) {
-      apiRequest<{ groups: Group[] }>("/groups", {
+      apiRequest<{ groups: (Group & { isLeader?: boolean })[] }>("/groups/my", {
         headers: { Authorization: `Bearer ${session.accessToken}` }
       })
-        .then(res => setGroups(res.groups || []))
+        .then(res => {
+          const myLedGroups = res.groups?.filter(g => g.isLeader) || [];
+          setGroups(myLedGroups);
+          // Auto-select group if preselectGroup is provided
+          if (preselectGroup) {
+            setIsTargeted(true);
+            setTargetGroupIds([preselectGroup]);
+          }
+        })
         .catch(err => console.error("Failed to fetch groups", err));
     }
-  }, [session?.accessToken]);
+  }, [session?.accessToken, preselectGroup]);
 
   const toggleGroup = (groupId: string) => {
     setTargetGroupIds(prev => 
@@ -157,36 +168,53 @@ export default function NewPostScreen() {
             ))}
           </View>
 
-          {/* Visibility Toggle */}
-          <View style={styles.toggleRow}>
-            <View>
-              <Text style={styles.toggleLabel}>Targeted Post</Text>
-              <Text style={styles.toggleDesc}>Limit visibility to specific groups</Text>
+          {/* Visibility Controls */}
+          {preselectGroup ? (
+            <View style={styles.fixedTargetContainer}>
+              <IconSymbol name="person.2.fill" size={20} color="#4F46E5" />
+              <Text style={styles.fixedTargetText}>
+                Posting to club members
+              </Text>
             </View>
-            <Switch
-              value={isTargeted}
-              onValueChange={setIsTargeted}
-              trackColor={{ false: "#E5E7EB", true: "#A93C40" }}
-            />
-          </View>
-
-          {isTargeted && (
-            <View style={styles.groupsContainer}>
-              <Text style={styles.sectionSubtitle}>Select Target Groups</Text>
-              <View style={styles.groupsGrid}>
-                {groups.map(g => (
-                  <Pressable
-                    key={g.id}
-                    style={[styles.groupChip, targetGroupIds.includes(g.id) && styles.groupChipSelected]}
-                    onPress={() => toggleGroup(g.id)}
-                  >
-                    <Text style={[styles.groupChipText, targetGroupIds.includes(g.id) && styles.groupChipTextSelected]}>
-                      {g.name}
-                    </Text>
-                  </Pressable>
-                ))}
+          ) : (
+            <>
+              {/* Visibility Toggle */}
+              <View style={styles.toggleRow}>
+                <View>
+                  <Text style={styles.toggleLabel}>Targeted Post</Text>
+                  <Text style={styles.toggleDesc}>Limit visibility to specific groups</Text>
+                </View>
+                <Switch
+                  value={isTargeted}
+                  onValueChange={setIsTargeted}
+                  trackColor={{ false: "#E5E7EB", true: "#A93C40" }}
+                />
               </View>
-            </View>
+
+              {isTargeted && (
+                <View style={styles.groupsContainer}>
+                  <Text style={styles.sectionSubtitle}>Select Target Groups</Text>
+                  <View style={styles.groupsGrid}>
+                    {groups.map(g => (
+                      <Pressable
+                        key={g.id}
+                        style={[styles.groupChip, targetGroupIds.includes(g.id) && styles.groupChipSelected]}
+                        onPress={() => toggleGroup(g.id)}
+                      >
+                        <Text style={[styles.groupChipText, targetGroupIds.includes(g.id) && styles.groupChipTextSelected]}>
+                          {g.name}
+                        </Text>
+                      </Pressable>
+                    ))}
+                    {groups.length === 0 && (
+                      <Text style={{ color: "#6b7280", fontStyle: "italic", marginTop: 8 }}>
+                        You don't lead any clubs yet.
+                      </Text>
+                    )}
+                  </View>
+                </View>
+              )}
+            </>
           )}
 
           <View style={styles.divider} />
@@ -345,8 +373,22 @@ const styles = StyleSheet.create({
   },
   cancelText: {
     fontSize: 16,
-    color: "#6B7280",
-    fontWeight: "500",
+    color: "#4b5563",
+  },
+  fixedTargetContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EEF2FF',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+    gap: 12,
+  },
+  fixedTargetText: {
+    fontSize: 14,
+    color: '#4F46E5',
+    fontWeight: '600',
+    flex: 1,
   },
   form: {
     flex: 1,

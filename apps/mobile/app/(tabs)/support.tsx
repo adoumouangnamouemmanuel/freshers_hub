@@ -2,7 +2,8 @@ import { StyleSheet, Text, View, Pressable, ScrollView, Linking, ActivityIndicat
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { IconSymbol } from "../../components/ui/icon-symbol";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { StatusBar } from "expo-status-bar";
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { useAuth } from "@/context/auth-context";
 import { apiRequest } from "@/lib/api";
@@ -143,6 +144,7 @@ export default function SupportScreen() {
 
   return (
     <View style={styles.screen}>
+      <StatusBar style="dark" />
       <View style={styles.headerContainer}>
         <SafeAreaView edges={["top"]} style={{ paddingBottom: 0 }} />
         <Text style={styles.greeting}>Support Hub</Text>

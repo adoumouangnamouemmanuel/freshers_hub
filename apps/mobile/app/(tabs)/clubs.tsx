@@ -1,10 +1,12 @@
 import { StyleSheet, Text, View, Pressable, ScrollView, ActivityIndicator, TextInput, Image, RefreshControl } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
 import { apiRequest } from "@/lib/api";
 import { useAuth } from "@/context/auth-context";
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { StatusBar } from "expo-status-bar";
 
 type Club = {
   id: string;
@@ -18,6 +20,7 @@ type Club = {
 export default function ClubsScreen() {
   const { session } = useAuth();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [clubs, setClubs] = useState<Club[]>([]);
   const [myClubs, setMyClubs] = useState<Club[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -78,12 +81,13 @@ export default function ClubsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.screen} edges={["top"]}>
-      <View style={styles.headerContainer}>
+    <View style={styles.screen}>
+      <StatusBar style="light" />
+      <View style={[styles.headerContainer, { paddingTop: insets.top + 12 }]}>
         <Text style={styles.header}>Clubs & Societies</Text>
         
         <View style={styles.searchContainer}>
-          <Ionicons name="search" size={20} color="#9CA3AF" />
+          <Ionicons name="search" size={20} color="#6B7280" />
           <TextInput 
             style={styles.searchInput}
             placeholder="Search clubs, interests..."
@@ -93,7 +97,7 @@ export default function ClubsScreen() {
           />
           {searchQuery.length > 0 && (
             <Pressable onPress={() => setSearchQuery("")}>
-              <Ionicons name="close-circle" size={20} color="#9CA3AF" />
+              <Ionicons name="close-circle" size={20} color="#6B7280" />
             </Pressable>
           )}
         </View>
@@ -191,20 +195,56 @@ export default function ClubsScreen() {
           </View>
         </View>
       </ScrollView>
-    </SafeAreaView>
+      {/* Floating Action Button (FAB) for Club Feeds */}
+      {myClubs.length > 0 && !searchQuery && (
+        <View style={[styles.fabContainer, { bottom: insets.bottom + 84 }]}>
+          <Pressable 
+            style={styles.fab}
+            onPress={() => router.push('/clubs-feed' as any)}
+          >
+            <IconSymbol name="newspaper.fill" size={24} color="#FFFFFF" />
+            <Text style={styles.fabText}>My Feed</Text>
+          </Pressable>
+        </View>
+      )}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#F9FAFB" },
-  loadingScreen: { flex: 1, backgroundColor: "#F9FAFB", justifyContent: "center", alignItems: "center" },
-  headerContainer: { paddingHorizontal: 20, paddingTop: 12, paddingBottom: 16, backgroundColor: "#FFFFFF", borderBottomWidth: 1, borderBottomColor: "#F3F4F6" },
-  header: { fontSize: 28, fontWeight: "900", color: "#111827", letterSpacing: -0.5, marginBottom: 16 },
+  fabContainer: {
+    position: 'absolute',
+    right: 24,
+    zIndex: 999,
+  },
+  fab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#A93C40', // Ashesi Maroon
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 32,
+    shadowColor: '#A93C40',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+    gap: 8,
+  },
+  fabText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  screen: { flex: 1, backgroundColor: "#fffaf3" },
+  loadingScreen: { flex: 1, backgroundColor: "#fffaf3", justifyContent: "center", alignItems: "center" },
+  headerContainer: { paddingHorizontal: 20, paddingBottom: 24, backgroundColor: "#A93C40", borderBottomWidth: 0 },
+  header: { fontSize: 28, fontWeight: "900", color: "#FFFFFF", letterSpacing: -0.5, marginBottom: 16 },
   
-  searchContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#F3F4F6", borderRadius: 12, paddingHorizontal: 12, height: 44 },
+  searchContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", borderRadius: 12, paddingHorizontal: 12, height: 44, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
   searchInput: { flex: 1, marginLeft: 8, fontSize: 16, color: "#111827" },
   
-  scrollContent: { paddingBottom: 100 },
+  scrollContent: { paddingBottom: 200 },
   section: { marginTop: 24 },
   sectionTitle: { fontSize: 20, fontWeight: "800", color: "#111827", paddingHorizontal: 20, marginBottom: 16 },
   
