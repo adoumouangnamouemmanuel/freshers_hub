@@ -41,6 +41,8 @@ export default function OfficeDetailScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const scrollY = useRef(new Animated.Value(0)).current;
+  const [showAllStaff, setShowAllStaff] = useState(false);
+  const [isSharing, setIsSharing] = useState(false);
 
   const office = id ? MOCK_OFFICES[id] : null;
 
@@ -52,8 +54,57 @@ export default function OfficeDetailScreen() {
     );
   }
 
-  const handleOpenLink = (url: string) => {
-    Linking.openURL(url).catch((err) => console.error("An error occurred", err));
+  const handleOpenLink = async (url: any) => {
+    if (isSharing) return;
+    setIsSharing(true);
+    try {
+      if (typeof url === 'string' && (url.startsWith('http') || url.startsWith('https'))) {
+        const WebBrowser = require('expo-web-browser');
+        await WebBrowser.openBrowserAsync(url);
+      } else if (typeof url === 'string' && (url.startsWith('mailto:') || url.startsWith('tel:'))) {
+        await Linking.openURL(url).catch((err) => console.error("An error occurred", err));
+      } else {
+        // Assume it's a local asset (required)
+        const { Asset } = require('expo-asset');
+        const asset = Asset.fromModule(url);
+        if (!asset.localUri) {
+          await asset.downloadAsync();
+        }
+        
+        if (asset.localUri) {
+          const { Platform } = require('react-native');
+          
+          const isDocx = asset.type === 'docx' || asset.localUri?.toLowerCase().endsWith('.docx');
+          const mimeType = isDocx ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'application/pdf';
+          const uti = isDocx ? 'org.openxmlformats.wordprocessingml.document' : 'com.adobe.pdf';
+
+          if (Platform.OS === 'android') {
+            const IntentLauncher = require('expo-intent-launcher');
+            const FileSystemLegacy = require('expo-file-system/legacy');
+            const contentUri = await FileSystemLegacy.getContentUriAsync(asset.localUri);
+            await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
+              data: contentUri,
+              flags: 1,
+              type: mimeType,
+            });
+          } else {
+            const Sharing = require('expo-sharing');
+            if (await Sharing.isAvailableAsync()) {
+              await Sharing.shareAsync(asset.localUri, { UTI: uti, dialogTitle: 'View Document' });
+            } else {
+              alert('Sharing/viewing is not available on this device.');
+            }
+          }
+        } else {
+          alert('Could not download or locate the document.');
+        }
+      }
+    } catch (error) {
+      console.error(error);
+      alert('Error opening document.');
+    } finally {
+      setIsSharing(false);
+    }
   };
 
   const handleIntent = (type: "email" | "phone" | "whatsapp", value: string) => {
@@ -229,22 +280,31 @@ export default function OfficeDetailScreen() {
             {/* Key Contacts Section */}
             {office.staff && office.staff.length > 0 && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Key Personnel</Text>
-                <View style={styles.staffGrid}>
-                  {office.staff.map((staff) => (
-                    <View key={staff.id} style={styles.staffGridCard}>
-                      <Image source={staff.image} style={styles.avatarImageLarge} />
-                      <Text style={styles.staffNameCenter} numberOfLines={1}>{staff.name}</Text>
-                      <Text style={styles.staffRoleCenter} numberOfLines={2}>{staff.role}</Text>
+                <View style={styles.sectionHeaderRow}>
+                  <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Key Personnel</Text>
+                  {office.staff.length > 3 && (
+                    <Pressable onPress={() => setShowAllStaff(!showAllStaff)}>
+                      <Text style={styles.viewAllText}>{showAllStaff ? "Show Less" : "View All"}</Text>
+                    </Pressable>
+                  )}
+                </View>
+                <View style={styles.staffListContainer}>
+                  {(showAllStaff ? office.staff : office.staff.slice(0, 3)).map((staff) => (
+                    <View key={staff.id} style={styles.staffHorizontalCard}>
+                      <Image source={staff.image} style={styles.avatarImageSmall} />
+                      <View style={styles.staffInfoCol}>
+                        <Text style={styles.staffNameHorizontal} numberOfLines={1}>{staff.name}</Text>
+                        <Text style={styles.staffRoleHorizontal} numberOfLines={1}>{staff.role}</Text>
+                      </View>
                       
-                      <View style={styles.staffActionsGrid}>
-                        <Pressable style={styles.staffActionBtnIcon} onPress={() => handleIntent("email", staff.email)}>
-                          <IconSymbol name="envelope.fill" size={18} color={PRIMARY_COLOR} />
+                      <View style={styles.staffActionsHorizontal}>
+                        <Pressable style={styles.staffActionBtnIconSmall} onPress={() => handleIntent("email", staff.email)}>
+                          <IconSymbol name="envelope.fill" size={16} color={PRIMARY_COLOR} />
                         </Pressable>
                         
                         {staff.phone && (
-                          <Pressable style={styles.staffActionBtnIcon} onPress={() => handleIntent("phone", staff.phone!)}>
-                            <IconSymbol name="phone.fill" size={18} color={PRIMARY_COLOR} />
+                          <Pressable style={styles.staffActionBtnIconSmall} onPress={() => handleIntent("phone", staff.phone!)}>
+                            <IconSymbol name="phone.fill" size={16} color={PRIMARY_COLOR} />
                           </Pressable>
                         )}
                       </View>
@@ -472,56 +532,63 @@ const styles = StyleSheet.create({
   },
 
   // Staff
-  staffGrid: {
+  sectionHeaderRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
     justifyContent: "space-between",
-    gap: 16,
+    alignItems: "center",
+    marginBottom: 16,
   },
-  staffGridCard: {
-    width: "47%",
+  viewAllText: {
+    color: PRIMARY_COLOR,
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  staffListContainer: {
+    gap: 12,
+  },
+  staffHorizontalCard: {
+    flexDirection: "row",
     backgroundColor: "#FFFFFF",
-    borderRadius: 24,
-    padding: 16,
+    borderRadius: 16,
+    padding: 12,
     alignItems: "center",
     shadowColor: TEXT_COLOR,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.04,
-    shadowRadius: 16,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 2,
   },
-  avatarImageLarge: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+  avatarImageSmall: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: "#F8F9FA",
-    marginBottom: 12,
+    marginRight: 12,
   },
-  staffNameCenter: {
+  staffInfoCol: {
+    flex: 1,
+    marginRight: 8,
+  },
+  staffNameHorizontal: {
     fontSize: 15,
     fontWeight: "800",
     color: TEXT_COLOR,
-    textAlign: "center",
     marginBottom: 2,
   },
-  staffRoleCenter: {
-    fontSize: 12,
+  staffRoleHorizontal: {
+    fontSize: 13,
     color: "#C9933A", // Gold
     fontWeight: "600",
-    textAlign: "center",
-    marginBottom: 12,
-    minHeight: 34, // Keeps grid aligned if roles are different lengths
   },
-  staffActionsGrid: {
+  staffActionsHorizontal: {
     flexDirection: "row",
-    gap: 10,
-    justifyContent: "center",
+    gap: 8,
   },
-  staffActionBtnIcon: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: `${PRIMARY_COLOR}15`,
+  staffActionBtnIconSmall: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: `${PRIMARY_COLOR}10`,
     alignItems: "center",
     justifyContent: "center",
   },

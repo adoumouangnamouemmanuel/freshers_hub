@@ -288,7 +288,7 @@ export default function SupportScreen() {
               <View style={[styles.sectionIcon, { backgroundColor: "#D1FAE5" }]}>
                 <Ionicons name="earth" size={24} color="#059669" />
               </View>
-              <Text style={styles.sectionTitle}>Buddy Up (ODIP)</Text>
+              <Text style={styles.sectionTitle}>Buddy Up (OIPCC)</Text>
             </View>
 
             {buddy ? (
@@ -318,7 +318,7 @@ export default function SupportScreen() {
               <View style={styles.emptyCard}>
                 <Ionicons name="calendar-outline" size={32} color="#9CA3AF" style={{ marginBottom: 12 }} />
                 <Text style={styles.emptyCardTitle}>Upcoming Assignment</Text>
-                <Text style={styles.emptyCardDesc}>Your ODIP buddy will be assigned soon to help you navigate campus life!</Text>
+                <Text style={styles.emptyCardDesc}>Your OIPCC buddy will be assigned soon to help you navigate campus life!</Text>
               </View>
             )}
           </>
