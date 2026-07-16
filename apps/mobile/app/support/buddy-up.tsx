@@ -76,7 +76,7 @@ export default function BuddyUpScreen() {
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       <View style={styles.headerContainer}>
-        <Text style={styles.header}>Buddy Up (ODIP)</Text>
+        <Text style={styles.header}>Buddy Up (OIPCC)</Text>
         <Text style={styles.subHeader}>
           Connect with your assigned senior international student buddy.
         </Text>
