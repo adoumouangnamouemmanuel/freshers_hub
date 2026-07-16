@@ -15,7 +15,7 @@ export type OfficeLink = {
 
 export type DocumentResource = {
   title: string;
-  url: string;
+  url: any;
   size?: string;
   type: string;
 };
@@ -45,70 +45,93 @@ export type Office = {
   documents?: DocumentResource[];
   faqs?: FAQ[];
   contacts?: ContactChannels;
+  mapId?: string;
 };
 
 export const MOCK_OFFICES: Record<string, Office> = {
-  odip: {
-    id: "odip",
-    name: "Office of Diversity and International Programs",
-    shortName: "ODIP",
+  oipcc: {
+    id: "oipcc",
+    name: "Office of International Programs and Campus Cohesion",
+    shortName: "OIPCC",
     description:
-      "ODIP is dedicated to supporting international students, fostering cultural exchange, and promoting an inclusive campus environment. We assist with visas, buddy matching, and settling into life in Ghana.",
-    location: "Radcliffe Building, Room 204",
+      "The Office promotes a campus culture that values diversity, equity, and inclusion while supporting international students and global learning opportunities. The office provides immigration assistance, cultural immersion programs, and study abroad partnerships, ensuring a seamless transition for international students. The Cohesion Office also leads sexual misconduct prevention initiatives to maintain a safe and respectful learning environment.",
+    location: "Radichel Hall Rooms 207 & 210",
     hours: "Mon - Fri, 8:00 AM - 5:00 PM",
     icon: "earth.americas.fill",
     heroImage: require("../assets/images/help/hero_odip.png"),
     contacts: {
-      phone: "+233 20 000 0000",
-      email: "odip@ashesi.edu.gh",
-      whatsapp: "+233 20 000 0000",
+      phone: "+233 50 126 0277",
+      email: "cohesion@ashesi.edu.gh",
+      whatsapp: "+233 50 126 0277",
     },
     staff: [
       {
         id: "s1",
         name: "Millicent Adjei",
-        role: "Director, ODIP",
+        role: "Director of International Programs and Campus Cohesion",
         email: "madjei@ashesi.edu.gh",
-        phone: "+233 24 123 4567",
-        image: require("../assets/images/staff/avatar_female_1.png"),
+        phone: "ext.1062",
+        image: require("../assets/images/staff/oipcc/millicent.jpg"),
       },
       {
         id: "s2",
-        name: "Kweku Boateng",
-        role: "International Student Advisor",
-        email: "kboateng@ashesi.edu.gh",
-        image: require("../assets/images/staff/avatar_male_1.png"),
+        name: "Rosemary Kotei",
+        role: "Assistant Director, International Programs",
+        email: "rkotei@ashesi.edu.gh",
+        phone: "ext.1034",
+        image: require("../assets/images/staff/oipcc/rosemary.jpg"),
       },
     ],
     links: [
       {
-        title: "International Student Guide",
-        url: "https://ashesi.edu.gh",
-        icon: "earth.americas.fill",
+        title: "Campus Cohesion Info",
+        url: "https://ashesi.edu.gh/campus-cohesion/",
+        icon: "person.3.fill",
+      },
+      {
+        title: "Disability & Accessibility",
+        url: "http://ashesi.edu.gh/student-life/disability-and-accessibility-support/",
+        icon: "figure.roll",
+      },
+      {
+        title: "ISA Website",
+        url: "https://isashesi.vercel.app/",
+        icon: "globe.americas.fill",
       },
     ],
     documents: [
       {
-        title: "Non-Citizen ID Application Form",
-        url: "https://ashesi.edu.gh/form.pdf",
-        size: "1.2 MB",
+        title: "Ghana Card Payment Process Flow",
+        url: require("../assets/documents/oipcc/Ghana Card Payment Process Flow.pdf"),
         type: "pdf",
       },
       {
-        title: "Visa Renewal Checklist",
-        url: "https://ashesi.edu.gh/checklist.pdf",
-        size: "800 KB",
+        title: "Ghana Non-Citizenship App Form",
+        url: require("../assets/documents/oipcc/Ghana Non Citizenship App Form.pdf"),
+        type: "pdf",
+      },
+      {
+        title: "Immigration Regularization FAQ",
+        url: require("../assets/documents/oipcc/Immigration Regularization FAG.pdf.pdf"),
         type: "pdf",
       },
     ],
     faqs: [
       {
-        question: "How do I renew my student visa?",
-        answer: "Visit our office at least one month before your current visa expires. Bring your passport and non-citizen ID.",
+        question: "What support does OIPCC offer for international students?",
+        answer: "OIPCC arranges airport pick-up, guarantees on-campus housing, and helps students regularize their Ghana Non-Citizenship Cards and Residence Permits.",
       },
       {
-        question: "Is airport pickup provided?",
-        answer: "Yes, for first-year international students. Check your email for the arrival form.",
+        question: "How do I regularize my immigration status?",
+        answer: "Fill the Immigration Regularization (IR) form, prepare required documents, present them to NIA officers to receive your Ghana card, and submit your residence permit form.",
+      },
+      {
+        question: "What is the Host Family Program?",
+        answer: "It pairs international students with Ghanaian families to expand their network and learn about Ghanaian culture, while host families learn about the student's culture.",
+      },
+      {
+        question: "What is the First-Year Buddy Up Program?",
+        answer: "It pairs first-year students with continuing student coaches who guide them in transitioning to the university culture both socially and academically.",
       },
     ],
   },
@@ -117,7 +140,7 @@ export const MOCK_OFFICES: Record<string, Office> = {
     name: "Career Services Center",
     shortName: "Career Services",
     description:
-      "Your bridge between academic life and the professional world. We offer resume reviews, interview prep, internship placements, and networking events with top employers.",
+      "The Office plays a pivotal role in shaping students’ professional journeys by offering a range of resources designed to enhance career readiness. Working closely with employers and recruiters, we facilitate networking sessions, internships, and job placements that allow students to pursue their aspirations.",
     location: "Norton Motulsky Building, Ground Floor",
     hours: "Mon - Fri, 9:00 AM - 4:00 PM",
     icon: "briefcase.fill",
@@ -129,94 +152,194 @@ export const MOCK_OFFICES: Record<string, Office> = {
     staff: [
       {
         id: "c1",
-        name: "Abena Mensah",
-        role: "Head of Career Services",
-        email: "amensah@ashesi.edu.gh",
-        image: require("../assets/images/staff/avatar_female_2.png"),
+        name: "Abigail Welbeck",
+        role: "Director",
+        email: "awelbeck@ashesi.edu.gh",
+        image: require("../assets/images/staff/career_services/Abigail-Welbeck-1.png"),
       },
       {
         id: "c2",
-        name: "David Osei",
-        role: "Employer Relations Manager",
-        email: "dosei@ashesi.edu.gh",
-        phone: "+233 20 987 6543",
-        image: require("../assets/images/staff/avatar_male_1.png"),
+        name: "Selasi Nukpe",
+        role: "Assistant Director",
+        email: "snukpe@ashesi.edu.gh",
+        image: require("../assets/images/staff/career_services/Selasi-Nukpe.png"),
+      },
+      {
+        id: "c3",
+        name: "Najeeb Ibrahim",
+        role: "Assistant Director",
+        email: "nibrahim@ashesi.edu.gh",
+        image: require("../assets/images/staff/career_services/Najeeb-Ibrahim.png"),
+      },
+      {
+        id: "c4",
+        name: "Ngozi Dickson",
+        role: "Assistant Director",
+        email: "ndickson@ashesi.edu.gh",
+        image: require("../assets/images/staff/career_services/Ngozi-Dickson.png"),
+      },
+      {
+        id: "c5",
+        name: "Nana Afua Anoff",
+        role: "Senior Career Development Officer",
+        email: "nanoff@ashesi.edu.gh",
+        image: require("../assets/images/staff/career_services/Nana-Afua-Anoff.png"),
+      },
+      {
+        id: "c6",
+        name: "Alberta Asiamah",
+        role: "Senior Career Development Officer",
+        email: "aasiamah@ashesi.edu.gh",
+        image: require("../assets/images/staff/career_services/Alberta.png"),
       },
     ],
     links: [
       {
-        title: "Handshake Portal",
-        url: "https://ashesi.joinhandshake.com",
+        title: "Career Portal",
+        url: "https://app.thecareeros.com/with-university",
         icon: "briefcase.fill",
       },
       {
-        title: "Book an Advising Session",
-        url: "https://ashesi.edu.gh",
-        icon: "calendar",
+        title: "Focus2Career",
+        url: "https://www.focus2career.com/Portal/Login.cfm?SID=1992",
+        icon: "target",
+      },
+      {
+        title: "Big Interview",
+        url: "https://ashesi.biginterview.com/login",
+        icon: "video.fill",
+      },
+      {
+        title: "Global Mentorship",
+        url: "https://globalmentorship.org/schools/ashesi/",
+        icon: "globe.americas.fill",
+      },
+      {
+        title: "Job Shadowing Form",
+        url: "https://forms.office.com/r/MEMgdvWKv2",
+        icon: "person.2.fill",
       },
     ],
     documents: [
       {
-        title: "Resume Template (Standard)",
-        url: "https://ashesi.edu.gh/resume.docx",
-        size: "45 KB",
-        type: "doc",
+        title: "Ashesi CV Writing Guide",
+        url: require("../assets/documents/career_services/Ashesi CV Writing Guide.pdf"),
+        size: "1 MB",
+        type: "pdf",
       },
       {
-        title: "Cover Letter Guidelines",
-        url: "https://ashesi.edu.gh/cover.pdf",
-        size: "1.5 MB",
-        type: "pdf",
+        title: "CV Template with guidelines",
+        url: require("../assets/documents/career_services/CV Template_ with guidelines.docx"),
+        size: "24 KB",
+        type: "docx",
       },
     ],
     faqs: [
       {
+        question: "What is the Ashesi Career Mentorship Program?",
+        answer: "It connects students with experienced professionals who provide guidance, advice, and access to real-world learning opportunities over three months.",
+      },
+      {
+        question: "What is the Job Shadowing Program?",
+        answer: "An experiential learning initiative designed to help first-year students make informed decisions about the careers they want to explore while in university.",
+      },
+      {
+        question: "How does the Internship Program work?",
+        answer: "It provides students with opportunities to apply their classroom knowledge in real-world settings. All students are encouraged to complete at least one internship before graduation.",
+      },
+      {
+        question: "What services do you offer for interview preparation?",
+        answer: "We offer Mock Interviews, Job Search Strategies, Resume and Cover Letter Reviews, and access to Big Interview, an AI-powered practice tool.",
+      },
+      {
         question: "When should I start looking for internships?",
         answer: "As early as your sophomore year! We recommend attending our Fall Career Fair to start networking.",
+      },
+      {
+        question: "Does the Career Services office help with graduate school applications?",
+        answer: "Yes, we guide students in exploring graduate study opportunities, providing support with applications, preparation, and decision-making.",
+      },
+      {
+        question: "When should I start visiting Career Services?",
+        answer: "It is recommended to start engaging with Career Services in your first year through the Job Shadowing Program and early career coaching sessions.",
       },
     ],
   },
   it: {
     id: "it",
-    name: "IT Support Center",
-    shortName: "Support Center",
+    name: "Support Centre",
+    shortName: "Support Centre",
     description:
-      "Your first point of contact for all technology needs. We help with campus Wi-Fi, printer setup, software installations, and account access issues.",
-    location: "Radcliffe Building, Ground Floor",
-    hours: "Mon - Fri, 8:00 AM - 6:00 PM",
-    icon: "heart.text.square.fill",
+      "The Center serves as the primary hub for assistance, guidance, and problem resolution for students, staff, and faculty throughout their time at Ashesi University. Designed to ensure a smooth and supportive experience within the Ashesi community, the Centre provides quick and effective solutions by connecting individuals to the right resources and departments. Whether it’s facility or hostel concerns, IT issues, logistics queries, or general feedback, the Support Centre is committed to addressing your needs promptly and professionally.",
+    location: "King Engineering Building Room 105 (opposite Design Lab)",
+    hours: "Mon - Fri, 8:00 AM - 5:00 PM",
+    icon: "questionmark.circle.fill",
     heroImage: require("../assets/images/help/hero_it.png"),
     contacts: {
-      phone: "+233 30 261 0330",
-      email: "support@ashesi.edu.gh",
+      phone: "Ext: 1111 | +233 50 167 3669",
+      email: "supportcentre@ashesi.edu.gh",
     },
-    staff: [
-      {
-        id: "it1",
-        name: "Emmanuel Yeboah",
-        role: "Senior IT Support Engineer",
-        email: "eyeboah@ashesi.edu.gh",
-        phone: "+233 24 000 0000",
-        image: require("../assets/images/staff/avatar_male_1.png"),
-      },
-      {
-        id: "it2",
-        name: "Sarah Appiah",
-        role: "Network Administrator",
-        email: "sappiah@ashesi.edu.gh",
-        image: require("../assets/images/staff/avatar_female_1.png"),
-      },
-    ],
+    staff: [],
     links: [
       {
-        title: "Submit a Ticket",
-        url: "https://support.ashesi.edu.gh",
-        icon: "paperplane.fill",
+        title: "Support Center Docs",
+        url: "https://ashesi.helpscoutdocs.com/#",
+        icon: "newspaper.fill",
       },
       {
-        title: "Reset Password",
-        url: "https://ashesi.edu.gh",
-        icon: "chevron.right",
+        title: "Bamboo HR",
+        url: "https://ashesi.helpscoutdocs.com/category/68-bamboo-hr",
+        icon: "person.3.fill",
+      },
+      {
+        title: "Ashesi Online Teaching FAQs",
+        url: "https://ashesi.helpscoutdocs.com/category/47-ashesi-online-teaching-faqs",
+        icon: "laptopcomputer",
+      },
+      {
+        title: "Microsoft Stream",
+        url: "https://ashesi.helpscoutdocs.com/category/55-microsoft-stream",
+        icon: "play.tv.fill",
+      },
+      {
+        title: "Zoom",
+        url: "https://ashesi.helpscoutdocs.com/category/50-zoom",
+        icon: "video.fill",
+      },
+      {
+        title: "Canvas LMS",
+        url: "https://ashesi.helpscoutdocs.com/category/39-canvas-lms",
+        icon: "book.fill",
+      },
+      {
+        title: "CAMU",
+        url: "https://ashesi.helpscoutdocs.com/category/20-camu",
+        icon: "graduationcap.fill",
+      },
+      {
+        title: "CAMU FAQs",
+        url: "https://ashesi.helpscoutdocs.com/category/31-camu-faqs",
+        icon: "questionmark.circle.fill",
+      },
+      {
+        title: "Grammarly",
+        url: "https://ashesi.helpscoutdocs.com/category/29-grammarly",
+        icon: "pencil",
+      },
+      {
+        title: "Meal Plan",
+        url: "https://ashesi.helpscoutdocs.com/category/4-meal-plan",
+        icon: "fork.knife",
+      },
+    ],
+    faqs: [
+      {
+        question: "How do I submit a ticket?",
+        answer: "Visit our Support Center Docs at https://ashesi.helpscoutdocs.com or email supportcentre@ashesi.edu.gh",
+      },
+      {
+        question: "What services does the Support Centre provide?",
+        answer: "We help with facility and hostel concerns, IT issues, logistics queries, and general feedback.",
       },
     ],
   },
@@ -225,134 +348,131 @@ export const MOCK_OFFICES: Record<string, Office> = {
     name: "Natembea Health Center",
     shortName: "Health Center",
     description:
-      "Providing comprehensive medical and psychological support to the Ashesi community. We offer first aid, basic consultations, counselling sessions, and referrals. Your well-being is our utmost priority.",
+      "A HEFRA-accredited clinic providing 24-hour general outpatient care, inpatient observation, and laboratory services. We also offer comprehensive counseling and wellness coaching for body and mind.",
     location: "Behind the Student Hostels",
-    hours: "24/7 for Emergencies\nClinic: 8:00 AM - 6:00 PM",
+    hours: "Mon - Sun, 24 Hours",
     icon: "cross.case.fill",
     heroImage: require("../assets/images/help/hero_health.png"),
     contacts: {
-      phone: "+233 24 431 3866", // Emergency
-      whatsapp: "+233 24 431 3866",
-      email: "health@ashesi.edu.gh",
+      phone: "+233 501 331 668",
+      whatsapp: "+233 501 331 668",
+      email: "healthcenter@ashesi.edu.gh",
     },
     staff: [
       {
         id: "h1",
-        name: "Dr. William Akoto",
-        role: "Chief Medical Officer",
-        email: "wakoto@ashesi.edu.gh",
-        phone: "+233 24 431 3866",
-        image: require("../assets/images/staff/avatar_doctor.png"),
+        name: "Bridgette Addo Asiedu",
+        role: "Director, Health Services",
+        email: "baddoasiedu@ashesi.edu.gh",
+        image: require("../assets/images/staff/health_center/Bridgitte.jpg"),
       },
       {
         id: "h2",
-        name: "Dr. Grace Nartey",
-        role: "Lead Psychological Counselor",
-        email: "gnartey@ashesi.edu.gh",
-        image: require("../assets/images/staff/avatar_female_2.png"),
+        name: "Dr. Paul Kumi",
+        role: "Director of Counseling, Coaching, and Advising",
+        email: "pkumi@ashesi.edu.gh",
+        image: require("../assets/images/staff/health_center/PaulKumi.jpg"),
+      },
+      {
+        id: "h3",
+        name: "Selase Tsiagbe",
+        role: "Assistant Director, Health Services",
+        email: "stsiagbe@ashesi.edu.gh",
+        image: require("../assets/images/staff/health_center/Selasie.jpg"),
+      },
+      {
+        id: "h4",
+        name: "Sylvester Amponsah",
+        role: "Nursing Officer",
+        email: "samponsah@ashesi.edu.gh",
+        image: require("../assets/images/staff/health_center/Samuel.jpg"),
+      },
+      {
+        id: "h5",
+        name: "Nana Adu Asante",
+        role: "Nursing Officer",
+        email: "nasante@ashesi.edu.gh",
+        image: require("../assets/images/staff/health_center/Nana-Adu.jpg"),
+      },
+      {
+        id: "h6",
+        name: "Maame Ama Ackah",
+        role: "Counselor",
+        email: "mackah@ashesi.edu.gh",
+        image: require("../assets/images/staff/health_center/MaameAckah.jpg"),
+      },
+      {
+        id: "h7",
+        name: "Richard Tumawu",
+        role: "Health Services Coordinator",
+        email: "rtumawu@ashesi.edu.gh",
+        image: require("../assets/images/staff/health_center/Richard.jpg"),
+      },
+      {
+        id: "h8",
+        name: "Evonne Sauda",
+        role: "Assistant Director of Wellness & Wellness Coach",
+        email: "esauda@ashesi.edu.gh",
+        image: require("../assets/images/staff/health_center/EBS.jpg"),
+      },
+      {
+        id: "h9",
+        name: "Emmanuel Ntow",
+        role: "Senior Academic Advisor",
+        email: "entow@ashesi.edu.gh",
+        image: require("../assets/images/staff/health_center/EmmaNtow.jpg"),
+      },
+      {
+        id: "h10",
+        name: "Iehowa-Nhyirah Gaisie",
+        role: "Counselor",
+        email: "igaisie@ashesi.edu.gh",
+        image: require("../assets/images/staff/health_center/Nhyira.jpg"),
       },
     ],
     links: [
       {
-        title: "Book Therapy Session",
-        url: "https://ashesi.edu.gh",
+        title: "Book Counseling Session",
+        url: "https://ashesicounseling.simplybook.me/v2/",
+        icon: "heart.text.square.fill",
+      },
+      {
+        title: "Book Coaching & Wellness",
+        url: "https://ashesicounsellingandcoachingcentercoach.simplybook.it/v2/",
         icon: "calendar",
       },
       {
-        title: "List of Accredited Hospitals",
-        url: "https://ashesi.edu.gh",
-        icon: "earth.americas.fill",
+        title: "Book Academic Advising",
+        url: "https://calendly.com/emmanuel-ntow-ashesi/academicbooking-meeting",
+        icon: "graduationcap.fill",
       },
     ],
     documents: [
       {
-        title: "Excuse Duty Request Form",
-        url: "https://ashesi.edu.gh/excuse.pdf",
-        size: "200 KB",
-        type: "pdf",
+        title: "Health Insurance Policy Details",
+        url: "https://ashesi.edu.gh/health-and-wellbeing/",
+        size: "Link",
+        type: "link",
       },
       {
-        title: "Student Health Insurance Claim Form",
-        url: "https://ashesi.edu.gh/insurance.pdf",
-        size: "1.8 MB",
-        type: "pdf",
-      },
-      {
-        title: "Medical History Update Form",
-        url: "https://ashesi.edu.gh/medical-history.pdf",
-        size: "450 KB",
-        type: "pdf",
+        title: "Required Vaccinations List",
+        url: "https://ashesi.edu.gh/health-and-wellbeing/",
+        size: "Link",
+        type: "link",
       },
     ],
     faqs: [
       {
         question: "What should I do in a medical emergency?",
-        answer: "Immediately call our emergency line or WhatsApp us. We have an ambulance on standby 24/7.",
+        answer: "Call the Health Center immediately on +233 501 331 668 or report in person. The Natembea Health Center is always open 24/7.",
       },
       {
-        question: "How do I get an Excuse Duty?",
-        answer: "You must be assessed by the Medical Officer. If deemed unfit for classes, an Excuse Duty will be issued directly to the Registry.",
+        question: "What vaccinations are required?",
+        answer: "Measles/Mumps/Rubella (MMR), Varicella, and Yellow Fever are required. Hepatitis A, Typhoid, Tetanus, and COVID-19 are strongly recommended.",
       },
       {
-        question: "Is counseling confidential?",
-        answer: "Absolutely. All sessions with our psychologists are 100% strictly confidential and not shared with faculty.",
-      },
-    ],
-  },
-  registry: {
-    id: "registry",
-    name: "Academic Registry",
-    shortName: "Registrar",
-    description:
-      "Managing academic records, course registrations, transcripts, and graduation requirements. The backbone of your academic journey at Ashesi.",
-    location: "Radcliffe Building, Ground Floor",
-    hours: "Mon - Fri, 8:00 AM - 5:00 PM",
-    icon: "graduationcap.fill",
-    heroImage: require("../assets/images/help/hero_registry.png"),
-    contacts: {
-      email: "registry@ashesi.edu.gh",
-    },
-    staff: [
-      {
-        id: "r1",
-        name: "Samuel Osei-Mensah",
-        role: "University Registrar",
-        email: "sosei@ashesi.edu.gh",
-        image: require("../assets/images/staff/avatar_male_1.png"),
-      },
-      {
-        id: "r2",
-        name: "Janet Addo",
-        role: "Records Officer",
-        email: "jaddo@ashesi.edu.gh",
-        phone: "+233 20 111 2222",
-        image: require("../assets/images/staff/avatar_female_1.png"),
-      },
-    ],
-    links: [
-      {
-        title: "Student Information System (SIS)",
-        url: "https://sis.ashesi.edu.gh",
-        icon: "graduationcap.fill",
-      },
-      {
-        title: "Canvas LMS",
-        url: "https://canvas.ashesi.edu.gh",
-        icon: "newspaper.fill",
-      },
-    ],
-    documents: [
-      {
-        title: "Academic Calendar 2026-2027",
-        url: "https://ashesi.edu.gh/calendar.pdf",
-        size: "2.1 MB",
-        type: "pdf",
-      },
-    ],
-    faqs: [
-      {
-        question: "How do I request an official transcript?",
-        answer: "Transcript requests can be made via SIS. Processing takes 3-5 business days.",
+        question: "Is health insurance required?",
+        answer: "Yes, students without an insurance policy are required to sign up for the Natembea Health Center’s recommended provider. It's renewed annually and included in fees.",
       },
     ],
   },
@@ -446,8 +566,8 @@ export const DIRECTORY = [
     coordinate: { latitude: 5.7610, longitude: -0.2205 },
     icon: "cross.case.fill",
     emoji: "🏥",
-    description: "Natembea Health Clinic providing medical services, counseling, and 24/7 emergency support.",
-    hours: "24/7 for Emergencies • Clinic: 8:00 AM - 6:00 PM",
+    description: "HEFRA-accredited clinic providing 24/7 medical services, counseling, and wellness coaching.",
+    hours: "Mon - Sun, 24 Hours",
     linked_office_id: "health",
   },
   {
@@ -517,14 +637,14 @@ export const DIRECTORY = [
   },
   {
     id: "o1",
-    name: "ODIP Office",
+    name: "OIPCC Office",
     category: "office",
     parentId: "b2",
     building: "Radichel Hall",
     floor: "2nd Floor",
     icon: "earth.americas.fill",
-    description: "Office of Diversity and International Programs. Assisting with visas, buddy up programs, and cultural exchange.",
-    linked_office_id: "odip",
+    description: "Office of International Programs and Campus Cohesion. Assisting with visas, buddy up programs, and cultural exchange.",
+    linked_office_id: "oipcc",
   },
   {
     id: "o2",
