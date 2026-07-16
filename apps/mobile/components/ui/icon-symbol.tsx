@@ -77,6 +77,12 @@ const MAPPING = {
   'bookmark.fill': 'bookmark',
   'bookmark': 'bookmark-border',
   'figure.stand': 'accessibility',
+  'figure.roll': 'accessible',
+  'globe.americas.fill': 'public',
+  'target': 'track-changes',
+  'video.fill': 'videocam',
+  'play.tv.fill': 'live-tv',
+  'laptopcomputer': 'laptop-mac',
 };
 
 export type IconSymbolName = keyof typeof MAPPING;
