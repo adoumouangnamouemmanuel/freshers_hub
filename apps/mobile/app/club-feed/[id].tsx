@@ -23,6 +23,61 @@ type Post = {
   eventLocation: string | null;
 };
 
+function ClubPostCard({ post, index }: { post: Post; index: number }) {
+  const router = useRouter();
+  const { session } = useAuth();
+  const [expanded, setExpanded] = useState(false);
+  
+  const isOwner = session?.user?.id === post.authorId;
+  const isLong = post.content && post.content.length > 150;
+  const displayContent = isLong && !expanded ? `${post.content.substring(0, 150)}...` : post.content;
+
+  return (
+    <Animated.View entering={FadeInDown.delay(100 + (index * 50)).duration(500)}>
+      <Pressable 
+        style={styles.postCard} 
+        onPress={() => {
+          if (isOwner) {
+            router.push(`/post/${post.id}` as any);
+          } else if (isLong) {
+            setExpanded(!expanded);
+          }
+        }}
+      >
+        <View style={styles.postHeader}>
+          <View style={styles.authorAvatar}>
+            <Text style={styles.authorInitial}>{post.authorName?.charAt(0) || '?'}</Text>
+          </View>
+          <View style={styles.authorInfo}>
+            <Text style={styles.authorName}>{post.authorName}</Text>
+            <Text style={styles.postMeta}>
+              {new Date(post.createdAt).toLocaleDateString()} • {post.category}
+            </Text>
+          </View>
+          <View style={styles.categoryBadge}>
+            <Text style={styles.categoryBadgeText}>{post.category}</Text>
+          </View>
+        </View>
+        
+        <Text style={styles.postTitle}>{post.title}</Text>
+        <Text style={styles.postContent}>
+          {displayContent}
+          {isLong && !expanded && <Text style={styles.viewMoreInline}> View more</Text>}
+        </Text>
+        
+        {post.eventId && (
+          <View style={styles.eventCard}>
+            <IconSymbol name="calendar" size={16} color="#C9933A" />
+            <Text style={styles.eventText}>
+              Event on {new Date(post.eventDate!).toLocaleDateString()} at {post.eventLocation}
+            </Text>
+          </View>
+        )}
+      </Pressable>
+    </Animated.View>
+  );
+}
+
 export default function ClubFeedScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
@@ -92,36 +147,7 @@ export default function ClubFeedScreen() {
             </View>
           ) : (
             posts.map((post, idx) => (
-              <Animated.View key={post.id} entering={FadeInDown.delay(100 + (idx * 50)).duration(500)}>
-                <Pressable style={styles.postCard} onPress={() => router.push(`/post/${post.id}` as any)}>
-                  <View style={styles.postHeader}>
-                    <View style={styles.authorAvatar}>
-                      <Text style={styles.authorInitial}>{post.authorName?.charAt(0) || '?'}</Text>
-                    </View>
-                    <View style={styles.authorInfo}>
-                      <Text style={styles.authorName}>{post.authorName}</Text>
-                      <Text style={styles.postMeta}>
-                        {new Date(post.createdAt).toLocaleDateString()} • {post.category}
-                      </Text>
-                    </View>
-                    <View style={styles.categoryBadge}>
-                      <Text style={styles.categoryBadgeText}>{post.category}</Text>
-                    </View>
-                  </View>
-                  
-                  <Text style={styles.postTitle}>{post.title}</Text>
-                  <Text style={styles.postContent}>{post.content}</Text>
-                  
-                  {post.eventId && (
-                    <View style={styles.eventCard}>
-                      <IconSymbol name="calendar" size={16} color="#C9933A" />
-                      <Text style={styles.eventText}>
-                        Event on {new Date(post.eventDate!).toLocaleDateString()} at {post.eventLocation}
-                      </Text>
-                    </View>
-                  )}
-                </Pressable>
-              </Animated.View>
+              <ClubPostCard key={post.id} post={post} index={idx} />
             ))
           )}
         </ScrollView>
@@ -268,6 +294,10 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#4b5563',
     lineHeight: 24,
+  },
+  viewMoreInline: {
+    color: "#6B7280",
+    fontWeight: "700",
   },
   eventCard: {
     flexDirection: 'row',
