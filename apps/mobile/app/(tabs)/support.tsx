@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
   },
   greeting: { fontSize: 13, fontWeight: "800", color: "#8B5CF6", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 },
   header: { fontSize: 34, fontWeight: "900", color: "#111827", letterSpacing: -1 },
-  scrollContent: { padding: 20, gap: 24, paddingBottom: 100, paddingTop: 24 },
+  scrollContent: { padding: 20, gap: 24, paddingBottom: 200, paddingTop: 24 },
   
   sectionHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 16 },
   sectionIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
@@ -393,7 +393,7 @@ const styles = StyleSheet.create({
   staffActions: { flexDirection: "row", gap: 12, alignItems: "center" },
   socialRow: { flexDirection: "row", gap: 8 },
   socialBtn: { width: 48, height: 48, borderRadius: 16, alignItems: "center", justifyContent: "center" },
-  primaryBtn: { flex: 1, backgroundColor: "#1A2B4A", height: 48, alignItems: "center", justifyContent: "center", borderRadius: 16 },
+  primaryBtn: { flex: 1, backgroundColor: "#A93C40", height: 48, alignItems: "center", justifyContent: "center", borderRadius: 16 },
   primaryBtnText: { color: "#FFFFFF", fontWeight: "800", fontSize: 15 },
   secondaryBtn: { flex: 1, backgroundColor: "#E5E7EB", height: 48, alignItems: "center", justifyContent: "center", borderRadius: 16 },
   secondaryBtnText: { color: "#4B5563", fontWeight: "800", fontSize: 15 },
@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
   contactItem: { flexDirection: "row", alignItems: "center", gap: 10 },
   contactText: { fontSize: 14, color: "#4B5563", fontWeight: "500", flex: 1 },
   
-  bookBtn: { flex: 1, backgroundColor: "#1A2B4A", height: 48, alignItems: "center", justifyContent: "center", borderRadius: 16 },
+  bookBtn: { flex: 1, backgroundColor: "#A93C40", height: 48, alignItems: "center", justifyContent: "center", borderRadius: 16 },
   bookBtnText: { color: "#FFFFFF", fontWeight: "800", fontSize: 15 },
   
   crisisBox: { 
@@ -474,9 +474,9 @@ const styles = StyleSheet.create({
   
   fab: {
     position: "absolute",
-    bottom: 24,
+    bottom: 130,
     right: 24,
-    backgroundColor: "#1A2B4A",
+    backgroundColor: "#A93C40",
     borderRadius: 28,
     height: 56,
     paddingHorizontal: 20,

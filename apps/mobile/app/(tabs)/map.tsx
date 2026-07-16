@@ -817,7 +817,7 @@ const styles = StyleSheet.create({
   // Detail Sheet Bottom
   detailSheetWrapper: {
     position: "absolute",
-    bottom: 0,
+    bottom: 100,
     left: 0,
     right: 0,
     paddingHorizontal: 16,
@@ -951,7 +951,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#1A2B4A",
+    backgroundColor: "#A93C40",
     paddingVertical: 12,
     borderRadius: 12,
     gap: 8,

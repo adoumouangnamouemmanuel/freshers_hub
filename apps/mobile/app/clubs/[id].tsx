@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 15, color: "#9CA3AF", fontStyle: "italic", fontWeight: "500" },
   
   bottomBar: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "rgba(255,255,255,0.95)", backdropFilter: "blur(10px)", paddingHorizontal: 24, paddingTop: 16, paddingBottom: 36, borderTopWidth: 1, borderTopColor: "rgba(0,0,0,0.05)" },
-  actionBtn: { backgroundColor: "#1A2B4A", height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center", shadowColor: "#1A2B4A", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 4 },
+  actionBtn: { backgroundColor: "#A93C40", height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center", shadowColor: "#1A2B4A", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 4 },
   actionBtnLeave: { backgroundColor: "#FEF2F2", shadowColor: "#EF4444", shadowOpacity: 0.1 },
   actionBtnText: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
   actionBtnTextLeave: { color: "#EF4444" },

@@ -239,7 +239,7 @@ const styles = StyleSheet.create({
   },
   greeting: { fontSize: 13, fontWeight: "800", color: "#8B5CF6", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 },
   header: { fontSize: 34, fontWeight: "900", color: "#111827", letterSpacing: -1 },
-  scrollContent: { padding: 20, gap: 24, paddingBottom: 100, paddingTop: 24 },
+  scrollContent: { padding: 20, gap: 24, paddingBottom: 200, paddingTop: 24 },
   
   statsCard: {
     flexDirection: 'row',
@@ -329,7 +329,7 @@ const styles = StyleSheet.create({
   actionsRow: { flexDirection: 'row', gap: 12 },
   btnSecondary: { flex: 1, backgroundColor: '#F3F4F6', height: 44, borderRadius: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
   btnSecondaryText: { color: '#4B5563', fontWeight: '700', fontSize: 14 },
-  btnPrimary: { flex: 1, backgroundColor: '#1A2B4A', height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  btnPrimary: { flex: 1, backgroundColor: '#A93C40', height: 44, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   btnPrimaryText: { color: '#FFFFFF', fontWeight: '700', fontSize: 14 },
 
   yvonneCard: {
@@ -374,9 +374,9 @@ const styles = StyleSheet.create({
   
   fab: {
     position: "absolute",
-    bottom: 24,
+    bottom: 130,
     right: 24,
-    backgroundColor: "#1A2B4A",
+    backgroundColor: "#A93C40",
     borderRadius: 28,
     height: 56,
     paddingHorizontal: 20,
