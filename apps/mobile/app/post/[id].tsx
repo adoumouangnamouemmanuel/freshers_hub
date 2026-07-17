@@ -7,7 +7,8 @@ import {
   ActivityIndicator,
   ScrollView,
   Alert 
-} from "react-native";
+} from "react-native"; 
+import globalStyles from '../../styles';
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -144,6 +145,9 @@ export default function PostScreen() {
 }
 
 const styles = StyleSheet.create({
+  ...globalStyles.layout,
+  ...globalStyles.typography,
+  ...globalStyles.components,
   screen: {
     flex: 1,
     backgroundColor: "#FAFAFA",
