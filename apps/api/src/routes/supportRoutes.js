@@ -24,7 +24,7 @@ router.get("/staff/:unitName", supportController.getStaffByUnit);
 router.post("/contact", supportController.logContactClick);
 
 // Admin Routes - Restrict to specific roles
-const adminMiddleware = requireRoles('admin', 'peer_coach');
+const adminMiddleware = requireRoles('admin', 'coach_admin', 'peer_coach');
 router.use("/admin", adminMiddleware);
 
 router.get("/admin/dashboard", supportAdminController.getAdminDashboardStats);
