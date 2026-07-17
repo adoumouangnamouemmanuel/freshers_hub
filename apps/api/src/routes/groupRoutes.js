@@ -1,6 +1,6 @@
 const express = require("express");
 const { requireAuth, requireRoles } = require("../middleware/authMiddleware");
-const { validate } = require("../middleware/validate");
+const validate = require("../middleware/validate");
 const { 
   createGroupSchema, 
   updateGroupSchema, 
