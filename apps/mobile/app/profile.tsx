@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet, Pressable, ScrollView, Switch } from "react-native";
+import { View, Text, StyleSheet, Pressable, ScrollView, Switch } from "react-native"; 
+import globalStyles from './styles';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
@@ -108,6 +109,9 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  ...globalStyles.layout,
+  ...globalStyles.typography,
+  ...globalStyles.components,
   screen: {
     flex: 1,
     backgroundColor: "#F8F9FA",
