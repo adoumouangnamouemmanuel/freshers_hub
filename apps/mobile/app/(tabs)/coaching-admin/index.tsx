@@ -221,7 +221,7 @@ const styles = StyleSheet.create({
   header: { fontSize: 34, fontWeight: "900", color: "#111827", letterSpacing: -1 },
   
   scroll: { flex: 1 },
-  content: { padding: 20, gap: 24, paddingBottom: 80, paddingTop: 32 },
+  content: { padding: 20, gap: 24, paddingBottom: 150, paddingTop: 32 },
   
   quickActions: { flexDirection: "row", gap: 16 },
   actionBtn: { flex: 1, backgroundColor: "#FFFFFF", padding: 16, borderRadius: 24, flexDirection: "column", alignItems: "flex-start", gap: 16, ...Platform.select({ ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 16 }, android: { elevation: 3 } }), borderWidth: 1, borderColor: "rgba(0,0,0,0.03)" },

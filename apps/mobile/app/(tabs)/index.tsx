@@ -6,7 +6,8 @@ import {
   Text,
   View,
   ActivityIndicator,
-  RefreshControl
+  RefreshControl,
+  Image
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Link } from "expo-router";
@@ -15,7 +16,7 @@ import { useAuth } from "@/context/auth-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { apiRequest } from "@/lib/api";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Post = {
@@ -40,6 +41,14 @@ type Post = {
   goingCount?: number;
   myRsvp?: string;
 };
+
+// New Types for DB integration
+type CoachAssignment = { id: string; peer_coach_id: string; coach_name: string; avatar_url: string | null; };
+type BuddyPairing = { id: string; buddy_id: string; buddy_name: string; avatar_url: string | null; };
+type AssignedFresher = { id: string; fresher_id: string; fresher_name: string; avatar_url: string | null; };
+type Group = { id: string; name: string; image_url: string | null; is_leader: boolean; member_count?: number; category?: string; };
+type Session = { id: string; session_date: string; start_time: string; status: string; };
+type AdminStats = { unassigned_freshers?: number; total_freshers?: number; };
 
 function PostCard({ post, onUpdate }: { post: Post; onUpdate: () => void }) {
   const router = useRouter();
@@ -159,74 +168,121 @@ function PostCard({ post, onUpdate }: { post: Post; onUpdate: () => void }) {
 export default function FeedScreen() {
   const router = useRouter();
   const { session } = useAuth();
-  const isCoachAdmin = session?.user.roles.some((r: any) => r.name === "coach_admin" || r.name === "admin");
   const insets = useSafeAreaInsets();
 
   const [posts, setPosts] = useState<Post[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [welcomeDismissed, setWelcomeDismissed] = useState(true);
 
-  useEffect(() => {
-    AsyncStorage.getItem("@welcome_dismissed").then(val => {
-      if (val !== "true") {
-        setWelcomeDismissed(false);
-      }
-    });
-  }, []);
+  // New DB States
+  const [assignedCoaches, setAssignedCoaches] = useState<CoachAssignment[]>([]);
+  const [assignedBuddy, setAssignedBuddy] = useState<BuddyPairing | null>(null);
+  const [assignedFreshers, setAssignedFreshers] = useState<AssignedFresher[]>([]);
+  const [myGroups, setMyGroups] = useState<Group[]>([]);
+  const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
+  const [adminStats, setAdminStats] = useState<AdminStats | null>(null);
 
-  const dismissWelcome = async () => {
-    setWelcomeDismissed(true);
-    await AsyncStorage.setItem("@welcome_dismissed", "true");
-  };
+  // Role Checks
+  const currentYear = new Date().getFullYear();
+  const isFresher = session?.user.studentProfile?.graduationYear === currentYear + 4;
+  
+  const roles = session?.user.roles || [];
+  const hasRole = (roleName: string) => roles.some((r: any) => r.name === roleName);
+  
+  const isPeerCoach = hasRole("peer_coach");
+  const isPeerCounsellor = hasRole("peer_counsellor");
+  const isClubLead = hasRole("club_lead");
+  const isAdmin = hasRole("admin");
+  const isCoachAdmin = hasRole("coach_admin") || isAdmin;
+  const isStaff = hasRole("staff") || hasRole("faculty");
+  const isContinuingStudent = !isFresher && !isStaff && !isCoachAdmin && !isAdmin && !isPeerCoach && !isPeerCounsellor && !isClubLead;
 
-  const fetchPosts = async () => {
-    try {
-      const headers = session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : undefined;
-      const data = await apiRequest<{ posts: Post[] }>("/posts", { headers });
-      setPosts(data.posts || []);
-    } catch (err) {
-      console.error("Failed to fetch posts:", err);
-    }
-  };
-
-  const fetchUnreadCount = async () => {
+  const fetchData = async () => {
     if (!session?.accessToken) return;
+    const headers = { Authorization: `Bearer ${session.accessToken}` };
+
     try {
-      const data = await apiRequest<{ unreadCount: number }>("/notifications/unread-count", {
-        headers: { Authorization: `Bearer ${session.accessToken}` },
-      });
-      setUnreadCount(data.unreadCount || 0);
+      const promises: Promise<any>[] = [
+        apiRequest<{ posts: Post[] }>("/posts", { headers }).then(d => setPosts(d.posts || [])),
+        apiRequest<{ unreadCount: number }>("/notifications/unread-count", { headers }).then(d => setUnreadCount(d.unreadCount || 0))
+      ];
+
+      if (isFresher) {
+        promises.push(
+          apiRequest<CoachAssignment[]>("/support/coaches/assigned", { headers }).then(d => setAssignedCoaches(d || [])).catch(() => {}),
+          apiRequest<BuddyPairing>("/support/buddy", { headers }).then(d => setAssignedBuddy(d || null)).catch(() => {})
+        );
+      }
+
+      if (isPeerCoach) {
+        promises.push(
+          apiRequest<AssignedFresher[]>("/support/coaches/freshers", { headers }).then(d => setAssignedFreshers(d || [])).catch(() => {})
+        );
+      }
+
+      if (isContinuingStudent || isClubLead || isFresher) {
+        promises.push(
+          apiRequest<{groups: Group[]}>("/groups/my", { headers }).then(d => setMyGroups(d.groups || [])).catch(() => {})
+        );
+      }
+
+      if (isFresher || isPeerCounsellor || isPeerCoach) {
+        promises.push(
+           apiRequest<Session[]>("/support/sessions", { headers }).then(d => {
+             const upcoming = (d || []).filter(s => s.status === 'scheduled' || s.status === 'pending');
+             setUpcomingSessions(upcoming);
+           }).catch(() => {})
+        );
+      }
+
+      if (isCoachAdmin) {
+        promises.push(
+          apiRequest<AdminStats>("/support/admin/dashboard", { headers }).then(d => setAdminStats(d || null)).catch(() => {})
+        );
+      }
+
+      await Promise.all(promises);
     } catch (err) {
-      console.error("Failed to fetch unread count:", err);
+      console.error("Failed to fetch dashboard data:", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    Promise.all([fetchPosts(), fetchUnreadCount()]).finally(() => setIsLoading(false));
+    fetchData();
   }, [session?.accessToken]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await Promise.all([fetchPosts(), fetchUnreadCount()]);
+    await fetchData();
     setRefreshing(false);
   };
 
   const firstName = session?.user.fullName?.split(" ")[0] ?? "there";
   const userInitial = session?.user.fullName?.charAt(0).toUpperCase() ?? "?";
 
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  };
+
   const allowedRoles = ["staff", "faculty", "student_leader", "admin", "club_lead"];
   const canPost = session?.user.roles.some((r) => allowedRoles.includes(r.name));
 
   const categories = ["All", "Announcement", "Event", "Alert"];
   const [activeCategory, setActiveCategory] = useState("All");
-  const [viewMode, setViewMode] = useState("list");
 
   const filteredPosts = posts.filter(p => {
     if (activeCategory !== "All" && p.category?.toLowerCase() !== activeCategory.toLowerCase()) return false;
     return true;
   });
+
+  const nextSession = upcomingSessions.length > 0 ? upcomingSessions[0] : null;
+  const myLedClubs = myGroups.filter(g => g.is_leader);
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
@@ -237,144 +293,243 @@ export default function FeedScreen() {
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#A93C40" />}
       >
-        {/* Top Header */}
-        <View style={styles.topHeader}>
-          <Pressable style={styles.headerAvatar} onPress={() => router.push("/profile")}>
-            <Text style={styles.headerAvatarText}>{userInitial}</Text>
-          </Pressable>
-          <Pressable style={styles.headerSearchContainer} onPress={() => router.push("/search")}>
-            <IconSymbol name="magnifyingglass" size={20} color="#9BA3AE" style={styles.searchIcon} />
-            <Text style={styles.searchPlaceholder}>Search campus updates...</Text>
-          </Pressable>
-          <Pressable style={styles.notificationBtn} onPress={() => router.push("/notifications")}>
-            <IconSymbol name="bell.fill" size={24} color="#1A2B4A" />
-            {unreadCount > 0 && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{unreadCount > 99 ? "99+" : unreadCount}</Text>
-              </View>
-            )}
-          </Pressable>
-        </View>
-
-        {/* Category Filters */}
-        <View style={styles.categoryScrollContainer}>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScrollContent}>
-            {categories.map(cat => (
-              <Pressable 
-                key={cat} 
-                style={[styles.categoryChip, activeCategory === cat && styles.categoryChipActive]}
-                onPress={() => {
-                  setActiveCategory(cat);
-                  if (cat !== "Event") setViewMode("list");
-                }}
-              >
-                <Text style={[styles.categoryChipText, activeCategory === cat && styles.categoryChipTextActive]}>{cat}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
-        </View>
-
-        {/* Welcome Card for Freshers */}
-        {!welcomeDismissed && (
-          <View style={styles.welcomeCard}>
-            <View style={styles.welcomeHeader}>
-              <Text style={styles.welcomeTitle}>Welcome to Ashesi!</Text>
-              <Pressable onPress={dismissWelcome} style={styles.welcomeCloseBtn}>
-                <IconSymbol name="xmark" size={16} color="#6B7280" />
-              </Pressable>
-            </View>
-            <Text style={styles.welcomeDesc}>
-              This is your Fresher Hub. Swipe through the Support tab for coaching and counselling, check the Map to find your way around, and browse Clubs to get involved.
-            </Text>
-            <Pressable style={styles.welcomeActionBtn} onPress={() => router.push("/(tabs)/support")}>
-              <Text style={styles.welcomeActionText}>Explore Support Hub</Text>
+        {/* Dynamic Personal Greeting Header */}
+        <View style={styles.personalHeader}>
+          <View style={styles.greetingRow}>
+            <Pressable style={styles.headerAvatarLarge} onPress={() => router.push("/profile")}>
+              <Text style={styles.headerAvatarLargeText}>{userInitial}</Text>
             </Pressable>
-          </View>
-        )}
-
-        {isCoachAdmin && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Daily Briefing</Text>
-            <View style={styles.actionGrid}>
-              <Pressable
-                style={styles.actionTile}
-                onPress={() => router.push("/(tabs)/coaching-admin/assignments" as any)}
-              >
-                <View style={[styles.actionIconBg, { backgroundColor: "#E0E7FF" }]}>
-                  <IconSymbol name="person.3.fill" size={24} color="#4338CA" />
-                </View>
-                <Text style={styles.actionTileText}>Assign Coaches</Text>
-              </Pressable>
-
-              <Pressable 
-                style={styles.actionTile}
-                onPress={() => router.push("/(tabs)/schedule" as any)}
-              >
-                <View style={[styles.actionIconBg, { backgroundColor: "#FEF3C7" }]}>
-                  <IconSymbol name="calendar" size={24} color="#D97706" />
-                </View>
-                <Text style={styles.actionTileText}>Today's Sessions</Text>
-              </Pressable>
-
-              <Pressable style={styles.actionTile} onPress={() => router.push("/support/schedule-session" as any)}>
-                <View style={[styles.actionIconBg, { backgroundColor: "#D1FAE5" }]}>
-                  <IconSymbol name="plus" size={24} color="#059669" />
-                </View>
-                <Text style={styles.actionTileText}>New Session</Text>
-              </Pressable>
+            <View>
+              <Text style={styles.greetingTime}>{getGreeting()},</Text>
+              <Text style={styles.greetingName}>{firstName}</Text>
             </View>
-          </View>
-        )}
-
-        {/* Quick Actions */}
-        {!isCoachAdmin && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Quick Access</Text>
-            <View style={styles.actionGrid}>
-              <Pressable
-                style={styles.actionTile}
-                onPress={() => router.push("/(tabs)/help")}
-              >
-                <View style={[styles.actionIconBg, { backgroundColor: "#A93C4015" }]}>
-                  <IconSymbol name="heart.text.square.fill" size={24} color="#A93C40" />
-                </View>
-                <Text style={styles.actionTileText}>Support</Text>
-              </Pressable>
-
-              <Pressable 
-                style={styles.actionTile}
-                onPress={() => router.push("/(tabs)/clubs")}
-              >
-                <View style={[styles.actionIconBg, { backgroundColor: "#C9933A15" }]}>
-                  <IconSymbol name="person.2.fill" size={24} color="#C9933A" />
-                </View>
-                <Text style={styles.actionTileText}>Clubs</Text>
-              </Pressable>
-
-              <Pressable style={styles.actionTile}>
-                <View style={[styles.actionIconBg, { backgroundColor: "#1A2B4A15" }]}>
-                  <IconSymbol name="map.fill" size={24} color="#1A2B4A" />
-                </View>
-                <Text style={styles.actionTileText}>Map</Text>
-              </Pressable>
-            </View>
-          </View>
-        )}
-
-        {/* Feed Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeaderRow}>
-            <Text style={styles.sectionTitle}>Campus Updates</Text>
-            {canPost && (
-              <Link href="/new-post" asChild>
-                <Pressable style={styles.createPostBtn}>
-                  <IconSymbol name="plus" size={16} color="#FFFFFF" />
-                  <Text style={styles.createPostBtnText}>New Post</Text>
-                </Pressable>
-              </Link>
-            )}
           </View>
           
+          <View style={styles.headerActions}>
+            <Pressable style={styles.iconBtn} onPress={() => router.push("/search")}>
+              <IconSymbol name="magnifyingglass" size={22} color="#1A2B4A" />
+            </Pressable>
+            <Pressable style={styles.iconBtn} onPress={() => router.push("/notifications")}>
+              <IconSymbol name="bell.fill" size={22} color="#1A2B4A" />
+              {unreadCount > 0 && (
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>{unreadCount > 99 ? "99+" : unreadCount}</Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Personalized "What matters right now" Section */}
+        <View style={styles.personalSection}>
+          
+          {/* FRESHER CARDS */}
+          {isFresher && (
+            <View style={styles.cardsStack}>
+              
+              {(assignedCoaches.length > 0 || assignedBuddy) && (
+                <View style={styles.fresherPeopleCard}>
+                  <Text style={styles.cardSectionTitle}>Your Support Team</Text>
+                  <View style={styles.peopleRow}>
+                    {assignedCoaches.length > 0 && (
+                      <Pressable style={styles.personItem} onPress={() => router.push("/(tabs)/support")}>
+                        {assignedCoaches[0].avatar_url ? (
+                          <Image source={{ uri: assignedCoaches[0].avatar_url }} style={styles.personImage} />
+                        ) : (
+                          <View style={[styles.personImage, styles.personImagePlaceholder]}>
+                            <Text style={styles.personImagePlaceholderText}>{assignedCoaches[0].coach_name.charAt(0)}</Text>
+                          </View>
+                        )}
+                        <Text style={styles.personName}>{assignedCoaches[0].coach_name.split(' ')[0]}</Text>
+                        <Text style={styles.personRole}>Peer Coach</Text>
+                      </Pressable>
+                    )}
+                    
+                    {assignedBuddy && (
+                      <Pressable style={styles.personItem} onPress={() => router.push("/(tabs)/support")}>
+                        {assignedBuddy.avatar_url ? (
+                          <Image source={{ uri: assignedBuddy.avatar_url }} style={styles.personImage} />
+                        ) : (
+                          <View style={[styles.personImage, styles.personImagePlaceholder]}>
+                            <Text style={styles.personImagePlaceholderText}>{assignedBuddy.buddy_name.charAt(0)}</Text>
+                          </View>
+                        )}
+                        <Text style={styles.personName}>{assignedBuddy.buddy_name.split(' ')[0]}</Text>
+                        <Text style={styles.personRole}>Buddy</Text>
+                      </Pressable>
+                    )}
+                  </View>
+                </View>
+              )}
+
+              {nextSession && (
+                <Pressable style={styles.upNextCard} onPress={() => router.push("/(tabs)/support")}>
+                  <View style={styles.upNextLeft}>
+                    <Text style={styles.upNextLabel}>Up next</Text>
+                    <Text style={styles.upNextTitle}>Session</Text>
+                    <Text style={styles.upNextTime}>
+                      {new Date(nextSession.session_date).toLocaleDateString()} at {nextSession.start_time.substring(0, 5)}
+                    </Text>
+                  </View>
+                  <View style={styles.progressRing}>
+                    <IconSymbol name="calendar" size={20} color="#FFFFFF" />
+                  </View>
+                </Pressable>
+              )}
+
+              {myGroups.length === 0 && (
+                <Pressable style={styles.clubNudgeCard} onPress={() => router.push("/(tabs)/clubs")}>
+                  <View style={styles.clubNudgeInfo}>
+                    <Text style={styles.clubNudgeTitle}>Looking for a community?</Text>
+                    <Text style={styles.clubNudgeDesc}>Explore 40+ clubs on campus.</Text>
+                  </View>
+                  <IconSymbol name="chevron.right" size={20} color="#9BA3AE" />
+                </Pressable>
+              )}
+            </View>
+          )}
+
+          {/* CONTINUING STUDENT CARDS (Clubs they are just a member of) */}
+          {(isContinuingStudent || isFresher) && myGroups.filter(g => !g.is_leader).length > 0 && (
+            <View style={styles.cardsStack}>
+              <Text style={[styles.cardSectionTitle, { marginTop: 12 }]}>Your Clubs</Text>
+              {myGroups.filter(g => !g.is_leader).map(club => (
+                <Pressable key={club.id} style={styles.joinedClubCard} onPress={() => router.push("/(tabs)/clubs")}>
+                  <View style={styles.clubRow}>
+                    {club.image_url ? (
+                      <Image source={{uri: club.image_url}} style={styles.clubAvatarImage} />
+                    ) : (
+                      <View style={styles.clubAvatarMock}><Text style={styles.clubAvatarText}>{club.name.charAt(0)}</Text></View>
+                    )}
+                    <View style={styles.clubInfo}>
+                      <Text style={styles.clubName}>{club.name}</Text>
+                      <Text style={styles.clubUpdate}>{club.category}</Text>
+                    </View>
+                  </View>
+                </Pressable>
+              ))}
+            </View>
+          )}
+
+          {/* PEER COACH DASHBOARD */}
+          {isPeerCoach && (
+            <View style={styles.coachDashboardContainer}>
+              <Text style={styles.cardSectionTitle}>Coach Overview</Text>
+              
+              <View style={styles.coachStatsRow}>
+                <Pressable style={styles.coachStatCard} onPress={() => router.push("/(tabs)/my-coaching")}>
+                  <View style={styles.statIconBg}>
+                    <IconSymbol name="person.3.fill" size={20} color="#4338CA" />
+                  </View>
+                  <Text style={styles.statValue}>{assignedFreshers.length}</Text>
+                  <Text style={styles.statLabel}>Freshers</Text>
+                </Pressable>
+
+                <Pressable style={styles.coachStatCard} onPress={() => router.push("/(tabs)/support")}>
+                  <View style={[styles.statIconBg, { backgroundColor: '#DEF7EC' }]}>
+                    <IconSymbol name="calendar" size={20} color="#059669" />
+                  </View>
+                  <Text style={styles.statValue}>{upcomingSessions.length}</Text>
+                  <Text style={styles.statLabel}>Sessions</Text>
+                </Pressable>
+              </View>
+
+              {assignedFreshers.length > 0 && (
+                <Pressable style={styles.fresherListPreview} onPress={() => router.push("/(tabs)/my-coaching")}>
+                  <Text style={styles.previewTitle}>Recent Freshers</Text>
+                  <View style={styles.fresherAvatarsRow}>
+                    {assignedFreshers.slice(0, 4).map((fresher, idx) => (
+                      <View key={fresher.id} style={[styles.fresherAvatarBubble, { zIndex: 10 - idx, marginLeft: idx > 0 ? -12 : 0 }]}>
+                        {fresher.avatar_url ? (
+                          <Image source={{ uri: fresher.avatar_url }} style={styles.fresherAvatarImage} />
+                        ) : (
+                          <Text style={styles.fresherAvatarText}>{fresher.fresher_name.charAt(0)}</Text>
+                        )}
+                      </View>
+                    ))}
+                    {assignedFreshers.length > 4 && (
+                      <View style={[styles.fresherAvatarBubble, styles.fresherAvatarMore, { zIndex: 5, marginLeft: -12 }]}>
+                        <Text style={styles.fresherAvatarMoreText}>+{assignedFreshers.length - 4}</Text>
+                      </View>
+                    )}
+                  </View>
+                </Pressable>
+              )}
+            </View>
+          )}
+
+
+          {isPeerCounsellor && nextSession && (
+            <Pressable style={styles.elevatedCard} onPress={() => router.push("/(tabs)/my-roles")}>
+              <View style={styles.elevatedHeader}>
+                <Text style={styles.elevatedTitle}>Upcoming sessions</Text>
+                <IconSymbol name="calendar" size={18} color="#059669" />
+              </View>
+              <Text style={styles.elevatedDesc}>
+                Your next session: {new Date(nextSession.session_date).toLocaleDateString()} at {nextSession.start_time.substring(0, 5)}
+              </Text>
+            </Pressable>
+          )}
+
+          {isClubLead && myLedClubs.map(club => (
+            <Pressable key={club.id} style={styles.elevatedCard} onPress={() => router.push("/(tabs)/club-admin")}>
+              <View style={styles.elevatedHeader}>
+                <Text style={styles.elevatedTitle}>Your club: {club.name}</Text>
+                <Link href="/new-post" asChild>
+                  <Pressable style={styles.miniPostBtn}>
+                    <Text style={styles.miniPostBtnText}>New Post</Text>
+                  </Pressable>
+                </Link>
+              </View>
+              <Text style={styles.elevatedDesc}>Manage your club members and announcements</Text>
+            </Pressable>
+          ))}
+
+          {/* COACH ADMIN */}
+          {isCoachAdmin && !isPeerCoach && !isClubLead && adminStats && (
+             <View style={styles.cardsStack}>
+                <Pressable style={styles.staffSummaryCard} onPress={() => router.push("/(tabs)/coaching-admin")}>
+                  <Text style={styles.staffSummaryText}>
+                    {adminStats.unassigned_freshers && adminStats.unassigned_freshers > 0 
+                      ? `${adminStats.unassigned_freshers} freshers are waiting to be assigned.` 
+                      : `All ${adminStats.total_freshers || 0} freshers are assigned!`}
+                  </Text>
+                  <IconSymbol name="arrow.right" size={16} color="#A93C40" />
+                </Pressable>
+             </View>
+          )}
+
+          {/* STAFF / FACULTY / ADMIN (Quick Post) */}
+          {(isCoachAdmin || isStaff) && canPost && !isPeerCoach && !isClubLead && (
+             <View style={[styles.cardsStack, { marginTop: isCoachAdmin ? 0 : 12 }]}>
+                <Link href="/new-post" asChild>
+                  <Pressable style={styles.quickPostCard}>
+                    <IconSymbol name="plus" size={20} color="#4338CA" />
+                    <Text style={styles.quickPostText}>Post an announcement</Text>
+                  </Pressable>
+                </Link>
+             </View>
+          )}
+        </View>
+
+        {/* General Feed Section */}
+        <View style={styles.feedSection}>
+          <Text style={styles.feedTitle}>Campus Updates</Text>
+          
+          <View style={styles.categoryScrollContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScrollContent}>
+              {categories.map(cat => (
+                <Pressable 
+                  key={cat} 
+                  style={[styles.categoryChip, activeCategory === cat && styles.categoryChipActive]}
+                  onPress={() => setActiveCategory(cat)}
+                >
+                  <Text style={[styles.categoryChipText, activeCategory === cat && styles.categoryChipTextActive]}>{cat}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+
           {isLoading ? (
             <ActivityIndicator size="large" color="#A93C40" style={{ marginTop: 24 }} />
           ) : filteredPosts.length === 0 ? (
@@ -384,13 +539,13 @@ export default function FeedScreen() {
               </View>
               <Text style={styles.emptyFeedTitle}>You're all caught up!</Text>
               <Text style={styles.emptyFeedDesc}>
-                Announcements and events for your class will appear here.
+                Announcements and events will appear here.
               </Text>
             </View>
           ) : (
             <View style={styles.postsList}>
               {filteredPosts.map((post) => (
-                <PostCard key={post.id} post={post} onUpdate={fetchPosts} />
+                <PostCard key={post.id} post={post} onUpdate={fetchData} />
               ))}
             </View>
           )}
@@ -404,69 +559,71 @@ export default function FeedScreen() {
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#F8F9FA",
+    backgroundColor: "#F4F5F7",
   },
   scroll: {
     flex: 1,
-    marginBottom: 60
   },
   content: {
-    padding: 20,
-    gap: 28,
     paddingBottom: 40,
   },
 
-  // Top Header
-  topHeader: {
+  // Personal Header
+  personalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 24,
+  },
+  greetingRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 8,
+    gap: 16,
   },
-  headerAvatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  headerAvatarLarge: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: "#A93C40",
     alignItems: "center",
     justifyContent: "center",
+    shadowColor: "#A93C40",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
   },
-  headerAvatarText: {
-    fontSize: 20,
+  headerAvatarLargeText: {
+    fontSize: 22,
     fontWeight: "800",
     color: "#FFFFFF",
   },
-  headerSearchContainer: {
-    flex: 1,
+  greetingTime: {
+    fontSize: 15,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  greetingName: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#1A2B4A",
+    letterSpacing: -0.5,
+  },
+  headerActions: {
     flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    paddingHorizontal: 16,
-    borderRadius: 24,
-    height: 48,
-    shadowColor: "#1A2B4A",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
-    shadowRadius: 8,
-    elevation: 2,
+    gap: 12,
   },
-  searchPlaceholder: {
-    color: "#9BA3AE",
-    fontSize: 16,
-  },
-  searchIcon: {
-    marginRight: 8,
-  },
-  notificationBtn: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  iconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#1A2B4A",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.04,
+    shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
   },
@@ -489,18 +646,282 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: "800",
   },
+
+  // Personal Section
+  personalSection: {
+    paddingHorizontal: 20,
+    marginBottom: 32,
+  },
+  cardsStack: {
+    gap: 12,
+  },
+  cardSectionTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#6B7280",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 12,
+  },
+
+  // Fresher Cards
+  dayCounter: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#A93C40",
+    marginBottom: 4,
+  },
+  fresherPeopleCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 20,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 24,
+    elevation: 3,
+  },
+  peopleRow: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  personItem: {
+    flex: 1,
+    alignItems: "center",
+    backgroundColor: "#F8F9FA",
+    padding: 16,
+    borderRadius: 16,
+  },
+  personImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    marginBottom: 12,
+  },
+  personImagePlaceholder: {
+    backgroundColor: "#C7D2FE",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  personImagePlaceholderText: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#4338CA",
+  },
+  personName: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  personRole: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginTop: 2,
+  },
+
+  upNextCard: {
+    backgroundColor: "#1A2B4A",
+    borderRadius: 20,
+    padding: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  upNextLeft: {
+    flex: 1,
+  },
+  upNextLabel: {
+    color: "#9BA3AE",
+    fontSize: 13,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  upNextTitle: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  upNextTime: {
+    color: "#D1D5DB",
+    fontSize: 14,
+  },
+  progressRing: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 3,
+    borderColor: "#4B5563",
+    borderTopColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  progressText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+
+  clubNudgeCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  clubNudgeInfo: {
+    flex: 1,
+  },
+  clubNudgeTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  clubNudgeDesc: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginTop: 4,
+  },
+
+  // Continuing Student Cards
+  joinedClubCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 12,
+  },
+  clubRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  clubAvatarMock: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: "#FEF3C7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  clubAvatarImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+  },
+  clubAvatarText: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#D97706",
+  },
+  clubInfo: {
+    flex: 1,
+  },
+  clubName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  clubUpdate: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginTop: 4,
+  },
+
+  // Elevated Role Cards
+  elevatedCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: "#4338CA",
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+  },
+  elevatedHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  elevatedTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  elevatedDesc: {
+    fontSize: 14,
+    color: "#6B7280",
+  },
+  miniPostBtn: {
+    backgroundColor: "#F0F2F5",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  miniPostBtnText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+
+  // Staff Cards
+  staffSummaryCard: {
+    backgroundColor: "#FEF2F2",
+    borderRadius: 20,
+    padding: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  staffSummaryText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#991B1B",
+    flex: 1,
+    marginRight: 16,
+  },
+  quickPostCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  quickPostText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1A2B4A",
+  },
+
+  // Feed Section
+  feedSection: {
+    gap: 16,
+  },
+  feedTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#1A2B4A",
+    paddingHorizontal: 20,
+    letterSpacing: -0.5,
+  },
   categoryScrollContainer: {
-    marginHorizontal: -20,
-    marginTop: 0,
+    marginBottom: 12,
   },
   categoryScrollContent: {
     paddingHorizontal: 20,
     gap: 8,
   },
   categoryChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
     backgroundColor: "#FFFFFF",
     shadowColor: "#1A2B4A",
     shadowOffset: { width: 0, height: 2 },
@@ -509,176 +930,28 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   categoryChipActive: {
-    backgroundColor: "#A93C40",
+    backgroundColor: "#1A2B4A",
   },
   categoryChipText: {
-    fontSize: 13,
+    fontSize: 14,
     color: "#6B7280",
     fontWeight: "600",
   },
   categoryChipTextActive: {
     color: "#FFFFFF",
   },
-
-  // Sections
-  section: {
-    gap: 16,
-  },
-  sectionHeaderRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#1A2B4A",
-    letterSpacing: -0.2,
-  },
-  seeAllText: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#A93C40",
-    marginBottom: 2,
-  },
-  // Action Grid
-  actionGrid: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  actionTile: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    padding: 16,
-    borderRadius: 20,
-    alignItems: "center",
-    gap: 12,
-    shadowColor: "#1A2B4A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 12,
-    elevation: 2,
-  },
-  actionIconBg: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  actionTileText: {
-    fontSize: 13,
-    fontWeight: "700",
-    color: "#1A2B4A",
-  },
-
-  // Empty Feed & Posts
-  emptyFeedCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 24,
-    padding: 32,
-    alignItems: "center",
-    gap: 12,
-    shadowColor: "#1A2B4A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 12,
-    elevation: 2,
-  },
-  emptyFeedIcon: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: "#F8F9FA",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 4,
-  },
-  emptyFeedTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1A2B4A",
-  },
-  emptyFeedDesc: {
-    fontSize: 15,
-    color: "#6B7280",
-    textAlign: "center",
-    paddingHorizontal: 20,
-    lineHeight: 22,
-  },
   postsList: {
-    gap: 16,
+    paddingHorizontal: 20,
+    gap: 20,
   },
-  createPostBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#A93C40",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 4,
-  },
-  createPostBtnText: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-    fontSize: 13,
-  },
-
-  welcomeCard: {
-    backgroundColor: "#E0E7FF",
-    borderRadius: 20,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: "#C7D2FE",
-    shadowColor: "#1A2B4A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 12,
-    elevation: 2,
-  },
-  welcomeHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 8,
-  },
-  welcomeTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#1A2B4A",
-    flex: 1,
-  },
-  welcomeCloseBtn: {
-    padding: 4,
-    marginLeft: 12,
-  },
-  welcomeDesc: {
-    fontSize: 15,
-    color: "#4B5563",
-    lineHeight: 22,
-    marginBottom: 16,
-  },
-  welcomeActionBtn: {
-    backgroundColor: "#4338CA",
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    alignSelf: "flex-start",
-  },
-  welcomeActionText: {
-    color: "#FFFFFF",
-    fontWeight: "700",
-    fontSize: 14,
-  },
-
   postCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 20,
+    borderRadius: 24,
+    padding: 24,
     shadowColor: "#1A2B4A",
-    shadowOffset: { width: 0, height: 6 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.04,
-    shadowRadius: 16,
+    shadowRadius: 24,
     elevation: 3,
   },
   alertCard: {
@@ -735,11 +1008,11 @@ const styles = StyleSheet.create({
     fontWeight: "700",
   },
   eventContainer: {
-    marginTop: 16,
-    paddingTop: 16,
+    marginTop: 20,
+    paddingTop: 20,
     borderTopWidth: 1,
     borderTopColor: "#F0F2F5",
-    gap: 8,
+    gap: 12,
   },
   eventDetailsRow: {
     flexDirection: "row",
@@ -755,7 +1028,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginTop: 8,
+    marginTop: 12,
   },
   attendeeCount: {
     fontSize: 14,
@@ -767,8 +1040,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   rsvpBtn: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     borderRadius: 16,
     backgroundColor: "#F0F2F5",
   },
@@ -782,5 +1055,129 @@ const styles = StyleSheet.create({
   },
   rsvpBtnTextActive: {
     color: "#A93C40",
+  },
+  emptyFeedCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 32,
+    alignItems: "center",
+    gap: 12,
+    marginHorizontal: 20,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  emptyFeedIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#F8F9FA",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  emptyFeedTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  emptyFeedDesc: {
+    fontSize: 15,
+    color: "#6B7280",
+    textAlign: "center",
+    paddingHorizontal: 20,
+    lineHeight: 22,
+  },
+  coachDashboardContainer: {
+    marginBottom: 16,
+    gap: 12,
+  },
+  coachStatsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  coachStatCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    alignItems: 'center',
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  statIconBg: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#EEF2FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#1A2B4A',
+    marginBottom: 2,
+  },
+  statLabel: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  fresherListPreview: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  previewTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A2B4A',
+  },
+  fresherAvatarsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  fresherAvatarBubble: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F0F2F5',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  fresherAvatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  fresherAvatarText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A2B4A',
+  },
+  fresherAvatarMore: {
+    backgroundColor: '#EEF2FF',
+  },
+  fresherAvatarMoreText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#4338CA',
   },
 });

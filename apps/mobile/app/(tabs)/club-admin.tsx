@@ -48,6 +48,7 @@ export default function ClubAdminScreen() {
   const [editCategory, setEditCategory] = useState("");
 
   const fetchMyLedClubs = async () => {
+    if (!session?.accessToken) return;
     try {
       const data = await apiRequest<{ groups: any[] }>('/groups/my', {
         headers: { Authorization: `Bearer ${session?.accessToken}` }
@@ -66,6 +67,7 @@ export default function ClubAdminScreen() {
   };
 
   const fetchClubDetails = async (id: string) => {
+    if (!session?.accessToken) return;
     setLoading(true);
     try {
       const headers = { Authorization: `Bearer ${session?.accessToken}` };
