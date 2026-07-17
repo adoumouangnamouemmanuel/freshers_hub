@@ -33,6 +33,7 @@ const MAPPING = {
   'figure.2.arms.open': 'emoji-people',
   'chevron.left': 'chevron-left',
   'calendar': 'event',
+  'calendar.badge.clock': 'event-available',
   'chevron.down': 'keyboard-arrow-down',
   'phone.fill': 'phone',
   'envelope.fill': 'email',
