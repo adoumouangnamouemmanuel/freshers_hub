@@ -33,7 +33,7 @@ beforeAll(async () => {
 
   // Generate tokens directly for testing (mocking JWT issuing)
   const jwt = require('jsonwebtoken');
-  const JWT_SECRET = process.env.JWT_SECRET || 'test_secret_for_jwt_which_should_be_long_enough';
+  const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
   
   adminToken = jwt.sign(
     { sub: adminUserId, email: 'admin.post@test.com', roles: ['admin'] },
