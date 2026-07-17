@@ -1,3 +1,4 @@
+const logger = require('../utils/logger');
 const { pool } = require("../services/db");
 
 class SupportAdminRepository {
