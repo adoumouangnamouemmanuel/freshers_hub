@@ -14,7 +14,7 @@ async function getAdminDashboardStats(req, res) {
         )) as total_freshers,
         (SELECT COUNT(*) FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE r.name = 'peer_coach') as total_coaches,
         (SELECT COUNT(DISTINCT fresher_id) FROM coach_assignments) as assigned_freshers,
-        (SELECT COUNT(*) FROM sessions WHERE is_mandatory = true AND status = 'completed') as completed_mandatory_sessions,
+        (SELECT COUNT(*) FROM sessions WHERE with_type = 'peer_coach' AND status = 'completed') as completed_mandatory_sessions,
         (SELECT COUNT(DISTINCT fresher_id) * 3 FROM coach_assignments) as target_mandatory_sessions,
         (SELECT COUNT(*) FROM sessions WHERE status = 'scheduled' AND scheduled_at >= now()) as upcoming_sessions_count,
         (SELECT COUNT(*) FROM sessions WHERE status = 'scheduled' AND scheduled_at < now()) as overdue_sessions_count
@@ -448,7 +448,7 @@ async function getAdminUserProfile(req, res) {
       sessionFilter += ` AND (s.student_id = $2 OR s.provider_id = $2)`;
       params.push(req.user.id);
     } else if (req.user.roles.includes("coach_admin") || req.user.roles.includes("admin")) {
-      sessionFilter += ` AND s.with_type IN ('coaching', 'peer_coach')`;
+      sessionFilter += ` AND s.with_type = 'peer_coach'`;
     }
 
     // Fetch recent sessions
@@ -484,7 +484,8 @@ async function getAdminUserProfile(req, res) {
 
     res.json(userProfile);
   } catch (err) {
-    res.status(500).json({ error: "Server error" });
+    console.error("GET ADMIN USER PROFILE ERROR:", err);
+    res.status(500).json({ error: err.message, stack: err.stack });
   } finally {
     client.release();
   }
