@@ -1,5 +1,5 @@
 const { pool } = require("../services/db");
-const { loadUserBundle, issueTokens, hashToken, generateOTP, generatePasswordResetToken } = require("../services/authService");
+const authService = require("../services/authService");
 const AppError = require("../utils/AppError");
 const asyncHandler = require("../utils/asyncHandler");
 const logger = require("../utils/logger");
@@ -10,7 +10,7 @@ const handleLogin = asyncHandler(async (req, res) => {
 
   const client = await pool.connect();
   try {
-    const user = await loadUserBundle(client, String(email).trim());
+    const user = await authService.loadUserBundle(client, String(email).trim());
 
     if (!user) {
       logger.warn(`Login failed: User not found (${email})`);
@@ -39,7 +39,7 @@ const handleLogin = asyncHandler(async (req, res) => {
       throw new AppError("Invalid credentials", 401);
     }
 
-    const tokens = await issueTokens(client, user);
+    const tokens = await authService.issueTokens(client, user);
     logger.info(`Login successful for email: ${email}`);
     
     res.json({
@@ -128,8 +128,8 @@ const handleActivate = asyncHandler(async (req, res) => {
       [record.id]
     );
 
-    const user = await loadUserBundle(client, String(email).trim());
-    const tokens = await issueTokens(client, user);
+    const user = await authService.loadUserBundle(client, String(email).trim());
+    const tokens = await authService.issueTokens(client, user);
 
     logger.info(`Activation successful for email: ${email}`);
     res.json({
@@ -157,7 +157,7 @@ const handleRefresh = asyncHandler(async (req, res) => {
 
   const client = await pool.connect();
   try {
-    const tokenHash = hashToken(String(refreshToken).trim());
+    const tokenHash = authService.hashToken(String(refreshToken).trim());
     const { rows } = await client.query(
       `
         SELECT rt.id, rt.user_id, u.email, rt.expires_at
@@ -185,8 +185,8 @@ const handleRefresh = asyncHandler(async (req, res) => {
       [record.id]
     );
 
-    const user = await loadUserBundle(client, record.email);
-    const tokens = await issueTokens(client, user);
+    const user = await authService.loadUserBundle(client, record.email);
+    const tokens = await authService.issueTokens(client, user);
 
     logger.info(`Refresh successful for email: ${user.email}`);
     res.json({
@@ -213,14 +213,14 @@ const handleRequestOtp = asyncHandler(async (req, res) => {
 
   const client = await pool.connect();
   try {
-    const user = await loadUserBundle(client, String(email).trim());
+    const user = await authService.loadUserBundle(client, String(email).trim());
     
     if (!user) {
       logger.warn(`OTP request failed: User not found (${email})`);
       throw new AppError("User not found", 404);
     }
 
-    await generateOTP(client, user);
+    await authService.generateOTP(client, user);
     logger.info(`OTP successfully generated for email: ${email}`);
     
     res.json({ success: true, message: "OTP sent to email (mocked to terminal)" });
@@ -238,14 +238,14 @@ const handleForgotPassword = asyncHandler(async (req, res) => {
 
   const client = await pool.connect();
   try {
-    const user = await loadUserBundle(client, String(email).trim());
+    const user = await authService.loadUserBundle(client, String(email).trim());
     
     if (!user) {
       logger.warn(`Forgot password request failed: User not found (${email})`);
       throw new AppError("User not found", 404);
     }
 
-    await generatePasswordResetToken(client, user);
+    await authService.generatePasswordResetToken(client, user);
     logger.info(`Password reset token successfully generated for email: ${email}`);
     
     res.json({ success: true, message: "Password reset link sent to email (mocked to terminal)" });
@@ -263,12 +263,12 @@ const handleResetPassword = asyncHandler(async (req, res) => {
 
   const client = await pool.connect();
   try {
-    const user = await loadUserBundle(client, String(email).trim());
+    const user = await authService.loadUserBundle(client, String(email).trim());
     if (!user) {
       throw new AppError("User not found", 404);
     }
 
-    const tokenHash = hashToken(String(token).trim());
+    const tokenHash = authService.hashToken(String(token).trim());
     
     const { rows } = await client.query(
       `
@@ -331,7 +331,7 @@ const handleLogout = asyncHandler(async (req, res) => {
 
   const client = await pool.connect();
   try {
-    const tokenHash = hashToken(String(refreshToken).trim());
+    const tokenHash = authService.hashToken(String(refreshToken).trim());
     
     await client.query(
       `
