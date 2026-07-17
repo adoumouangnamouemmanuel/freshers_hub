@@ -7,7 +7,8 @@ import {
   Pressable,
   ScrollView,
   RefreshControl
-} from "react-native";
+} from "react-native"; 
+import globalStyles from '../styles';
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -161,6 +162,9 @@ export default function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
+  ...globalStyles.layout,
+  ...globalStyles.typography,
+  ...globalStyles.components,
   screen: {
     flex: 1,
     backgroundColor: "#F8F9FA",
