@@ -3,7 +3,7 @@ const express = require("express");
 const jwt = require("jsonwebtoken");
 const { pool } = require("../services/db");
 const groupRoutes = require("../routes/groupRoutes");
-const { errorHandler } = require("../middleware/errorMiddleware");
+const errorHandler = require("../middleware/errorHandler");
 
 // Setup express app just for testing the group routes
 const app = express();
@@ -13,9 +13,9 @@ app.use(errorHandler);
 
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-me';
 
-const adminUser = { id: '11111111-1111-1111-1111-111111111111', roles: ['admin'] };
-const studentUser = { id: '22222222-2222-2222-2222-222222222222', roles: ['student'] };
-const anotherStudentUser = { id: '33333333-3333-3333-3333-333333333333', roles: ['student'] };
+const adminUser = { sub: '11111111-1111-1111-1111-111111111111', roles: ['admin'] };
+const studentUser = { sub: '22222222-2222-2222-2222-222222222222', roles: ['student'] };
+const anotherStudentUser = { sub: '33333333-3333-3333-3333-333333333333', roles: ['student'] };
 
 const adminToken = jwt.sign(adminUser, JWT_SECRET, { expiresIn: '1h' });
 const studentToken = jwt.sign(studentUser, JWT_SECRET, { expiresIn: '1h' });
@@ -27,13 +27,13 @@ describe("Group Routes API", () => {
   beforeAll(async () => {
     // Setup users
     await pool.query(`
-      INSERT INTO users (id, full_name, email, role) 
+      INSERT INTO users (id, full_name, email) 
       VALUES 
-        ($1, 'Admin Group Test', 'admin_grp@test.com', 'admin'),
-        ($2, 'Student Group Test', 'student_grp@test.com', 'student'),
-        ($3, 'Another Student Grp', 'another_grp@test.com', 'student')
+        ($1, 'Admin Group Test', 'admin_grp@test.com'),
+        ($2, 'Student Group Test', 'student_grp@test.com'),
+        ($3, 'Another Student Grp', 'another_grp@test.com')
       ON CONFLICT (id) DO NOTHING
-    `, [adminUser.id, studentUser.id, anotherStudentUser.id]);
+    `, [adminUser.sub, studentUser.sub, anotherStudentUser.sub]);
   });
 
   afterAll(async () => {
@@ -54,6 +54,7 @@ describe("Group Routes API", () => {
           category: "Technology"
         });
 
+      if (response.status !== 201) console.log(response.body);
       expect(response.status).toBe(201);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty("id");
@@ -71,7 +72,7 @@ describe("Group Routes API", () => {
 
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
-      expect(response.body.errors).toBeDefined();
+      expect(response.body.error).toBeDefined();
     });
   });
 
@@ -98,9 +99,10 @@ describe("Group Routes API", () => {
       expect(response.body.data.id).toBe(createdGroupId);
     });
 
-    it("should return 404 for invalid id", async () => {
+    it("should return 404 for missing group", async () => {
+      const validButMissingId = "123e4567-e89b-12d3-a456-426614174000";
       const response = await request(app)
-        .get("/api/groups/99999999-9999-9999-9999-999999999999");
+        .get(`/api/groups/${validButMissingId}`);
 
       expect(response.status).toBe(404);
     });
