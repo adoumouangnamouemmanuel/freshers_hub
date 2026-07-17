@@ -1,7 +1,9 @@
+const AppError = require("../utils/AppError");
+const asyncHandler = require("../utils/asyncHandler");
 const { pool } = require("../services/db");
 
 // Get all sessions (filtered automatically by RLS)
-async function getSessions(req, res) {
+const getSessions = asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -31,24 +33,20 @@ async function getSessions(req, res) {
 
     await client.query("COMMIT");
     res.json(rows);
-  } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("Error getting sessions:", err);
-    res.status(500).json({ error: "Internal server error" });
   } finally {
     client.release();
   }
-}
+});
 
 // Book a new session
-async function bookSession(req, res) {
+const bookSession = asyncHandler(async (req, res) => {
   const { unitId, academicYearId, providerId, studentId, withType, scheduledAt, location, isMandatory, description } = req.body;
   
   const finalStudentId = studentId || req.user.id;
   const finalProviderId = providerId || req.user.id;
 
   if (!unitId || !academicYearId || !finalProviderId || !finalStudentId || !scheduledAt) {
-    return res.status(400).json({ error: "Missing required fields" });
+    throw new AppError("Missing required fields", 400);
   }
 
   const client = await pool.connect();
@@ -66,22 +64,18 @@ async function bookSession(req, res) {
 
     await client.query("COMMIT");
     res.status(201).json(rows[0]);
-  } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("Error booking session:", err);
-    res.status(500).json({ error: "Internal server error" });
   } finally {
     client.release();
   }
-}
+});
 
 // Update session status (e.g. mark complete or cancel)
-async function updateSessionStatus(req, res) {
+const updateSessionStatus = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
   if (!status) {
-    return res.status(400).json({ error: "Missing status" });
+    throw new AppError("Missing status", 400);
   }
 
   const client = await pool.connect();
@@ -98,22 +92,18 @@ async function updateSessionStatus(req, res) {
 
     if (rows.length === 0) {
       await client.query("ROLLBACK");
-      return res.status(404).json({ error: "Session not found or permission denied" });
+      throw new AppError("Session not found or permission denied", 404);
     }
 
     await client.query("COMMIT");
     res.json(rows[0]);
-  } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("Error updating session:", err);
-    res.status(500).json({ error: "Internal server error" });
   } finally {
     client.release();
   }
-}
+});
 
 // Update session details (location, description, scheduledAt)
-async function updateSession(req, res) {
+const updateSession = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { location, description, scheduledAt } = req.body;
 
@@ -130,19 +120,16 @@ async function updateSession(req, res) {
     `, [location, description, scheduledAt, id, req.user.id]);
 
     if (rows.length === 0) {
-      return res.status(404).json({ error: "Session not found" });
+      throw new AppError("Session not found", 404);
     }
     res.json(rows[0]);
-  } catch (err) {
-    console.error("Error updating session:", err);
-    res.status(500).json({ error: "Internal server error" });
   } finally {
     client.release();
   }
-}
+});
 
 // Delete session
-async function deleteSession(req, res) {
+const deleteSession = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const client = await pool.connect();
   try {
@@ -151,20 +138,17 @@ async function deleteSession(req, res) {
     `, [id, req.user.id]);
 
     if (rowCount === 0) {
-      return res.status(404).json({ error: "Session not found" });
+      throw new AppError("Session not found", 404);
     }
 
     res.json({ success: true, message: "Session deleted" });
-  } catch (err) {
-    console.error("Error deleting session:", err);
-    res.status(500).json({ error: "Internal server error" });
   } finally {
     client.release();
   }
-}
+});
 
 // Get assigned coaches for a fresher
-async function getCoachAssignments(req, res) {
+const getCoachAssignments = asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
     const { rows } = await client.query(`
@@ -175,16 +159,13 @@ async function getCoachAssignments(req, res) {
     `, [req.user.id]);
 
     res.json(rows);
-  } catch (err) {
-    console.error("Error getting coach assignments:", err);
-    res.status(500).json({ error: "Internal server error" });
   } finally {
     client.release();
   }
-}
+});
 
 // Get freshers assigned to this peer coach
-async function getAssignedFreshers(req, res) {
+const getAssignedFreshers = asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
     const { rows } = await client.query(`
@@ -195,16 +176,13 @@ async function getAssignedFreshers(req, res) {
     `, [req.user.id]);
 
     res.json(rows);
-  } catch (err) {
-    console.error("Error getting assigned freshers:", err);
-    res.status(500).json({ error: "Internal server error" });
   } finally {
     client.release();
   }
-}
+});
 
 // Get assigned buddy
-async function getBuddyPairing(req, res) {
+const getBuddyPairing = asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
     const { rows } = await client.query(`
@@ -215,19 +193,16 @@ async function getBuddyPairing(req, res) {
     `, [req.user.id]);
 
     res.json(rows[0] || null);
-  } catch (err) {
-    console.error("Error getting buddy:", err);
-    res.status(500).json({ error: "Internal server error" });
   } finally {
     client.release();
   }
-}
+});
 
 // Log WhatsApp outreach
-async function logContactClick(req, res) {
+const logContactClick = asyncHandler(async (req, res) => {
   const { targetId, unitId, context } = req.body;
   if (!targetId) {
-    return res.status(400).json({ error: "Missing targetId" });
+    throw new AppError("Missing targetId", 400);
   }
 
   const client = await pool.connect();
@@ -238,16 +213,13 @@ async function logContactClick(req, res) {
     `, [req.user.id, targetId, unitId || null, context || null]);
 
     res.status(201).json({ success: true });
-  } catch (err) {
-    console.error("Error logging contact:", err);
-    res.status(500).json({ error: "Internal server error" });
   } finally {
     client.release();
   }
-}
+});
 
 // Get staff members for a specific unit (e.g., counselling, advising)
-async function getStaffByUnit(req, res) {
+const getStaffByUnit = asyncHandler(async (req, res) => {
   const { unitName } = req.params;
   const client = await pool.connect();
   try {
@@ -259,21 +231,18 @@ async function getStaffByUnit(req, res) {
       WHERE un.name = $1 AND u.is_active = true
     `, [unitName]);
     res.json(rows);
-  } catch (err) {
-    console.error("Error getting staff by unit:", err);
-    res.status(500).json({ error: "Internal server error" });
   } finally {
     client.release();
   }
-}
+});
 
 // Submit a session report
-async function submitSessionReport(req, res) {
+const submitSessionReport = asyncHandler(async (req, res) => {
   const { id } = req.params; // session_id
   const { content } = req.body;
 
   if (!content) {
-    return res.status(400).json({ error: "Missing report content" });
+    throw new AppError("Missing report content", 400);
   }
 
   const client = await pool.connect();
@@ -288,7 +257,7 @@ async function submitSessionReport(req, res) {
 
     if (sessionRows.length === 0) {
       await client.query("ROLLBACK");
-      return res.status(403).json({ error: "Permission denied or session not found" });
+      throw new AppError("Permission denied or session not found", 403);
     }
 
     const { rows } = await client.query(`
@@ -300,14 +269,10 @@ async function submitSessionReport(req, res) {
 
     await client.query("COMMIT");
     res.status(201).json(rows[0]);
-  } catch (err) {
-    await client.query("ROLLBACK");
-    console.error("Error submitting report:", err);
-    res.status(500).json({ error: "Internal server error" });
   } finally {
     client.release();
   }
-}
+});
 
 module.exports = {
   getSessions,
