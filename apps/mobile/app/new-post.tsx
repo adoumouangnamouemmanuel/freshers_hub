@@ -11,7 +11,8 @@ import {
   Alert,
   ScrollView,
   Switch
-} from "react-native";
+} from "react-native"; 
+import globalStyles from './styles';
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -352,6 +353,9 @@ export default function NewPostScreen() {
 }
 
 const styles = StyleSheet.create({
+  ...globalStyles.layout,
+  ...globalStyles.typography,
+  ...globalStyles.components,
   screen: {
     flex: 1,
     backgroundColor: "#FFFFFF",
