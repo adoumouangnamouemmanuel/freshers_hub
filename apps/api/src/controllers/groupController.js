@@ -1,6 +1,8 @@
+const AppError = require("../utils/AppError");
+const asyncHandler = require("../utils/asyncHandler");
 const { pool } = require("../services/db");
 
-async function handleGetGroups(req, res) {
+const handleGetGroups = asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
     const { rows } = await client.query(`
@@ -10,15 +12,12 @@ async function handleGetGroups(req, res) {
       ORDER BY g.type, g.name
     `);
     res.json({ groups: rows });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
-}
+});
 
-async function handleGetMyGroups(req, res) {
+const handleGetMyGroups = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const client = await pool.connect();
   try {
@@ -31,15 +30,12 @@ async function handleGetMyGroups(req, res) {
       ORDER BY g.type, g.name
     `, [userId]);
     res.json({ groups: rows });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
-}
+});
 
-async function handleGetGroupById(req, res) {
+const handleGetGroupById = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const client = await pool.connect();
   try {
@@ -51,7 +47,7 @@ async function handleGetGroupById(req, res) {
     `, [id]);
 
     if (groupRows.length === 0) {
-      return res.status(404).json({ error: "Group not found" });
+      throw new AppError("Group not found", 404);
     }
 
     const { rows: memberRows } = await client.query(`
@@ -67,15 +63,12 @@ async function handleGetGroupById(req, res) {
     group.leaders = memberRows.filter(m => m.is_leader);
 
     res.json({ group });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
-}
+});
 
-async function handleJoinGroup(req, res) {
+const handleJoinGroup = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { id } = req.params;
   const client = await pool.connect();
@@ -83,7 +76,7 @@ async function handleJoinGroup(req, res) {
     // Check if group exists
     const { rows: groupRows } = await client.query('SELECT id FROM groups WHERE id = $1', [id]);
     if (groupRows.length === 0) {
-      return res.status(404).json({ error: "Group not found" });
+      throw new AppError("Group not found", 404);
     }
 
     await client.query(`
@@ -93,15 +86,12 @@ async function handleJoinGroup(req, res) {
     `, [id, userId]);
     
     res.json({ success: true, message: "Successfully joined group" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
-}
+});
 
-async function handleLeaveGroup(req, res) {
+const handleLeaveGroup = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { id } = req.params;
   const client = await pool.connect();
@@ -112,15 +102,12 @@ async function handleLeaveGroup(req, res) {
     `, [id, userId]);
     
     res.json({ success: true, message: "Successfully left group" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
-}
+});
 
-async function handleUpdateGroup(req, res) {
+const handleUpdateGroup = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { id } = req.params;
   const { name, description, category, image_url } = req.body;
@@ -133,7 +120,7 @@ async function handleUpdateGroup(req, res) {
     `, [id, userId]);
 
     if (memberRows.length === 0 || !memberRows[0].is_leader) {
-      return res.status(403).json({ error: "Only group leaders can update group info" });
+      throw new AppError("Only group leaders can update group info", 403);
     }
 
     const { rows } = await client.query(`
@@ -147,15 +134,12 @@ async function handleUpdateGroup(req, res) {
     `, [name, description, category, image_url, id]);
 
     res.json({ group: rows[0] });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
-}
+});
 
-async function handleGetGroupPosts(req, res) {
+const handleGetGroupPosts = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const client = await pool.connect();
   try {
@@ -177,15 +161,12 @@ async function handleGetGroupPosts(req, res) {
     `, [id]);
     
     res.json({ posts: rows });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
-}
+});
 
-async function handleGetMyGroupsPosts(req, res) {
+const handleGetMyGroupsPosts = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const client = await pool.connect();
   try {
@@ -210,13 +191,10 @@ async function handleGetMyGroupsPosts(req, res) {
     `, [userId]);
     
     res.json({ posts: rows });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
-}
+});
 
 module.exports = { 
   handleGetGroups, 
