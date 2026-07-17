@@ -38,14 +38,15 @@ const createEvent = async (userId, userRoles, data) => {
     // 2. Targets & Notifications
     if (visibility === "targeted" && targetGroupIds?.length > 0) {
       await postRepository.insertPostTargets(client, post.id, targetGroupIds);
-      await postRepository.insertTargetedNotifications(
+      await postRepository.insertNotificationsForTargets(
         client, 
-        post.id, 
-        targetGroupIds, 
-        userId, 
-        'event', 
-        `New Event: ${title.trim()}`,
-        `You've been invited to "${title.trim()}". Tap to view details and RSVP.`
+        {
+          title: `New Event: ${title.trim()}`,
+          category: 'event',
+          postId: post.id,
+          targetGroupIds,
+          authorId: userId
+        }
       );
     }
 
