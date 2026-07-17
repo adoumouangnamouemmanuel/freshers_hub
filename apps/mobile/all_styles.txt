@@ -1,0 +1,5436 @@
+
+
+// --- undefined ---
+StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#fffaf3",
+  },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerBg: {
+    backgroundColor: '#A93C40',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+    zIndex: 10,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  iconBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    flex: 1,
+    textAlign: 'center',
+  },
+  content: {
+    padding: 20,
+    gap: 16,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1A2B4A',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 15,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    paddingHorizontal: 32,
+    lineHeight: 22,
+  },
+  postCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
+  },
+  groupBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f3f4f6',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
+    marginBottom: 12,
+    gap: 6,
+  },
+  groupBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#1A2B4A',
+  },
+  postHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  authorAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#1A2B4A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  authorInitial: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  authorInfo: {
+    flex: 1,
+  },
+  authorName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A2B4A',
+  },
+  postMeta: {
+    fontSize: 13,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+  categoryBadge: {
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  categoryBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#C9933A',
+    textTransform: 'capitalize',
+  },
+  postTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1A2B4A',
+    marginBottom: 8,
+  },
+  postContent: {
+    fontSize: 15,
+    color: '#4b5563',
+    lineHeight: 24,
+  },
+  viewMoreInline: {
+    color: "#6B7280",
+    fontWeight: "700",
+  },
+  eventCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fffaf3',
+    padding: 12,
+    borderRadius: 12,
+    marginTop: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: '#C9933A',
+    gap: 8,
+  },
+  eventText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1A2B4A',
+    flex: 1,
+  },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  link: {
+    marginTop: 15,
+    paddingVertical: 15,
+  },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F2F5",
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  cancelText: {
+    fontSize: 16,
+    color: "#4b5563",
+  },
+  fixedTargetContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EEF2FF',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 20,
+    gap: 12,
+  },
+  fixedTargetText: {
+    fontSize: 14,
+    color: '#4F46E5',
+    fontWeight: '600',
+    flex: 1,
+  },
+  form: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: "#FFFFFF",
+  },
+  categoryContainer: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 20,
+  },
+  categoryChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: "#F0F2F5",
+    borderWidth: 1,
+    borderColor: "transparent",
+  },
+  categoryChipActive: {
+    backgroundColor: "#FEF2F2",
+    borderColor: "#FCA5A5",
+  },
+  categoryChipText: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight: "600",
+  },
+  categoryChipTextActive: {
+    color: "#A93C40",
+  },
+  toggleRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 12,
+  },
+  toggleLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1A2B4A",
+  },
+  toggleDesc: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginTop: 2,
+  },
+  groupsContainer: {
+    marginTop: 12,
+    padding: 16,
+    backgroundColor: "#F8F9FA",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  sectionSubtitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#1A2B4A",
+    marginBottom: 12,
+  },
+  groupsGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  groupChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  groupChipSelected: {
+    backgroundColor: "#1A2B4A",
+    borderColor: "#1A2B4A",
+  },
+  groupChipText: {
+    fontSize: 13,
+    color: "#4B5563",
+    fontWeight: "500",
+  },
+  groupChipTextSelected: {
+    color: "#FFFFFF",
+  },
+  titleInput: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#1A2B4A",
+    marginBottom: 16,
+    marginTop: 8,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#F0F2F5",
+    marginVertical: 16,
+  },
+  contentInput: {
+    fontSize: 18,
+    color: "#4B5563",
+    textAlignVertical: "top",
+    marginBottom: 24,
+  },
+  eventSection: {
+    backgroundColor: "#FFFFFF",
+    padding: 0,
+    marginTop: 16,
+  },
+  inputRow: {
+    flexDirection: "row",
+    gap: 16,
+    marginBottom: 16,
+  },
+  inputHalf: {
+    flex: 1,
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#6B7280",
+    marginBottom: 8,
+  },
+  detailInput: {
+    backgroundColor: "#F0F2F5",
+    borderRadius: 12,
+    padding: 16,
+    fontSize: 16,
+    color: "#1A2B4A",
+  },
+  locationChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: "#F0F2F5",
+    marginRight: 8,
+  },
+  locationChipSelected: {
+    backgroundColor: "#1A2B4A",
+  },
+  locationChipText: {
+    fontSize: 14,
+    color: "#4B5563",
+    fontWeight: "600",
+  },
+  locationChipTextSelected: {
+    color: "#FFFFFF",
+  },
+  footer: {
+    padding: 20,
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: 1,
+    borderTopColor: "#F0F2F5",
+  },
+  submitBtn: {
+    backgroundColor: "#A93C40",
+    padding: 16,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  submitBtnDisabled: {
+    backgroundColor: "#D1D5DB",
+  },
+  submitBtnText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#F8F9FA",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F2F5",
+  },
+  headerLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  backBtn: {
+    padding: 8,
+    marginLeft: -8,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  markAllText: {
+    fontSize: 14,
+    color: "#A93C40",
+    fontWeight: "600",
+  },
+  centerContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 32,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1A2B4A",
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyDesc: {
+    fontSize: 14,
+    color: "#6B7280",
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  list: {
+    flex: 1,
+  },
+  notificationCard: {
+    flexDirection: "row",
+    padding: 16,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F2F5",
+    gap: 16,
+  },
+  notificationCardUnread: {
+    backgroundColor: "#FEF2F2",
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#F0F2F5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  iconContainerUnread: {
+    backgroundColor: "#FFFFFF",
+  },
+  content: {
+    flex: 1,
+  },
+  title: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#4B5563",
+    marginBottom: 4,
+  },
+  titleUnread: {
+    color: "#1A2B4A",
+    fontWeight: "700",
+  },
+  body: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  date: {
+    fontSize: 12,
+    color: "#9BA3AE",
+  },
+  unreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#A93C40",
+    marginTop: 6,
+  },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#F8F9FA",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F2F5",
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  closeBtn: {
+    padding: 8,
+    marginLeft: -8,
+  },
+  content: {
+    padding: 20,
+    gap: 24,
+  },
+  avatarSection: {
+    alignItems: "center",
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  avatarCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: "#A93C40",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  avatarInitial: {
+    fontSize: 32,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+  name: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#1A2B4A",
+    marginBottom: 4,
+  },
+  email: {
+    fontSize: 15,
+    color: "#6B7280",
+    marginBottom: 16,
+  },
+  roleContainer: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "center",
+    gap: 8,
+  },
+  roleBadge: {
+    backgroundColor: "#FEF2F2",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#FCA5A5",
+  },
+  roleText: {
+    color: "#A93C40",
+    fontSize: 12,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: "#F0F2F5",
+  },
+  cardTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1A2B4A",
+    marginBottom: 16,
+  },
+  infoRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  infoLabel: {
+    fontSize: 15,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  infoValue: {
+    fontSize: 15,
+    color: "#1A2B4A",
+    fontWeight: "700",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#F3F4F6",
+    marginVertical: 16,
+  },
+  switchRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  switchLabelWrap: {
+    flex: 1,
+    paddingRight: 16,
+  },
+  switchLabel: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1A2B4A",
+    marginBottom: 4,
+  },
+  switchDesc: {
+    fontSize: 13,
+    color: "#6B7280",
+  },
+  signOutBtn: {
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    borderRadius: 16,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#FEE2E2",
+    marginTop: 12,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  signOutText: {
+    color: "#A93C40",
+    fontWeight: "700",
+    fontSize: 16,
+  },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#F8F9FA" },
+  header: {
+    flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12,
+    backgroundColor: "#FFFFFF", borderBottomWidth: 1, borderBottomColor: "#F0F2F5", gap: 12,
+  },
+  closeBtn: { padding: 8, marginLeft: -8 },
+  searchContainer: {
+    flex: 1, flexDirection: "row", alignItems: "center", backgroundColor: "#F3F4F6",
+    borderRadius: 12, paddingHorizontal: 12, height: 44, gap: 8,
+  },
+  searchInput: { flex: 1, fontSize: 16, color: "#1A2B4A", height: "100%" },
+  content: { padding: 20, flexGrow: 1 },
+  emptyState: { alignItems: "center", justifyContent: "center", marginTop: 80, gap: 12 },
+  emptyStateTitle: { fontSize: 18, fontWeight: "700", color: "#1A2B4A" },
+  emptyStateDesc: { fontSize: 15, color: "#6B7280", textAlign: "center", paddingHorizontal: 32, lineHeight: 22 },
+  resultsList: { gap: 24 },
+  section: { gap: 12 },
+  sectionTitle: { fontSize: 18, fontWeight: "800", color: "#1A2B4A", marginBottom: 4 },
+  resultCard: {
+    backgroundColor: "#FFFFFF", borderRadius: 16, padding: 16, borderWidth: 1,
+    borderColor: "#F0F2F5", shadowColor: "#1A2B4A", shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04, shadowRadius: 8, elevation: 2,
+  },
+  alertCard: { backgroundColor: "#FEF2F2", borderColor: "#FCA5A5" },
+  row: { flexDirection: "row", alignItems: "center", gap: 12 },
+  flex1: { flex: 1 },
+  resultHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
+  resultCategory: { fontSize: 12, fontWeight: "700", color: "#A93C40", textTransform: "uppercase" },
+  resultDate: { fontSize: 12, color: "#9BA3AE" },
+  resultTitle: { fontSize: 16, fontWeight: "700", color: "#1A2B4A", marginBottom: 4 },
+  resultSub: { fontSize: 12, color: "#6B7280", fontWeight: "600", marginBottom: 4 },
+  resultContent: { fontSize: 14, color: "#4B5563", lineHeight: 20 },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: { flex: 1, backgroundColor: WHITE },
+  kav: { flex: 1 },
+
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 32,
+    gap: 28,
+  },
+
+  /* Back */
+  backRow: {
+    position: "absolute",
+    top: 16,
+    left: 32,
+  },
+  backLabel: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: GRAY,
+  },
+
+  /* Top block */
+  topBlock: {
+    alignItems: "center",
+    gap: 10,
+  },
+  step: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 3,
+    color: GOLD,
+    textAlign: "center",
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: "900",
+    color: NAVY,
+    letterSpacing: -0.5,
+    textAlign: "center",
+    lineHeight: 38,
+  },
+  emailTag: {
+    backgroundColor: LIGHT,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: BORDER,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    maxWidth: "85%",
+  },
+  emailTagText: {
+    fontSize: 13,
+    color: GRAY,
+    fontWeight: "500",
+    textAlign: "center",
+  },
+
+  /* Form */
+  form: {
+    width: "100%",
+    gap: 16,
+  },
+  field: {
+    gap: 8,
+    alignItems: "center",
+  },
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    letterSpacing: 0.5,
+    color: GRAY,
+    textTransform: "uppercase",
+  },
+  input: {
+    width: "100%",
+    backgroundColor: LIGHT,
+    borderWidth: 1.5,
+    borderColor: BORDER,
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    fontSize: 16,
+    color: NAVY,
+    textAlign: "center",
+  },
+  otpInput: {
+    width: "100%",
+    backgroundColor: LIGHT,
+    borderWidth: 1.5,
+    borderColor: BORDER,
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    fontSize: 32,
+    fontWeight: "800",
+    color: NAVY,
+    letterSpacing: 12,
+    textAlign: "center",
+  },
+  inputOn: {
+    borderColor: RED,
+    backgroundColor: WHITE,
+    shadowColor: RED,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  error: {
+    textAlign: "center",
+    fontSize: 13,
+    color: RED,
+    fontWeight: "500",
+  },
+  btn: {
+    width: "100%",
+    backgroundColor: RED,
+    borderRadius: 16,
+    paddingVertical: 18,
+    alignItems: "center",
+    shadowColor: RED,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 8,
+    marginTop: 4,
+  },
+  btnDark:  { backgroundColor: RED_D, shadowOpacity: 0.15 },
+  btnFaded: { opacity: 0.65, shadowOpacity: 0 },
+  btnLabel: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: WHITE,
+    letterSpacing: 0.2,
+  },
+
+  /* Footer */
+  footer: {
+    fontSize: 13,
+    color: GRAY,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: { flex: 1, backgroundColor: WHITE },
+  kav: { flex: 1 },
+
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 32,
+    gap: 28,
+  },
+
+  /* Logo block */
+  logoBlock: {
+    alignItems: "center",
+    gap: 10,
+  },
+  logoCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 24,
+    backgroundColor: RED,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: RED,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 10,
+    marginBottom: 4,
+  },
+  logoA: {
+    fontSize: 42,
+    fontWeight: "900",
+    color: WHITE,
+    lineHeight: 50,
+  },
+  university: {
+    fontSize: 10,
+    fontWeight: "800",
+    letterSpacing: 3,
+    color: GOLD,
+    textAlign: "center",
+  },
+  appTitle: {
+    fontSize: 28,
+    fontWeight: "900",
+    color: NAVY,
+    letterSpacing: -0.5,
+    textAlign: "center",
+  },
+
+  /* Divider */
+  divider: {
+    width: 40,
+    height: 2,
+    borderRadius: 2,
+    backgroundColor: BORDER,
+  },
+
+  /* Form */
+  form: {
+    width: "100%",
+    gap: 12,
+  },
+  input: {
+    width: "100%",
+    backgroundColor: LIGHT,
+    borderWidth: 1.5,
+    borderColor: BORDER,
+    borderRadius: 16,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
+    fontSize: 16,
+    color: NAVY,
+    textAlign: "center",
+  },
+  inputOn: {
+    borderColor: RED,
+    backgroundColor: WHITE,
+    shadowColor: RED,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.12,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  error: {
+    textAlign: "center",
+    fontSize: 13,
+    color: RED,
+    fontWeight: "500",
+  },
+  btn: {
+    width: "100%",
+    backgroundColor: RED,
+    borderRadius: 16,
+    paddingVertical: 18,
+    alignItems: "center",
+    shadowColor: RED,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 8,
+    marginTop: 4,
+  },
+  btnDark:  { backgroundColor: RED_D, shadowOpacity: 0.15 },
+  btnFaded: { opacity: 0.65, shadowOpacity: 0 },
+  btnLabel: {
+    fontSize: 17,
+    fontWeight: "800",
+    color: WHITE,
+    letterSpacing: 0.2,
+  },
+
+  /* Footer */
+  footer: {
+    fontSize: 13,
+    color: GRAY,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#FAFAFA" },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    backgroundColor: "#FAFAFA",
+    zIndex: 10,
+  },
+  iconBtn: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F8F9FA", gap: 16 },
+  errorText: { fontSize: 18, color: "#1A2B4A", fontWeight: "700" },
+  backBtnFallback: { paddingHorizontal: 24, paddingVertical: 12, backgroundColor: "#A93C40", borderRadius: 12 },
+  backBtnFallbackText: { color: "#FFFFFF", fontWeight: "700" },
+  
+  content: { 
+    flex: 1,
+  },
+  
+  cardHeader: {
+    flexDirection: "row",
+    paddingHorizontal: 24,
+    gap: 16,
+    marginBottom: 24,
+    marginTop: 16,
+  },
+  dateBadge: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    width: 64,
+    height: 72,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 4,
+  },
+  dateBadgeMonth: { fontSize: 13, fontWeight: "800", color: "#A93C40", marginBottom: 2 },
+  dateBadgeDay: { fontSize: 24, fontWeight: "800", color: "#1A2B4A" },
+  titleContainer: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: "800",
+    color: "#1A2B4A",
+    lineHeight: 32,
+    letterSpacing: -0.5,
+  },
+  organizerText: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#6B7280",
+    marginTop: 4,
+  },
+
+  detailsBox: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    marginHorizontal: 20,
+    padding: 24,
+    gap: 16,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 3,
+    marginBottom: 32,
+  },
+  detailRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  detailIconBg: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: "#FEF2F2",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  detailLabel: { fontSize: 13, color: "#9BA3AE", fontWeight: "600", marginBottom: 2 },
+  detailValue: { fontSize: 16, fontWeight: "700", color: "#1A2B4A" },
+  detailSubValue: { fontSize: 14, color: "#6B7280", marginTop: 2 },
+  detailDivider: { height: 1, backgroundColor: "#F0F2F5", marginLeft: 64 },
+
+  section: {
+    paddingHorizontal: 24,
+    marginBottom: 32,
+  },
+  sectionTitle: { fontSize: 20, fontWeight: "800", color: "#1A2B4A", marginBottom: 16 },
+  description: {
+    fontSize: 16,
+    color: "#4B5563",
+    lineHeight: 26,
+  },
+  
+  rsvpContainer: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  rsvpTile: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 16,
+    alignItems: "center",
+    gap: 8,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  rsvpTileGoing: { backgroundColor: "#10B981" },
+  rsvpTileMaybe: { backgroundColor: "#F59E0B" },
+  rsvpTileDeclined: { backgroundColor: "#EF4444" },
+  rsvpTileText: { fontSize: 14, fontWeight: "700", color: "#4B5563" },
+  rsvpTileTextActive: { color: "#FFFFFF" },
+  
+  attendeesHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+    marginBottom: 16,
+  },
+  emptyAttendees: {
+    padding: 32,
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 1,
+    gap: 12,
+  },
+  emptyAttendeesText: { color: "#9BA3AE", fontWeight: "500", fontSize: 15 },
+  attendeesList: { 
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 20,
+    gap: 16,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.02,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  attendeeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  attendeeAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#F0F2F5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  attendeeAvatarText: { fontSize: 16, fontWeight: "800", color: "#1A2B4A" },
+  attendeeInfo: { flex: 1 },
+  attendeeName: { fontSize: 16, fontWeight: "700", color: "#1A2B4A" },
+  attendeeStatus: { fontSize: 13, fontWeight: "800", marginTop: 2 },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#fffaf3",
+  },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  header: {
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 4,
+    paddingBottom: 24,
+    backgroundColor: '#A93C40',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    flex: 1,
+    textAlign: 'center',
+  },
+  content: {
+    padding: 20,
+    gap: 16,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 60,
+  },
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1A2B4A',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 15,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    paddingHorizontal: 32,
+    lineHeight: 22,
+  },
+  postCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
+  },
+  postHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  authorAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#1A2B4A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  authorInitial: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  authorInfo: {
+    flex: 1,
+  },
+  authorName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A2B4A',
+  },
+  postMeta: {
+    fontSize: 13,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+  categoryBadge: {
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  categoryBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#C9933A',
+    textTransform: 'capitalize',
+  },
+  postTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1A2B4A',
+    marginBottom: 8,
+  },
+  postContent: {
+    fontSize: 15,
+    color: '#4b5563',
+    lineHeight: 24,
+  },
+  viewMoreInline: {
+    color: "#6B7280",
+    fontWeight: "700",
+  },
+  eventCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fffaf3',
+    padding: 12,
+    borderRadius: 12,
+    marginTop: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: '#C9933A',
+    gap: 8,
+  },
+  eventText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1A2B4A',
+    flex: 1,
+  },
+  fabContainer: {
+    position: 'absolute',
+    bottom: 120, // using hardcoded 120 because we don't have insets accessible in styles directly
+    right: 24,
+    zIndex: 999,
+  },
+  fab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#A93C40', // Ashesi Maroon
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 32,
+    shadowColor: '#A93C40',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+    gap: 8,
+  },
+  fabText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#F8F9FA",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F2F5",
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  cancelText: {
+    fontSize: 16,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  form: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: "#FFFFFF",
+  },
+  categoryContainer: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 20,
+  },
+  categoryChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: "#F0F2F5",
+    borderWidth: 1,
+    borderColor: "transparent",
+  },
+  categoryChipActive: {
+    backgroundColor: "#FEF2F2",
+    borderColor: "#FCA5A5",
+  },
+  categoryChipText: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight: "600",
+  },
+  categoryChipTextActive: {
+    color: "#A93C40",
+  },
+  titleInput: {
+    fontSize: 24,
+    fontWeight: "700",
+    color: "#1A2B4A",
+    marginBottom: 16,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#F0F2F5",
+    marginBottom: 16,
+  },
+  contentInput: {
+    flex: 1,
+    fontSize: 18,
+    color: "#4B5563",
+    textAlignVertical: "top",
+  },
+  footer: {
+    padding: 20,
+    backgroundColor: "#FFFFFF",
+    borderTopWidth: 1,
+    borderTopColor: "#F0F2F5",
+  },
+  submitBtn: {
+    backgroundColor: "#A93C40",
+    padding: 16,
+    borderRadius: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  submitBtnDisabled: {
+    backgroundColor: "#D1D5DB",
+  },
+  submitBtnText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#FFFFFF" },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F9FAFB" },
+  errorText: { fontSize: 18, fontWeight: "700", color: "#4B5563", marginTop: 12, marginBottom: 24 },
+  backBtnAlt: { backgroundColor: "#1A2B4A", paddingHorizontal: 24, paddingVertical: 12, borderRadius: 12 },
+  backBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 16 },
+  
+  coverWrapper: { width: "100%", height: 340, position: "relative" },
+  coverImage: { width: "100%", height: "100%" },
+  coverPlaceholder: { width: "100%", height: "100%", backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
+  
+  headerSafeArea: { position: "absolute", top: 0, left: 0, right: 0 },
+  topBar: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingTop: 12, paddingBottom: 12, backgroundColor: "rgba(255,255,255,0.85)", backdropFilter: "blur(10px)", borderBottomWidth: 1, borderBottomColor: "rgba(0,0,0,0.05)" },
+  topBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 },
+  headerTitleContainer: { flex: 1, alignItems: "center", paddingHorizontal: 12 },
+  headerTitle: { fontSize: 18, fontWeight: "800", color: "#111827" },
+  
+  content: { flex: 1, backgroundColor: "#FFFFFF", borderTopLeftRadius: 32, borderTopRightRadius: 32, marginTop: -40, padding: 24, shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 10 },
+  
+  titleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  title: { fontSize: 32, fontWeight: "900", color: "#111827", flex: 1, letterSpacing: -0.5 },
+  
+  metaRow: { flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 32 },
+  badge: { backgroundColor: "rgba(26, 43, 74, 0.08)", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  badgeText: { fontSize: 13, fontWeight: "800", color: "#1A2B4A", textTransform: "uppercase", letterSpacing: 0.5 },
+  metaItem: { flexDirection: "row", alignItems: "center", gap: 6 },
+  metaText: { fontSize: 15, fontWeight: "700", color: "#4B5563" },
+  
+  section: { marginBottom: 36 },
+  sectionTitle: { fontSize: 22, fontWeight: "900", color: "#111827", marginBottom: 16, letterSpacing: -0.5 },
+  description: { fontSize: 16, color: "#4B5563", lineHeight: 26, fontWeight: "400" },
+  
+  memberCard: { flexDirection: "row", alignItems: "center", gap: 16, backgroundColor: "#FFFFFF", padding: 16, borderRadius: 20, marginBottom: 12, borderWidth: 1, borderColor: "rgba(0,0,0,0.05)", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 1 },
+  memberAvatar: { width: 60, height: 60, borderRadius: 30 },
+  memberAvatarPlaceholder: { width: 60, height: 60, borderRadius: 30, backgroundColor: "#E0E7FF", alignItems: "center", justifyContent: "center" },
+  memberAvatarText: { fontSize: 22, fontWeight: "800", color: "#4338CA" },
+  memberName: { fontSize: 17, fontWeight: "800", color: "#111827", marginBottom: 4 },
+  memberRole: { fontSize: 14, color: "#A93C40", fontWeight: "700" },
+  
+  membersScroll: { gap: 16, paddingRight: 20 },
+  smallMemberCard: { alignItems: "center", width: 68, gap: 8 },
+  smallAvatar: { width: 64, height: 64, borderRadius: 32, borderWidth: 2, borderColor: "#F3F4F6" },
+  smallAvatarPlaceholder: { width: 64, height: 64, borderRadius: 32, backgroundColor: "#F3F4F6", alignItems: "center", justifyContent: "center" },
+  smallAvatarText: { fontSize: 24, fontWeight: "800", color: "#9CA3AF" },
+  smallMemberName: { fontSize: 13, fontWeight: "700", color: "#4B5563", textAlign: "center" },
+  
+  emptyText: { fontSize: 15, color: "#9CA3AF", fontStyle: "italic", fontWeight: "500" },
+  
+  bottomBar: { position: "absolute", bottom: 0, left: 0, right: 0, backgroundColor: "rgba(255,255,255,0.95)", backdropFilter: "blur(10px)", paddingHorizontal: 24, paddingTop: 16, paddingBottom: 36, borderTopWidth: 1, borderTopColor: "rgba(0,0,0,0.05)" },
+  actionBtn: { backgroundColor: "#A93C40", height: 56, borderRadius: 16, alignItems: "center", justifyContent: "center", shadowColor: "#1A2B4A", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.2, shadowRadius: 12, elevation: 4 },
+  actionBtnLeave: { backgroundColor: "#FEF2F2", shadowColor: "#EF4444", shadowOpacity: 0.1 },
+  actionBtnText: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
+  actionBtnTextLeave: { color: "#EF4444" },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#F8F9FA" },
+  content: { padding: 20, paddingBottom: 40 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F8F9FA" },
+  
+  headerContainer: { marginBottom: 24 },
+  header: { fontSize: 32, fontWeight: "900", color: "#1A2B4A", letterSpacing: -0.5 },
+  subHeader: { fontSize: 16, color: "#6B7280", marginTop: 8, lineHeight: 24 },
+  
+  sectionHeaderRow: { marginTop: 32, marginBottom: 16 },
+  sectionTitle: { fontSize: 20, fontWeight: "800", color: "#1A2B4A" },
+  
+  bookCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 28,
+    padding: 24,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.05,
+    shadowRadius: 24,
+    elevation: 4,
+    gap: 12,
+    alignItems: "center",
+  },
+  bookIconBg: {
+    width: 64, height: 64, borderRadius: 32,
+    backgroundColor: "#1A2B4A15",
+    justifyContent: "center", alignItems: "center",
+    marginBottom: 4,
+  },
+  bookTitle: { fontSize: 22, fontWeight: "800", color: "#1A2B4A" },
+  bookDesc: { fontSize: 15, color: "#6B7280", textAlign: "center", lineHeight: 22, marginBottom: 8 },
+  
+  primaryButton: {
+    backgroundColor: "#1A2B4A",
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    width: "100%",
+  },
+  primaryButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+  
+  sessionsList: { gap: 16 },
+  sessionCard: {
+    backgroundColor: "#FFFFFF",
+    padding: 20,
+    borderRadius: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 3,
+    gap: 20,
+  },
+  sessionDateBadge: {
+    backgroundColor: "#F8F9FA",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    alignItems: "center",
+    minWidth: 72,
+  },
+  sessionDateBadgeMonth: { fontSize: 13, fontWeight: "800", color: "#1A2B4A", marginBottom: 2 },
+  sessionDateBadgeDay: { fontSize: 24, fontWeight: "900", color: "#1A2B4A" },
+  sessionInfo: { flex: 1, gap: 8, alignItems: "flex-start" },
+  sessionTime: { fontSize: 15, fontWeight: "700", color: "#1A2B4A" },
+  sessionLocation: { fontSize: 14, color: "#6B7280", fontWeight: "500" },
+  statusChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginTop: 2,
+  },
+  sessionStatus: { fontSize: 11, fontWeight: "800", letterSpacing: 0.5 },
+  
+  noSessionsBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    padding: 24,
+    backgroundColor: "transparent",
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: "#F0F2F5",
+    borderStyle: "dashed",
+  },
+  noSessionsText: { color: "#9BA3AE", fontSize: 15, fontWeight: "600" },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#F8F9FA" },
+  content: { padding: 20, paddingBottom: 40 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F8F9FA" },
+  
+  headerContainer: { marginBottom: 24 },
+  header: { fontSize: 32, fontWeight: "900", color: "#1A2B4A", letterSpacing: -0.5 },
+  subHeader: { fontSize: 16, color: "#6B7280", marginTop: 8, lineHeight: 24 },
+  
+  sectionHeaderRow: { marginTop: 32, marginBottom: 16 },
+  sectionTitle: { fontSize: 20, fontWeight: "800", color: "#1A2B4A" },
+  
+  coachCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 28,
+    padding: 24,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.05,
+    shadowRadius: 24,
+    elevation: 4,
+    gap: 24,
+  },
+  coachHeader: { flexDirection: "row", alignItems: "center", gap: 16 },
+  avatarPlaceholder: {
+    width: 64, height: 64, borderRadius: 32,
+    backgroundColor: "#A93C40",
+    justifyContent: "center", alignItems: "center",
+  },
+  avatarText: { fontSize: 24, fontWeight: "800", color: "#FFFFFF" },
+  coachRole: { fontSize: 12, color: "#6B7280", fontWeight: "700", letterSpacing: 0.5, marginBottom: 2 },
+  coachName: { fontSize: 20, fontWeight: "800", color: "#1A2B4A" },
+  iconBtn: {
+    width: 40, height: 40, borderRadius: 20, backgroundColor: "#F0F2F5",
+    alignItems: "center", justifyContent: "center",
+  },
+  
+  progressContainer: { gap: 10 },
+  progressHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end" },
+  progressText: { fontSize: 15, fontWeight: "700", color: "#1A2B4A" },
+  progressCount: { fontSize: 15, fontWeight: "800", color: "#A93C40" },
+  progressBar: { height: 12, backgroundColor: "#F0F2F5", borderRadius: 6, overflow: "hidden" },
+  progressFill: { height: "100%", backgroundColor: "#A93C40", borderRadius: 6 },
+  
+  primaryButton: {
+    backgroundColor: "#1A2B4A",
+    paddingVertical: 16,
+    borderRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  primaryButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+  
+  emptyCard: {
+    padding: 32,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 28,
+    alignItems: "center",
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.04,
+    shadowRadius: 24,
+    elevation: 2,
+    gap: 12,
+  },
+  emptyIconBg: { width: 56, height: 56, borderRadius: 28, backgroundColor: "#F0F2F5", alignItems: "center", justifyContent: "center" },
+  emptyTitle: { fontSize: 18, fontWeight: "800", color: "#1A2B4A" },
+  emptyText: { color: "#6B7280", fontSize: 15, textAlign: "center", lineHeight: 22 },
+  
+  sessionsList: { gap: 16 },
+  sessionCard: {
+    backgroundColor: "#FFFFFF",
+    padding: 20,
+    borderRadius: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 3,
+    gap: 20,
+  },
+  sessionDateBadge: {
+    backgroundColor: "#F8F9FA",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    alignItems: "center",
+    minWidth: 72,
+  },
+  sessionDateBadgeMonth: { fontSize: 13, fontWeight: "800", color: "#A93C40", marginBottom: 2 },
+  sessionDateBadgeDay: { fontSize: 24, fontWeight: "900", color: "#1A2B4A" },
+  sessionInfo: { flex: 1, gap: 8, alignItems: "flex-start" },
+  sessionTime: { fontSize: 15, fontWeight: "700", color: "#1A2B4A" },
+  sessionLocation: { fontSize: 14, color: "#6B7280", fontWeight: "500" },
+  statusChip: {
+    backgroundColor: "#25D36615",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginTop: 2,
+  },
+  sessionStatus: { fontSize: 11, fontWeight: "800", color: "#25D366", letterSpacing: 0.5 },
+  
+  noSessionsBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    padding: 24,
+    backgroundColor: "transparent",
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: "#F0F2F5",
+    borderStyle: "dashed",
+  },
+  noSessionsText: { color: "#9BA3AE", fontSize: 15, fontWeight: "600" },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#F8F9FA" },
+  content: { padding: 20, paddingBottom: 40 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F8F9FA" },
+  
+  headerContainer: { marginBottom: 24 },
+  header: { fontSize: 32, fontWeight: "900", color: "#1A2B4A", letterSpacing: -0.5 },
+  subHeader: { fontSize: 16, color: "#6B7280", marginTop: 8, lineHeight: 24 },
+  
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 28,
+    padding: 24,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.05,
+    shadowRadius: 24,
+    elevation: 4,
+    gap: 20,
+  },
+  profileHeader: { flexDirection: "row", alignItems: "center", gap: 16 },
+  avatarPlaceholder: {
+    width: 64, height: 64, borderRadius: 32,
+    backgroundColor: "#25D366",
+    justifyContent: "center", alignItems: "center",
+  },
+  avatarText: { fontSize: 24, fontWeight: "900", color: "#FFFFFF" },
+  profileInfo: { flex: 1, gap: 2 },
+  buddyRole: { fontSize: 12, color: "#6B7280", fontWeight: "700", letterSpacing: 0.5 },
+  buddyName: { fontSize: 22, fontWeight: "800", color: "#1A2B4A" },
+  
+  detailsRow: { flexDirection: "row", gap: 16 },
+  detailItem: { flexDirection: "row", alignItems: "center", gap: 6 },
+  buddyDetails: { fontSize: 14, color: "#4B5563", fontWeight: "600" },
+  
+  divider: { height: 1, backgroundColor: "#F0F2F5", marginVertical: 4 },
+  
+  cardDesc: { fontSize: 15, color: "#6B7280", lineHeight: 22 },
+  
+  primaryButton: {
+    backgroundColor: "#25D366", // WhatsApp Green
+    paddingVertical: 16,
+    borderRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    marginTop: 8,
+  },
+  primaryButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+  
+  emptyCard: {
+    padding: 32,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 28,
+    alignItems: "center",
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.04,
+    shadowRadius: 24,
+    elevation: 2,
+    gap: 12,
+  },
+  emptyIconBg: { width: 56, height: 56, borderRadius: 28, backgroundColor: "#F0F2F5", alignItems: "center", justifyContent: "center" },
+  emptyTitle: { fontSize: 18, fontWeight: "800", color: "#1A2B4A" },
+  emptyText: { color: "#6B7280", fontSize: 15, textAlign: "center", lineHeight: 22 },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#F8F9FA" },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  closeBtn: { padding: 8, marginLeft: -8 },
+  headerTitle: { fontSize: 18, fontWeight: "700", color: "#1A2B4A" },
+  
+  scroll: { flex: 1 },
+  content: { padding: 24, gap: 24 },
+  
+  formGroup: { gap: 8 },
+  label: { fontSize: 14, fontWeight: "700", color: "#1A2B4A", marginLeft: 4 },
+  
+  row: { flexDirection: "row" },
+  inputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    height: 52,
+    ...Platform.select({
+      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.02, shadowRadius: 4 },
+      android: { elevation: 1 }
+    })
+
+// --- undefined ---
+StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#F8F9FA" },
+  content: { padding: 20, paddingBottom: 40 },
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F8F9FA" },
+  
+  headerContainer: { marginBottom: 24 },
+  header: { fontSize: 32, fontWeight: "900", color: "#1A2B4A", letterSpacing: -0.5 },
+  subHeader: { fontSize: 16, color: "#6B7280", marginTop: 8, lineHeight: 24 },
+  
+  sectionHeaderRow: { marginTop: 32, marginBottom: 16 },
+  sectionTitle: { fontSize: 20, fontWeight: "800", color: "#1A2B4A" },
+  
+  bookCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 28,
+    padding: 24,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.05,
+    shadowRadius: 24,
+    elevation: 4,
+    gap: 12,
+    alignItems: "center",
+  },
+  bookIconBg: {
+    width: 64, height: 64, borderRadius: 32,
+    backgroundColor: "#C9933A15",
+    justifyContent: "center", alignItems: "center",
+    marginBottom: 4,
+  },
+  bookTitle: { fontSize: 22, fontWeight: "800", color: "#1A2B4A" },
+  bookDesc: { fontSize: 15, color: "#6B7280", textAlign: "center", lineHeight: 22, marginBottom: 8 },
+  
+  primaryButton: {
+    backgroundColor: "#C9933A",
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    width: "100%",
+  },
+  primaryButtonText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+  
+  sessionsList: { gap: 16 },
+  sessionCard: {
+    backgroundColor: "#FFFFFF",
+    padding: 20,
+    borderRadius: 24,
+    flexDirection: "row",
+    alignItems: "center",
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 3,
+    gap: 20,
+  },
+  sessionDateBadge: {
+    backgroundColor: "#F8F9FA",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 16,
+    alignItems: "center",
+    minWidth: 72,
+  },
+  sessionDateBadgeMonth: { fontSize: 13, fontWeight: "800", color: "#C9933A", marginBottom: 2 },
+  sessionDateBadgeDay: { fontSize: 24, fontWeight: "900", color: "#1A2B4A" },
+  sessionInfo: { flex: 1, gap: 8, alignItems: "flex-start" },
+  sessionTime: { fontSize: 15, fontWeight: "700", color: "#1A2B4A" },
+  sessionLocation: { fontSize: 14, color: "#6B7280", fontWeight: "500" },
+  statusChip: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginTop: 2,
+  },
+  sessionStatus: { fontSize: 11, fontWeight: "800", letterSpacing: 0.5 },
+  
+  noSessionsBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    padding: 24,
+    backgroundColor: "transparent",
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: "#F0F2F5",
+    borderStyle: "dashed",
+  },
+  noSessionsText: { color: "#9BA3AE", fontSize: 15, fontWeight: "600" },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#FAFAFA",
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: "#FAFAFA",
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  closeBtn: {
+    padding: 8,
+    marginLeft: -8,
+  },
+  content: {
+    padding: 20,
+    gap: 24,
+  },
+  emptyState: {
+    alignItems: "center",
+    marginTop: 60,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    elevation: 3,
+  },
+  alertCard: {
+    backgroundColor: "#FEF2F2",
+    shadowColor: "#DC2626",
+    shadowOpacity: 0.06,
+  },
+  postHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 20,
+  },
+  postAuthorAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#F0F2F5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  postAuthorInitial: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  postAuthorInfo: {
+    flex: 1,
+  },
+  postAuthorName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  postDate: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginTop: 2,
+  },
+  categoryBadge: {
+    backgroundColor: "#F0F2F5",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  categoryBadgeText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#6B7280",
+    textTransform: "uppercase",
+  },
+  alertBadge: {
+    backgroundColor: "#FEE2E2",
+  },
+  alertBadgeText: {
+    color: "#DC2626",
+  },
+  postTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#1A2B4A",
+    marginBottom: 12,
+    letterSpacing: -0.3,
+  },
+  postContent: {
+    fontSize: 16,
+    color: "#4B5563",
+    lineHeight: 26,
+  },
+  actionsContainer: {
+    gap: 12,
+  },
+  editBtn: {
+    backgroundColor: "#1A2B4A",
+    padding: 16,
+    borderRadius: 16,
+    alignItems: "center",
+  },
+  editBtnText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  deleteBtn: {
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    borderRadius: 16,
+    alignItems: "center",
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 8,
+    elevation: 1,
+  },
+  deleteBtnText: {
+    color: "#DC2626",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#F8F9FA" },
+  loadingContainer: { flex: 1, justifyContent: "center", alignItems: "center" },
+  notFoundText: { fontSize: 16, color: "#6B7280", fontWeight: "600" },
+  header: { paddingHorizontal: 20, paddingVertical: 16 },
+  closeBtnLoading: { padding: 8, marginLeft: -8 },
+  
+  headerBg: { 
+    backgroundColor: "#A93C40", 
+    paddingBottom: 40, // Extra padding for overlap
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    shadowColor: "#A93C40",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 10
+  },
+  headerRow: { 
+    flexDirection: "row", 
+    alignItems: "center", 
+    justifyContent: "space-between", 
+    paddingHorizontal: 20, 
+    paddingVertical: 12 
+  },
+  headerName: { fontSize: 18, fontWeight: "800", color: "#FFFFFF", flex: 1, textAlign: "center" },
+  closeBtn: { 
+    width: 40, height: 40, 
+    borderRadius: 20, 
+    backgroundColor: "rgba(255,255,255,0.2)", 
+    alignItems: "center", justifyContent: "center" 
+  },
+  
+  content: { padding: 20 },
+  
+  profileCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 24,
+    alignItems: "center",
+    marginTop: -40, // Overlaps the header
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.08,
+    shadowRadius: 24,
+    elevation: 8,
+    marginBottom: 20
+  },
+  avatarCircle: { 
+    width: 90, height: 90, 
+    borderRadius: 45, 
+    backgroundColor: "#1A2B4A", 
+    alignItems: "center", justifyContent: "center", 
+    marginBottom: 16,
+    borderWidth: 4,
+    borderColor: "#FFFFFF"
+  },
+  avatarInitial: { fontSize: 36, fontWeight: "800", color: "#FFFFFF" },
+  name: { fontSize: 24, fontWeight: "800", color: "#1A2B4A", marginBottom: 6 },
+  majorMeta: { fontSize: 14, color: "#6B7280", fontWeight: "600", marginBottom: 16 },
+  
+  roleContainer: { flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 8, marginBottom: 24 },
+  roleBadge: { backgroundColor: "#F0F4F8", paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 },
+  roleBadgeCoach: { backgroundColor: "rgba(201, 147, 58, 0.15)" },
+  roleText: { color: "#1A2B4A", fontSize: 12, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
+  roleTextCoach: { color: "#C9933A" },
+  
+  quickActions: { flexDirection: "row", gap: 16 },
+  actionCircle: {
+    width: 50, height: 50,
+    borderRadius: 25,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center", justifyContent: "center",
+  },
+  
+  statsGrid: { flexDirection: "row", gap: 16, marginBottom: 20 },
+  statBox: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 20,
+    alignItems: "center",
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  statNumber: { fontSize: 28, fontWeight: "800", color: "#1A2B4A", marginVertical: 8 },
+  statLabel: { fontSize: 13, color: "#6B7280", fontWeight: "600" },
+  
+  overviewRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 12 },
+  overviewItem: { flex: 1 },
+  overviewLabel: { fontSize: 13, color: "#6B7280", fontWeight: "600", marginBottom: 4 },
+  overviewValue: { fontSize: 24, fontWeight: "800", color: "#1A2B4A" },
+  
+  progressContainer: { marginTop: 8 },
+  progressBarBg: { height: 6, backgroundColor: "#F3F4F6", borderRadius: 3, overflow: "hidden", marginBottom: 6 },
+  progressBarFill: { height: "100%", borderRadius: 3 },
+  progressText: { fontSize: 12, fontWeight: "600", color: "#6B7280" },
+
+  detailsCard: { 
+    backgroundColor: "#FFFFFF", 
+    borderRadius: 20, 
+    padding: 24, 
+    marginBottom: 20,
+    shadowColor: "#1A2B4A", 
+    shadowOffset: { width: 0, height: 4 }, 
+    shadowOpacity: 0.04, 
+    shadowRadius: 12, 
+    elevation: 2 
+  },
+  cardTitle: { fontSize: 17, fontWeight: "800", color: "#1A2B4A", marginBottom: 20 },
+  infoRow: { flexDirection: "row", alignItems: "center" },
+  infoIconBox: { width: 40, height: 40, borderRadius: 12, backgroundColor: "#F9FAFB", alignItems: "center", justifyContent: "center", marginRight: 16 },
+  infoTextContainer: { flex: 1 },
+  infoLabel: { fontSize: 13, color: "#6B7280", fontWeight: "500", marginBottom: 4 },
+  infoValue: { fontSize: 15, color: "#1A2B4A", fontWeight: "700" },
+  divider: { height: 1, backgroundColor: "#F3F4F6", marginVertical: 16 },
+  
+  statusBadge: { backgroundColor: "#E5F6FD", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  statusText: { color: "#0369A1", fontSize: 11, fontWeight: "700", textTransform: "uppercase" },
+
+  expandedSessionContent: {
+    marginTop: 12,
+    marginLeft: 56, // aligns with text
+    paddingRight: 16,
+  },
+  sessionDetailText: { fontSize: 13, color: "#4B5563", marginBottom: 6 },
+  sessionReportBox: {
+    marginTop: 8,
+    backgroundColor: "#F9FAFB",
+    padding: 12,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: "#A93C40"
+  },
+  sessionReportTitle: { fontSize: 12, fontWeight: "700", color: "#A93C40", marginBottom: 4 },
+  sessionReportText: { fontSize: 14, color: "#4B5563", marginTop: 2, lineHeight: 20 },
+  submitReportBtn: { backgroundColor: "#1A2B4A", paddingVertical: 12, borderRadius: 12, alignItems: "center", marginTop: 12 },
+  submitReportBtnText: { color: "#FFFFFF", fontWeight: "700", fontSize: 14 },
+
+  fabContainer: {
+    position: "absolute",
+    bottom: 24, right: 24,
+    backgroundColor: "transparent",
+    flexDirection: "row",
+    gap: 12,
+  },
+  fabPrimary: {
+    backgroundColor: "#A93C40",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 30,
+    gap: 10,
+    shadowColor: "#A93C40",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  fabSecondary: {
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  fabPressed: { transform: [{ scale: 0.96 }], opacity: 0.9 },
+  fabTextPrimary: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#fffaf3",
+  },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerBg: {
+    backgroundColor: '#A93C40',
+    paddingBottom: 60, // gives space for the overlay card
+  },
+  headerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  iconBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    flex: 1,
+    textAlign: 'center',
+  },
+  dashboardContent: {
+    paddingHorizontal: 20,
+    marginTop: -20, // Less overlap to avoid covering content
+    gap: 20,
+  },
+  identityCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 5,
+  },
+  identityHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  identityIcon: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: '#fffaf3',
+    borderWidth: 2,
+    borderColor: '#C9933A',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  editBtn: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#f3f4f6',
+  },
+  editBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A2B4A',
+  },
+  saveBtn: {
+    backgroundColor: '#C9933A',
+  },
+  saveBtnText: {
+    color: '#FFFFFF',
+  },
+  clubName: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: '#1A2B4A',
+    marginBottom: 4,
+  },
+  clubCategory: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#C9933A',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 12,
+  },
+  clubDesc: {
+    fontSize: 15,
+    color: '#6b7280',
+    lineHeight: 22,
+  },
+  editForm: {
+    gap: 12,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#374151',
+    marginTop: 4,
+  },
+  input: {
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 15,
+    color: '#1A2B4A',
+  },
+  textArea: {
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 3,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#1A2B4A',
+    marginBottom: 16,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    gap: 16,
+  },
+  statBox: {
+    flex: 1,
+    backgroundColor: '#fffaf3',
+    borderRadius: 16,
+    padding: 20,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#fef3c7',
+  },
+  statValue: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#1A2B4A',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#6b7280',
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  rosterCount: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#C9933A',
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  membersList: {
+    gap: 16,
+  },
+  memberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  memberAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#f3f4f6',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  leaderAvatar: {
+    backgroundColor: '#1A2B4A',
+  },
+  memberInitial: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#6b7280',
+  },
+  leaderInitial: {
+    color: '#C9933A',
+  },
+  memberInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  memberName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+  },
+  leaderBadge: {
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  leaderBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#C9933A',
+  },
+  moreMembersContainer: {
+    marginTop: 8,
+    paddingVertical: 12,
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  moreMembersText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6b7280',
+  },
+  
+  // Recent Posts
+  viewAllText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#C9933A',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingVertical: 12,
+  },
+  recentPostCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  recentPostHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  recentPostCategory: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#C9933A',
+    textTransform: 'uppercase',
+  },
+  recentPostDate: {
+    fontSize: 12,
+    color: '#9CA3AF',
+  },
+  recentPostTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1A2B4A',
+    marginBottom: 4,
+  },
+  recentPostContent: {
+    fontSize: 14,
+    color: '#4b5563',
+    lineHeight: 20,
+  },
+  
+  // Selector Styles
+  selectorHeader: {
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 24,
+  },
+  selectorTitle: {
+    fontSize: 32,
+    fontWeight: '800',
+    color: '#FFFFFF',
+    marginBottom: 8,
+  },
+  selectorSubtitle: {
+    fontSize: 16,
+    color: '#9CA3AF',
+    lineHeight: 24,
+  },
+  selectorContent: {
+    paddingHorizontal: 20,
+    gap: 16,
+  },
+  selectorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2A3C5A',
+    borderRadius: 20,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#3A4C6A',
+  },
+  selectorIconCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#1A2B4A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+    borderWidth: 1,
+    borderColor: '#C9933A',
+  },
+  selectorClubName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginBottom: 4,
+  },
+  selectorClubMeta: {
+    fontSize: 14,
+    color: '#C9933A',
+    fontWeight: '500',
+  },
+
+  // FAB Styles
+  fabContainer: {
+    position: 'absolute',
+    right: 24,
+    zIndex: 999,
+  },
+  fab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#A93C40',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 32,
+    shadowColor: '#A93C40',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+    gap: 8,
+  },
+  fabText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  fabContainer: {
+    position: 'absolute',
+    right: 24,
+    zIndex: 999,
+  },
+  fab: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#A93C40', // Ashesi Maroon
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 32,
+    shadowColor: '#A93C40',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+    gap: 8,
+  },
+  fabText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 16,
+  },
+  screen: { flex: 1, backgroundColor: "#fffaf3" },
+  loadingScreen: { flex: 1, backgroundColor: "#fffaf3", justifyContent: "center", alignItems: "center" },
+  headerContainer: { paddingHorizontal: 20, paddingBottom: 24, backgroundColor: "#A93C40", borderBottomWidth: 0 },
+  header: { fontSize: 28, fontWeight: "900", color: "#FFFFFF", letterSpacing: -0.5, marginBottom: 16 },
+  
+  searchContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", borderRadius: 12, paddingHorizontal: 12, height: 44, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  searchInput: { flex: 1, marginLeft: 8, fontSize: 16, color: "#111827" },
+  
+  scrollContent: { paddingBottom: 200 },
+  section: { marginTop: 24 },
+  sectionTitle: { fontSize: 20, fontWeight: "800", color: "#111827", paddingHorizontal: 20, marginBottom: 16 },
+  
+  horizontalScroll: { paddingHorizontal: 20, gap: 16 },
+  myClubCard: { width: 84, alignItems: "center", gap: 8 },
+  myClubImageWrapper: { width: 72, height: 72, borderRadius: 36, overflow: "hidden", borderWidth: 3, borderColor: "#FFFFFF", shadowColor: "#1A2B4A", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 },
+  myClubImage: { width: "100%", height: "100%", backgroundColor: "#F3F4F6" },
+  myClubIconPlaceholder: { width: "100%", height: "100%", backgroundColor: "#E0E7FF", alignItems: "center", justifyContent: "center" },
+  myClubInitials: { fontSize: 24, fontWeight: "800", color: "#4338CA" },
+  myClubName: { fontSize: 13, fontWeight: "600", color: "#4B5563", textAlign: "center" },
+  
+  discoverHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingRight: 20 },
+  
+  categoryScroll: { paddingHorizontal: 20, gap: 8, marginBottom: 16 },
+  categoryChip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: "#F3F4F6" },
+  categoryChipActive: { backgroundColor: "#1A2B4A" },
+  categoryText: { fontSize: 14, fontWeight: "600", color: "#4B5563" },
+  categoryTextActive: { color: "#FFFFFF" },
+  
+  clubsList: { paddingHorizontal: 20, gap: 20 },
+  clubCard: { backgroundColor: "#1A2B4A", borderRadius: 24, overflow: "hidden", shadowColor: "#1A2B4A", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 24, elevation: 6, height: 220 },
+  clubCardImage: { ...StyleSheet.absoluteFillObject, width: "100%", height: "100%" },
+  clubCardImagePlaceholder: { ...StyleSheet.absoluteFillObject, backgroundColor: "#E5E7EB", alignItems: "center", justifyContent: "center" },
+  clubCardOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", padding: 20, justifyContent: "space-between" },
+  clubCardHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
+  categoryBadge: { backgroundColor: "rgba(255,255,255,0.25)", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, backdropFilter: "blur(10px)" },
+  categoryBadgeText: { fontSize: 12, fontWeight: "800", color: "#FFFFFF", textTransform: "uppercase", letterSpacing: 0.5 },
+  memberBadge: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)", paddingHorizontal: 10, paddingVertical: 6, borderRadius: 12, gap: 4 },
+  memberBadgeText: { fontSize: 13, fontWeight: "700", color: "#FFFFFF" },
+  clubCardContent: { gap: 6 },
+  clubName: { fontSize: 24, fontWeight: "900", color: "#FFFFFF", letterSpacing: -0.5 },
+  clubDesc: { fontSize: 15, color: "rgba(255,255,255,0.9)", lineHeight: 22 },
+  
+  emptyState: { alignItems: "center", paddingVertical: 40 },
+  emptyTitle: { fontSize: 18, fontWeight: "800", color: "#111827", marginTop: 12, marginBottom: 4 },
+  emptyDesc: { fontSize: 14, color: "#6B7280", textAlign: "center" }
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#F4F5F7",
+  },
+  scroll: {
+    flex: 1,
+  },
+  content: {
+    paddingBottom: 40,
+  },
+
+  // Personal Header
+  personalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 24,
+  },
+  greetingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  headerAvatarLarge: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#A93C40",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#A93C40",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  headerAvatarLargeText: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+  greetingTime: {
+    fontSize: 15,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  greetingName: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#1A2B4A",
+    letterSpacing: -0.5,
+  },
+  headerActions: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  iconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  badge: {
+    position: "absolute",
+    top: 6,
+    right: 8,
+    backgroundColor: "#A93C40",
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: "#FFFFFF",
+  },
+  badgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "800",
+  },
+
+  // Personal Section
+  personalSection: {
+    paddingHorizontal: 20,
+    marginBottom: 32,
+  },
+  cardsStack: {
+    gap: 12,
+  },
+  cardSectionTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#6B7280",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 12,
+  },
+
+  // Fresher Cards
+  dayCounter: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#A93C40",
+    marginBottom: 4,
+  },
+  fresherPeopleCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 20,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 24,
+    elevation: 3,
+  },
+  peopleRow: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  personItem: {
+    flex: 1,
+    alignItems: "center",
+    backgroundColor: "#F8F9FA",
+    padding: 16,
+    borderRadius: 16,
+  },
+  personImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    marginBottom: 12,
+  },
+  personImagePlaceholder: {
+    backgroundColor: "#C7D2FE",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  personImagePlaceholderText: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#4338CA",
+  },
+  personName: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  personRole: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginTop: 2,
+  },
+
+  upNextCard: {
+    backgroundColor: "#1A2B4A",
+    borderRadius: 20,
+    padding: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  upNextLeft: {
+    flex: 1,
+  },
+  upNextLabel: {
+    color: "#9BA3AE",
+    fontSize: 13,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  upNextTitle: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  upNextTime: {
+    color: "#D1D5DB",
+    fontSize: 14,
+  },
+  progressRing: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 3,
+    borderColor: "#4B5563",
+    borderTopColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  progressText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+
+  clubNudgeCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  clubNudgeInfo: {
+    flex: 1,
+  },
+  clubNudgeTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  clubNudgeDesc: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginTop: 4,
+  },
+
+  // Continuing Student Cards
+  joinedClubCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 12,
+  },
+  clubRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  clubAvatarMock: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: "#FEF3C7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  clubAvatarImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+  },
+  clubAvatarText: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#D97706",
+  },
+  clubInfo: {
+    flex: 1,
+  },
+  clubName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  clubUpdate: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginTop: 4,
+  },
+
+  // Elevated Role Cards
+  elevatedCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: "#4338CA",
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+  },
+  elevatedHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  elevatedTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  elevatedDesc: {
+    fontSize: 14,
+    color: "#6B7280",
+  },
+  miniPostBtn: {
+    backgroundColor: "#F0F2F5",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  miniPostBtnText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+
+  // Staff Cards
+  staffSummaryCard: {
+    backgroundColor: "#FEF2F2",
+    borderRadius: 20,
+    padding: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  staffSummaryText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#991B1B",
+    flex: 1,
+    marginRight: 16,
+  },
+  quickPostCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  quickPostText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1A2B4A",
+  },
+
+  // Feed Section
+  feedSection: {
+    gap: 16,
+  },
+  feedTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#1A2B4A",
+    paddingHorizontal: 20,
+    letterSpacing: -0.5,
+  },
+  categoryScrollContainer: {
+    marginBottom: 12,
+  },
+  categoryScrollContent: {
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  categoryChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  categoryChipActive: {
+    backgroundColor: "#1A2B4A",
+  },
+  categoryChipText: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight: "600",
+  },
+  categoryChipTextActive: {
+    color: "#FFFFFF",
+  },
+  postsList: {
+    paddingHorizontal: 20,
+    gap: 20,
+  },
+  postCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 24,
+    elevation: 3,
+  },
+  alertCard: {
+    backgroundColor: "#FEF2F2",
+    shadowColor: "#DC2626",
+    shadowOpacity: 0.06,
+  },
+  postHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 16,
+  },
+  postAuthorAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#F0F2F5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  postAuthorInitial: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  postAuthorInfo: {
+    flex: 1,
+  },
+  postAuthorName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  postDate: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginTop: 2,
+  },
+  postTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#1A2B4A",
+    marginBottom: 8,
+    letterSpacing: -0.3,
+  },
+  postContent: {
+    fontSize: 16,
+    color: "#4B5563",
+    lineHeight: 26,
+  },
+  viewMoreInline: {
+    color: "#A93C40",
+    fontWeight: "700",
+  },
+  eventContainer: {
+    marginTop: 20,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: "#F0F2F5",
+    gap: 12,
+  },
+  eventDetailsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  eventDetailsText: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  eventFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 12,
+  },
+  attendeeCount: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight: "600",
+  },
+  rsvpActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  rsvpBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 16,
+    backgroundColor: "#F0F2F5",
+  },
+  rsvpBtnActive: {
+    backgroundColor: "#FEF2F2",
+  },
+  rsvpBtnText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  rsvpBtnTextActive: {
+    color: "#A93C40",
+  },
+  emptyFeedCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 32,
+    alignItems: "center",
+    gap: 12,
+    marginHorizontal: 20,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  emptyFeedIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#F8F9FA",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  emptyFeedTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  emptyFeedDesc: {
+    fontSize: 15,
+    color: "#6B7280",
+    textAlign: "center",
+    paddingHorizontal: 20,
+    lineHeight: 22,
+  },
+  coachDashboardContainer: {
+    marginBottom: 16,
+    gap: 12,
+  },
+  coachStatsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  coachStatCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    alignItems: 'center',
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  statIconBg: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#EEF2FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#1A2B4A',
+    marginBottom: 2,
+  },
+  statLabel: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  fresherListPreview: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  previewTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A2B4A',
+  },
+  fresherAvatarsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  fresherAvatarBubble: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F0F2F5',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  fresherAvatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  fresherAvatarText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A2B4A',
+  },
+  fresherAvatarMore: {
+    backgroundColor: '#EEF2FF',
+  },
+  fresherAvatarMoreText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#4338CA',
+  },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#E5E7EB",
+  },
+  map: {
+    ...StyleSheet.absoluteFillObject,
+  },
+
+  // Custom Markers
+  markerContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  markerIconBg: {
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  markerLabel: {
+    fontSize: 10,
+    fontWeight: "bold",
+    marginTop: 2,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: 4,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 1,
+  },
+
+  // Top overlay interface
+  topOverlay: {
+    position: "absolute",
+    left: 12,
+    right: 12,
+    zIndex: 20,
+    gap: 8,
+  },
+  searchRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  searchWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 12,
+    height: 48,
+    borderRadius: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  bookmarkBtn: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  bookmarkBtnActive: {
+    backgroundColor: "#A93C40",
+  },
+  bookmarksSheet: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  bookmarksTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1A2B4A",
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 13,
+    color: "#9BA3AE",
+    fontStyle: "italic",
+    marginBottom: 12,
+  },
+  recentItemCard: {
+    backgroundColor: "#F3F4F6",
+    borderRadius: 12,
+    padding: 12,
+    marginRight: 8,
+    alignItems: "center",
+    width: 80,
+  },
+  recentItemEmoji: {
+    fontSize: 20,
+    marginBottom: 4,
+  },
+  recentItemName: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#4B5563",
+    textAlign: "center",
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 15,
+    color: "#1A2B4A",
+    fontWeight: "500",
+  },
+  clearBtn: {
+    padding: 4,
+  },
+  searchResults: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    maxHeight: 200,
+    padding: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  resultItem: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  resultTextContainer: {
+    flex: 1,
+  },
+  resultName: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1A2B4A",
+  },
+  resultSubtitle: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginTop: 2,
+  },
+
+  // Horizontal Category Chips
+  categoriesContainer: {
+    flexDirection: "row",
+  },
+  categoriesContent: {
+    gap: 8,
+    paddingVertical: 4,
+  },
+  categoryChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1,
+    gap: 6,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  categoryText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
+  // Floating Actions Controls
+  floatingControls: {
+    position: "absolute",
+    right: 16,
+    zIndex: 10,
+    gap: 10,
+  },
+  controlBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  quickActionText: {
+    fontSize: 18,
+  },
+
+  // Detail Sheet Bottom
+  detailSheetWrapper: {
+    position: "absolute",
+    bottom: 100,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    zIndex: 10,
+  },
+  detailSheet: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 16,
+    maxHeight: 340,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  detailHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    padding: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  titleWrapper: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  titleActionsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  saveBtn: {
+    padding: 4,
+  },
+  detailTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#1A2B4A",
+  },
+  detailSubtitle: {
+    fontSize: 12,
+    color: "#9BA3AE",
+    marginTop: 2,
+  },
+  closeBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  detailScroll: {
+    flex: 1,
+  },
+  contextBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FEF2F2",
+    alignSelf: "flex-start",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 6,
+    gap: 6,
+    marginBottom: 8,
+  },
+  contextText: {
+    fontSize: 12,
+    color: "#A93C40",
+    fontWeight: "600",
+  },
+  detailDescription: {
+    fontSize: 14,
+    color: "#4B5563",
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 8,
+  },
+  infoText: {
+    fontSize: 13,
+    color: "#4B5563",
+    fontWeight: "500",
+  },
+  officeBlock: {
+    backgroundColor: "#F9FAFB",
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    padding: 10,
+    marginTop: 8,
+  },
+  officeBlockHeader: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+    paddingBottom: 4,
+    marginBottom: 6,
+  },
+  officeBlockTitle: {
+    fontSize: 13,
+    fontWeight: "bold",
+    color: "#1A2B4A",
+  },
+  officeInfoLine: {
+    fontSize: 12,
+    color: "#4B5563",
+    marginBottom: 3,
+  },
+  staffList: {
+    marginTop: 6,
+  },
+  staffHeader: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: "#1A2B4A",
+    marginBottom: 2,
+  },
+  staffLine: {
+    fontSize: 12,
+    color: "#6B7280",
+    marginLeft: 4,
+  },
+  directionsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#A93C40",
+    paddingVertical: 12,
+    borderRadius: 12,
+    gap: 8,
+    marginTop: 10,
+  },
+  directionsText: {
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fffaf3',
+  },
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 24,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: '800',
+    color: '#1f1a17',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 15,
+    color: '#6b7280',
+    lineHeight: 22,
+  },
+  content: {
+    paddingHorizontal: 24,
+    gap: 16,
+  },
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#f3f4f6',
+  },
+  iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  cardText: {
+    flex: 1,
+  },
+  cardTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1f1a17',
+    marginBottom: 4,
+  },
+  cardDescription: {
+    fontSize: 14,
+    color: '#6b7280',
+    lineHeight: 20,
+  },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F4F7FB" },
+  screen: { flex: 1, backgroundColor: "#F4F7FB" },
+  headerContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 20,
+    backgroundColor: '#FFFFFF',
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    ...Platform.select({
+      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.05, shadowRadius: 20 },
+      android: { elevation: 4 }
+    })
+
+// --- undefined ---
+StyleSheet.create({
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F8F9FA" },
+  screen: { flex: 1, backgroundColor: "#F8F9FA" },
+  headerContainer: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
+  header: { fontSize: 32, fontWeight: "900", color: "#1A2B4A", letterSpacing: -1 },
+  
+  searchContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", marginHorizontal: 20, paddingHorizontal: 16, height: 48, borderRadius: 24, marginBottom: 16, ...Platform.select({ ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8 }, android: { elevation: 2 } })
+
+// --- undefined ---
+StyleSheet.create({
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F4F7FB" },
+  screen: { flex: 1, backgroundColor: "#F4F7FB" },
+  headerContainer: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: 20,
+    backgroundColor: '#FFFFFF',
+    borderBottomLeftRadius: 32,
+    borderBottomRightRadius: 32,
+    ...Platform.select({
+      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.05, shadowRadius: 20 },
+      android: { elevation: 4 }
+    })
+
+// --- undefined ---
+StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#F8F9FA" },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 12 },
+  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  headerTitle: { fontSize: 20, fontWeight: "800", color: "#1A2B4A" },
+  addBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#C9933A", alignItems: "center", justifyContent: "center" },
+  
+  listContent: { padding: 20, gap: 16 },
+  card: { backgroundColor: "#FFFFFF", padding: 20, borderRadius: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
+  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  targetBadge: { backgroundColor: "#EFF6FF", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  targetText: { fontSize: 10, fontWeight: "800", color: "#3B82F6", letterSpacing: 0.5 },
+  dateText: { fontSize: 12, color: "#9CA3AF", fontWeight: "500" },
+  titleText: { fontSize: 18, fontWeight: "800", color: "#1A2B4A", marginBottom: 8 },
+  contentText: { fontSize: 14, color: "#4B5563", lineHeight: 22 },
+  
+  emptyBox: { alignItems: "center", padding: 40, gap: 12 },
+  emptyText: { color: "#9BA3AE", fontSize: 15, fontWeight: "600" },
+
+  createForm: { flex: 1, padding: 20 },
+  label: { fontSize: 14, fontWeight: "700", color: "#1A2B4A", marginBottom: 8, marginTop: 16 },
+  input: { backgroundColor: "#FFFFFF", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, padding: 16, fontSize: 15, color: "#111827" },
+  textArea: { minHeight: 120 },
+  audienceRow: { flexDirection: "row", gap: 12 },
+  audienceBtn: { flex: 1, padding: 12, borderRadius: 12, borderWidth: 1, borderColor: "#E5E7EB", alignItems: "center" },
+  audienceActive: { backgroundColor: "#EFF6FF", borderColor: "#3B82F6" },
+  audienceText: { fontSize: 14, fontWeight: "600", color: "#6B7280" },
+  audienceTextActive: { color: "#3B82F6" },
+  
+  submitBtn: { backgroundColor: "#1A2B4A", padding: 16, borderRadius: 16, alignItems: "center", marginTop: 32 },
+  submitBtnText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#F8F9FA" },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 12 },
+  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  headerTitle: { fontSize: 20, fontWeight: "800", color: "#1A2B4A" },
+  placeholder: { width: 40 },
+  
+  listContent: { padding: 20, gap: 12 },
+  card: { backgroundColor: "#FFFFFF", padding: 16, borderRadius: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2, flexDirection: "row", alignItems: "center" },
+  cardInfo: { flex: 1, paddingRight: 16 },
+  name: { fontSize: 16, fontWeight: "700", color: "#1A2B4A", marginBottom: 2 },
+  sub: { fontSize: 13, color: "#6B7280" },
+  
+  filterContainer: { paddingVertical: 12, backgroundColor: "#F8F9FA" },
+  filterScroll: { paddingHorizontal: 20, gap: 8 },
+  filterPill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: "#E5E7EB" },
+  filterPillActive: { backgroundColor: "#1A2B4A" },
+  filterText: { fontSize: 13, fontWeight: "600", color: "#4B5563" },
+  filterTextActive: { color: "#FFFFFF" },
+
+  progressContainer: { marginTop: 12 },
+  progressBarBg: { height: 6, backgroundColor: "#F3F4F6", borderRadius: 3, overflow: "hidden", marginBottom: 6 },
+  progressBarFill: { height: "100%", borderRadius: 3 },
+  progressText: { fontSize: 12, fontWeight: "600", color: "#6B7280" },
+  
+  actionBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#1A2B4A", paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 },
+  actionText: { color: "#FFFFFF", fontSize: 13, fontWeight: "700" },
+  
+  emptyBox: { alignItems: "center", padding: 40, gap: 12 },
+  emptyText: { color: "#9BA3AE", fontSize: 15, fontWeight: "600" },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#F8F9FA" },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 12 },
+  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  headerTitle: { fontSize: 20, fontWeight: "800", color: "#1A2B4A" },
+  placeholder: { width: 40 },
+  
+  scroll: { flex: 1 },
+  content: { padding: 20, gap: 20 },
+  
+  infoBox: { flexDirection: "row", alignItems: "center", backgroundColor: "#EFF6FF", padding: 16, borderRadius: 16, gap: 12 },
+  infoText: { flex: 1, fontSize: 14, color: "#1E3A8A", lineHeight: 20 },
+  
+  columns: { flex: 1 },
+  columnHeaderRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  columnTitle: { fontSize: 16, fontWeight: "700", color: "#1A2B4A" },
+  bulkBtn: { backgroundColor: "#1A2B4A", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  bulkBtnText: { color: "#FFFFFF", fontSize: 13, fontWeight: "700" },
+  column: { flex: 1, gap: 12 },
+  
+  card: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: "#FFFFFF", padding: 16, borderRadius: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 4, elevation: 1 },
+  cardName: { fontSize: 15, fontWeight: "600", color: "#1A2B4A" },
+  cardSub: { fontSize: 13, color: "#6B7280", marginTop: 4 },
+  actionBtn: { backgroundColor: "#F0F2F5", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  actionText: { fontSize: 13, fontWeight: "700", color: "#1A2B4A" },
+  
+  emptyText: { color: "#6B7280", fontSize: 14, fontStyle: "italic", marginTop: 8 },
+
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" },
+  modalContent: { backgroundColor: "#FFFFFF", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, maxHeight: "80%" },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
+  modalTitle: { fontSize: 20, fontWeight: "800", color: "#1A2B4A" },
+  modalSub: { fontSize: 14, color: "#6B7280", marginBottom: 12 },
+  coachSelectItem: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", padding: 16, backgroundColor: "#F8F9FA", borderRadius: 12 },
+  coachSelectName: { fontSize: 16, fontWeight: "600", color: "#1A2B4A" },
+  coachSelectSubMeta: { fontSize: 13, color: "#6B7280", marginTop: 4 },
+  coachSelectSub: { fontSize: 13, fontWeight: "600", color: "#3B82F6" },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#F8F9FA" },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 12 },
+  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  headerTitle: { fontSize: 20, fontWeight: "800", color: "#1A2B4A" },
+  placeholder: { width: 40 },
+  
+  searchContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#E5E7EB", marginHorizontal: 20, borderRadius: 12, paddingHorizontal: 16, height: 44, marginBottom: 12 },
+  searchInput: { flex: 1, marginLeft: 8, fontSize: 16, color: "#1A2B4A" },
+
+  listContent: { padding: 20, gap: 12 },
+  fresherCard: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", padding: 16, borderRadius: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
+  avatarContainer: { marginRight: 16 },
+  avatar: { width: 48, height: 48, borderRadius: 24 },
+  avatarPlaceholder: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#10B981", alignItems: "center", justifyContent: "center" },
+  avatarText: { fontSize: 20, fontWeight: "800", color: "#FFFFFF" },
+  fresherInfo: { flex: 1 },
+  fresherName: { fontSize: 16, fontWeight: "700", color: "#1A2B4A", marginBottom: 4 },
+  fresherMeta: { fontSize: 13, color: "#3B82F6", marginBottom: 4, fontWeight: "600" },
+  fresherSub: { fontSize: 13, color: "#6B7280", fontWeight: "500" },
+  
+  statusBadge: { backgroundColor: "#F0F2F5", paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12 },
+  statusText: { fontSize: 13, fontWeight: "800", color: "#1A2B4A" },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F4F7FB" },
+  screen: { flex: 1, backgroundColor: "#F4F7FB" },
+  headerContainer: { paddingHorizontal: 24, paddingTop: 20, paddingBottom: 16, backgroundColor: '#FFFFFF', borderBottomLeftRadius: 32, borderBottomRightRadius: 32, ...Platform.select({ ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.05, shadowRadius: 20 }, android: { elevation: 4 } })
+
+// --- undefined ---
+StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#F8F9FA" },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 12 },
+  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  headerTitle: { fontSize: 20, fontWeight: "800", color: "#1A2B4A" },
+  placeholder: { width: 40 },
+  
+  listContent: { padding: 20, gap: 12 },
+  card: { backgroundColor: "#FFFFFF", padding: 20, borderRadius: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
+  cardHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 },
+  dateText: { fontSize: 14, fontWeight: "700", color: "#A93C40" },
+  namesText: { fontSize: 16, fontWeight: "700", color: "#1A2B4A", marginBottom: 4 },
+  locationText: { fontSize: 13, color: "#6B7280", marginBottom: 16 },
+  
+  statusBadge: { backgroundColor: "#F0F2F5", paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  statusComplete: { backgroundColor: "#10B98115" },
+  statusPending: { backgroundColor: "#C9933A15" },
+  statusText: { fontSize: 11, fontWeight: "800", color: "#6B7280" },
+  statusTextComplete: { color: "#10B981" },
+  
+  actionBtn: { backgroundColor: "#1A2B4A", padding: 12, borderRadius: 12, alignItems: "center" },
+  actionBtnText: { color: "#FFFFFF", fontSize: 13, fontWeight: "700" },
+  
+  emptyBox: { alignItems: "center", padding: 40, gap: 12 },
+  emptyText: { color: "#9BA3AE", fontSize: 15, fontWeight: "600" },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#F8F9FA" },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 12 },
+  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  headerTitle: { fontSize: 20, fontWeight: "800", color: "#1A2B4A" },
+  placeholder: { width: 40 },
+  
+  searchContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#E5E7EB", marginHorizontal: 20, borderRadius: 12, paddingHorizontal: 16, height: 44, marginBottom: 12 },
+  searchInput: { flex: 1, marginLeft: 8, fontSize: 16, color: "#1A2B4A" },
+  
+  listContent: { padding: 20, gap: 12 },
+  coachCard: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", padding: 16, borderRadius: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
+  avatarContainer: { marginRight: 16 },
+  avatar: { width: 48, height: 48, borderRadius: 24 },
+  avatarPlaceholder: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#4D96FF", alignItems: "center", justifyContent: "center" },
+  avatarText: { fontSize: 20, fontWeight: "800", color: "#FFFFFF" },
+  coachInfo: { flex: 1 },
+  coachName: { fontSize: 16, fontWeight: "700", color: "#1A2B4A", marginBottom: 4 },
+  coachMeta: { fontSize: 13, color: "#3B82F6", marginBottom: 4, fontWeight: "600" },
+  coachSub: { fontSize: 13, color: "#6B7280", fontWeight: "500" },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#F8F9FA" },
+  headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 12 },
+  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  headerTitle: { fontSize: 20, fontWeight: "800", color: "#1A2B4A" },
+  placeholder: { width: 40 },
+  
+  listContent: { padding: 20, gap: 16 },
+  reportCard: { backgroundColor: "#FFFFFF", padding: 20, borderRadius: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2 },
+  reportHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 },
+  reportNames: { fontSize: 16, fontWeight: "700", color: "#1A2B4A" },
+  reportSub: { fontSize: 13, color: "#6B7280", marginTop: 2 },
+  dateText: { fontSize: 12, fontWeight: "600", color: "#A93C40", marginBottom: 12 },
+  
+  contentBox: { backgroundColor: "#F8F9FA", padding: 12, borderRadius: 12 },
+  contentText: { fontSize: 14, color: "#4B5563", lineHeight: 20 },
+  
+  emptyBox: { alignItems: "center", padding: 40, gap: 12 },
+  emptyText: { color: "#9BA3AE", fontSize: 15, fontWeight: "600" },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#fffaf3",
+  },
+  headerContainer: {
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+    backgroundColor: "#A93C40",
+    borderBottomWidth: 0,
+  },
+  header: {
+    fontSize: 28,
+    fontWeight: "900",
+    color: "#FFFFFF",
+    letterSpacing: -0.5,
+    marginBottom: 4,
+  },
+  subHeader: {
+    fontSize: 16,
+    color: "#FFFFFF",
+    opacity: 0.9,
+    marginBottom: 16,
+  },
+  section: {
+    marginBottom: 32,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: TEXT_COLOR,
+    paddingHorizontal: 20,
+    marginBottom: 16,
+  },
+  carouselContent: {
+    paddingHorizontal: 20,
+    gap: 16,
+  },
+  
+  // Featured Card (Carousel)
+  featuredCard: {
+    width: 280,
+    height: 340,
+    borderRadius: 24,
+    shadowColor: TEXT_COLOR,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 8,
+  },
+  featuredImageBg: {
+    flex: 1,
+    borderRadius: 24,
+  },
+  featuredOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    borderRadius: 24,
+    padding: 20,
+    justifyContent: "space-between",
+  },
+  featuredIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "rgba(255,255,255,0.25)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  featuredTitle: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#FFF",
+    marginBottom: 4,
+  },
+  featuredDesc: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "rgba(255,255,255,0.8)",
+  },
+
+  // List Card
+  listContainer: {
+    gap: 12,
+  },
+  listCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    borderRadius: 20,
+    shadowColor: TEXT_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  listIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: `${PRIMARY_COLOR}15`,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 16,
+  },
+  listInfo: {
+    flex: 1,
+  },
+  listTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: TEXT_COLOR,
+    marginBottom: 2,
+  },
+  listDesc: {
+    fontSize: 13,
+    color: "#9BA3AE",
+  },
+  bottomSpacer: {
+    height: 100,
+  },
+  
+  // Search Bar
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    height: 44,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  searchInput: {
+    flex: 1,
+    height: "100%",
+    fontSize: 17,
+    color: "#000000",
+    marginLeft: 8,
+  },
+  
+  // Search Results
+  searchResultsWrapper: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  resultsGroup: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    overflow: "hidden",
+  },
+  faqRow: {
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(60, 60, 67, 0.18)",
+  },
+  faqRowLast: {
+    borderBottomWidth: 0,
+  },
+  faqCategoryApple: {
+    color: "#007AFF",
+    fontSize: 13,
+    fontWeight: "600",
+    marginBottom: 4,
+    letterSpacing: 0.5,
+  },
+  faqQuestionApple: {
+    fontSize: 17,
+    fontWeight: "600",
+    color: "#000000",
+    marginBottom: 6,
+    lineHeight: 22,
+    letterSpacing: -0.4,
+  },
+  faqAnswerApple: {
+    fontSize: 15,
+    color: "rgba(60, 60, 67, 0.6)",
+    lineHeight: 20,
+  },
+  
+  // Empty State
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingTop: 60,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: TEXT_COLOR,
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyDesc: {
+    fontSize: 15,
+    color: "#9BA3AE",
+    textAlign: "center",
+  },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#F8F9FA",
+  },
+  center: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerImage: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: width,
+    height: HEADER_HEIGHT,
+    resizeMode: "cover",
+  },
+  headerOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    width: width,
+    backgroundColor: "rgba(0,0,0,0.35)", // Darkens the image for text readability if needed
+  },
+  navBar: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+    zIndex: 10,
+  },
+  backBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 10,
+  },
+  contentContainer: {
+    backgroundColor: "#F8F9FA",
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingTop: 32,
+    paddingHorizontal: 20,
+    minHeight: 1000,
+  },
+  titleSection: {
+    marginBottom: 24,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: "900",
+    color: TEXT_COLOR,
+    letterSpacing: -0.5,
+    marginBottom: 12,
+  },
+  desc: {
+    fontSize: 16,
+    color: "#5f6874",
+    lineHeight: 24,
+  },
+
+  // Action Buttons
+  quickActionsRow: {
+    flexDirection: "row",
+    gap: 16,
+    marginBottom: 32,
+  },
+  actionBtn: {
+    flex: 1,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: PRIMARY_COLOR,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: PRIMARY_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+
+  // Info Card
+  infoCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 20,
+    shadowColor: TEXT_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
+    marginBottom: 32,
+  },
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  infoIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: `${PRIMARY_COLOR}10`,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  infoTextWrapper: {
+    flex: 1,
+  },
+  infoLabel: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#9BA3AE",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  infoValue: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: TEXT_COLOR,
+  },
+  mapLinkBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: `${PRIMARY_COLOR}15`,
+    borderRadius: 8,
+  },
+  mapLinkText: {
+    color: PRIMARY_COLOR,
+    fontSize: 12,
+    fontWeight: "700",
+  },
+
+  // Sections
+  section: {
+    marginBottom: 32,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: TEXT_COLOR,
+    marginBottom: 16,
+  },
+  linkList: {
+    gap: 12,
+  },
+  linkCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    shadowColor: TEXT_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  linkIconWrapper: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: `${PRIMARY_COLOR}10`,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  linkText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "700",
+    color: TEXT_COLOR,
+  },
+
+  // FAQs
+  faqCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: TEXT_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  faqHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  faqQuestion: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "700",
+    color: TEXT_COLOR,
+    paddingRight: 16,
+  },
+  faqAnswer: {
+    fontSize: 14,
+    color: "#5f6874",
+    lineHeight: 22,
+    marginTop: 12,
+  },
+
+  // Staff
+  sectionHeaderRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  viewAllText: {
+    color: PRIMARY_COLOR,
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  staffListContainer: {
+    gap: 12,
+  },
+  staffHorizontalCard: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 12,
+    alignItems: "center",
+    shadowColor: TEXT_COLOR,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  avatarImageSmall: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#F8F9FA",
+    marginRight: 12,
+  },
+  staffInfoCol: {
+    flex: 1,
+    marginRight: 8,
+  },
+  staffNameHorizontal: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: TEXT_COLOR,
+    marginBottom: 2,
+  },
+  staffRoleHorizontal: {
+    fontSize: 13,
+    color: "#C9933A", // Gold
+    fontWeight: "600",
+  },
+  staffActionsHorizontal: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  staffActionBtnIconSmall: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: `${PRIMARY_COLOR}10`,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: { flex: 1, backgroundColor: "#F4F7FB" },
+  headerContainer: {
+    backgroundColor: '#FFFFFF',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    ...Platform.select({
+      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.05, shadowRadius: 20 },
+      android: { elevation: 4 }
+    })
+
+// --- undefined ---
+StyleSheet.create({
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F4F7FB" },
+  errorText: { fontSize: 16, color: "#6B7280", marginBottom: 20 },
+  backBtn: { backgroundColor: "#1A2B4A", paddingHorizontal: 20, paddingVertical: 12, borderRadius: 12 },
+  backBtnText: { color: "#FFFFFF", fontWeight: "700" },
+  
+  screen: { flex: 1, backgroundColor: "#F4F7FB" },
+  headerContainer: {
+    backgroundColor: '#FFFFFF',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    ...Platform.select({
+      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.05, shadowRadius: 20 },
+      android: { elevation: 4 }
+    })
+
+// --- undefined ---
+StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  header: {
+    height: HEADER_HEIGHT,
+    overflow: 'hidden',
+  },
+  content: {
+    flex: 1,
+    padding: 32,
+    gap: 16,
+    overflow: 'hidden',
+  },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  default: {
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  defaultSemiBold: {
+    fontSize: 16,
+    lineHeight: 24,
+    fontWeight: '600',
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    lineHeight: 32,
+  },
+  subtitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  link: {
+    lineHeight: 30,
+    fontSize: 16,
+    color: '#0a7ea4',
+  },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  container: {
+    marginVertical: 12,
+    paddingHorizontal: 20,
+    gap: 16,
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  title: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#6B7280',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  manageBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#EEF2FF',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  manageBtnText: {
+    color: '#4338CA',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  kpiCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.05,
+    shadowRadius: 24,
+    elevation: 4,
+  },
+  kpiHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  kpiLabel: {
+    fontSize: 15,
+    color: '#6B7280',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  kpiValue: {
+    fontSize: 36,
+    fontWeight: '900',
+    letterSpacing: -1,
+  },
+  kpiIconWrap: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  kpiFooter: {
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  kpiFooterText: {
+    fontSize: 13,
+    color: '#4B5563',
+    fontWeight: '500',
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  gridItem: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  gridValue: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#111827',
+    marginTop: 8,
+    marginBottom: 2,
+  },
+  gridLabel: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  progressCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  progressHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginBottom: 12,
+  },
+  progressTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  progressPercent: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#059669',
+  },
+  progressBarBg: {
+    height: 8,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 4,
+    overflow: 'hidden',
+    marginBottom: 8,
+  },
+  progressBarFill: {
+    height: '100%',
+    backgroundColor: '#059669',
+    borderRadius: 4,
+  },
+  progressSubtitle: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  attentionSection: {
+    marginTop: 8,
+  },
+  attentionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  attentionSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginBottom: 12,
+  },
+  attentionList: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    gap: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  attentionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  attentionAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FEF2F2',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  attentionInitial: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#E11D48',
+  },
+  attentionInfo: {
+    flex: 1,
+  },
+  attentionName: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  attentionCoach: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#F4F5F7",
+  },
+  scroll: {
+    flex: 1,
+  },
+  content: {
+    paddingBottom: 40,
+  },
+
+  // Personal Header
+  personalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 10,
+    paddingBottom: 24,
+  },
+  greetingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  headerAvatarLarge: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: "#A93C40",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#A93C40",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  headerAvatarLargeText: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#FFFFFF",
+  },
+  greetingTime: {
+    fontSize: 15,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  greetingName: {
+    fontSize: 24,
+    fontWeight: "800",
+    color: "#1A2B4A",
+    letterSpacing: -0.5,
+  },
+  headerActions: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  iconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  badge: {
+    position: "absolute",
+    top: 6,
+    right: 8,
+    backgroundColor: "#A93C40",
+    borderRadius: 10,
+    minWidth: 18,
+    height: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+    borderWidth: 1.5,
+    borderColor: "#FFFFFF",
+  },
+  badgeText: {
+    color: "#FFFFFF",
+    fontSize: 10,
+    fontWeight: "800",
+  },
+
+  // Personal Section
+  personalSection: {
+    paddingHorizontal: 20,
+    marginBottom: 32,
+  },
+  cardsStack: {
+    gap: 12,
+  },
+  cardSectionTitle: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#6B7280",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 12,
+  },
+
+  // Fresher Cards
+  dayCounter: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#A93C40",
+    marginBottom: 4,
+  },
+  fresherPeopleCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 20,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 24,
+    elevation: 3,
+  },
+  peopleRow: {
+    flexDirection: "row",
+    gap: 16,
+  },
+  personItem: {
+    flex: 1,
+    alignItems: "center",
+    backgroundColor: "#F8F9FA",
+    padding: 16,
+    borderRadius: 16,
+  },
+  personImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    marginBottom: 12,
+  },
+  personImagePlaceholder: {
+    backgroundColor: "#C7D2FE",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  personImagePlaceholderText: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#4338CA",
+  },
+  personName: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  personRole: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginTop: 2,
+  },
+
+  upNextCard: {
+    backgroundColor: "#1A2B4A",
+    borderRadius: 20,
+    padding: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  upNextLeft: {
+    flex: 1,
+  },
+  upNextLabel: {
+    color: "#9BA3AE",
+    fontSize: 13,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  upNextTitle: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  upNextTime: {
+    color: "#D1D5DB",
+    fontSize: 14,
+  },
+  progressRing: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 3,
+    borderColor: "#4B5563",
+    borderTopColor: "#FFFFFF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  progressText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+
+  clubNudgeCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  clubNudgeInfo: {
+    flex: 1,
+  },
+  clubNudgeTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  clubNudgeDesc: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginTop: 4,
+  },
+
+  // Continuing Student Cards
+  joinedClubCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 12,
+  },
+  clubRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  clubAvatarMock: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+    backgroundColor: "#FEF3C7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  clubAvatarImage: {
+    width: 48,
+    height: 48,
+    borderRadius: 16,
+  },
+  clubAvatarText: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: "#D97706",
+  },
+  clubInfo: {
+    flex: 1,
+  },
+  clubName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  clubUpdate: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginTop: 4,
+  },
+
+  // Elevated Role Cards
+  elevatedCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: "#4338CA",
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+  },
+  elevatedHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  elevatedTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  elevatedDesc: {
+    fontSize: 14,
+    color: "#6B7280",
+  },
+  miniPostBtn: {
+    backgroundColor: "#F0F2F5",
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  miniPostBtnText: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+
+  // Staff Cards
+  staffSummaryCard: {
+    backgroundColor: "#FEF2F2",
+    borderRadius: 20,
+    padding: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  staffSummaryText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#991B1B",
+    flex: 1,
+    marginRight: 16,
+  },
+  quickPostCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  quickPostText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#1A2B4A",
+  },
+
+  // Feed Section
+  feedSection: {
+    gap: 16,
+  },
+  feedTitle: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: "#1A2B4A",
+    paddingHorizontal: 20,
+    letterSpacing: -0.5,
+  },
+  categoryScrollContainer: {
+    marginBottom: 12,
+  },
+  categoryScrollContent: {
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  categoryChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 1,
+  },
+  categoryChipActive: {
+    backgroundColor: "#1A2B4A",
+  },
+  categoryChipText: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight: "600",
+  },
+  categoryChipTextActive: {
+    color: "#FFFFFF",
+  },
+  postsList: {
+    paddingHorizontal: 20,
+    gap: 20,
+  },
+  postCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.04,
+    shadowRadius: 24,
+    elevation: 3,
+  },
+  alertCard: {
+    backgroundColor: "#FEF2F2",
+    shadowColor: "#DC2626",
+    shadowOpacity: 0.06,
+  },
+  postHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 16,
+  },
+  postAuthorAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#F0F2F5",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  postAuthorInitial: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  postAuthorInfo: {
+    flex: 1,
+  },
+  postAuthorName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  postDate: {
+    fontSize: 13,
+    color: "#6B7280",
+    marginTop: 2,
+  },
+  postTitle: {
+    fontSize: 20,
+    fontWeight: "800",
+    color: "#1A2B4A",
+    marginBottom: 8,
+    letterSpacing: -0.3,
+  },
+  postContent: {
+    fontSize: 16,
+    color: "#4B5563",
+    lineHeight: 26,
+  },
+  viewMoreInline: {
+    color: "#A93C40",
+    fontWeight: "700",
+  },
+  eventContainer: {
+    marginTop: 20,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: "#F0F2F5",
+    gap: 12,
+  },
+  eventDetailsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  eventDetailsText: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight: "500",
+  },
+  eventFooter: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 12,
+  },
+  attendeeCount: {
+    fontSize: 14,
+    color: "#6B7280",
+    fontWeight: "600",
+  },
+  rsvpActions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  rsvpBtn: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 16,
+    backgroundColor: "#F0F2F5",
+  },
+  rsvpBtnActive: {
+    backgroundColor: "#FEF2F2",
+  },
+  rsvpBtnText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  rsvpBtnTextActive: {
+    color: "#A93C40",
+  },
+  emptyFeedCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 24,
+    padding: 32,
+    alignItems: "center",
+    gap: 12,
+    marginHorizontal: 20,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  emptyFeedIcon: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#F8F9FA",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 4,
+  },
+  emptyFeedTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#1A2B4A",
+  },
+  emptyFeedDesc: {
+    fontSize: 15,
+    color: "#6B7280",
+    textAlign: "center",
+    paddingHorizontal: 20,
+    lineHeight: 22,
+  },
+  coachDashboardContainer: {
+    marginBottom: 16,
+    gap: 12,
+  },
+  coachStatsRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  coachStatCard: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    alignItems: 'center',
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  statIconBg: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#EEF2FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#1A2B4A',
+    marginBottom: 2,
+  },
+  statLabel: {
+    fontSize: 13,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  fresherListPreview: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 16,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 12,
+    elevation: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  previewTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1A2B4A',
+  },
+  fresherAvatarsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  fresherAvatarBubble: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F0F2F5',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  fresherAvatarImage: {
+    width: '100%',
+    height: '100%',
+  },
+  fresherAvatarText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1A2B4A',
+  },
+  fresherAvatarMore: {
+    backgroundColor: '#EEF2FF',
+  },
+  fresherAvatarMoreText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#4338CA',
+  },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  heading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  content: {
+    marginTop: 6,
+    marginLeft: 24,
+  },
+});
+
+// --- undefined ---
+StyleSheet.create({
+  modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
+  modalContent: { backgroundColor: "#FFFFFF", borderTopLeftRadius: 24, borderTopRightRadius: 24, height: "85%", shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 10 },
+  modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 24, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: "#F3F4F6" },
+  modalTitle: { fontSize: 20, fontWeight: "800", color: "#111827" },
+  closeBtn: { padding: 4, backgroundColor: "#F3F4F6", borderRadius: 20 },
+  modalBody: { padding: 24 },
+  
+  detailsView: { gap: 24 },
+  detailBlock: { gap: 6 },
+  detailLabelRow: { flexDirection: "row", alignItems: "center", gap: 6 },
+  detailLabel: { fontSize: 13, fontWeight: "600", color: "#6B7280", textTransform: "uppercase" },
+  detailValue: { fontSize: 16, color: "#1F2937", fontWeight: "500", marginLeft: 22 },
+  
+  form: { gap: 16 },
+  label: { fontSize: 14, fontWeight: "600", color: "#374151" },
+  input: { backgroundColor: "#F9FAFB", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, padding: 14, fontSize: 15, color: "#1F2937" },
+  datePickerContainer: { flexDirection: "row", gap: 12 },
+  dateInput: { flex: 1, flexDirection: "row", alignItems: "center", backgroundColor: "#F9FAFB", borderWidth: 1, borderColor: "#E5E7EB", borderRadius: 12, padding: 14, gap: 8 },
+  inputIcon: { opacity: 0.7 },
+  inputText: { fontSize: 15, color: "#1F2937" },
+  
+  modalFooter: { padding: 24, paddingBottom: 36, borderTopWidth: 1, borderTopColor: "#F3F4F6", backgroundColor: "#FFFFFF", gap: 12 },
+  actionRow: { flexDirection: "row", gap: 12 },
+  modalBtnPrimary: { flex: 1, backgroundColor: "#A93C40", paddingVertical: 16, borderRadius: 12, alignItems: "center" },
+  modalBtnPrimaryText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+  modalBtnAlt: { flex: 1, backgroundColor: "#F3F4F6", paddingVertical: 16, borderRadius: 12, alignItems: "center" },
+  modalBtnAltText: { color: "#4B5563", fontSize: 16, fontWeight: "700" },
+  modalBtnSuccess: { flexDirection: "row", backgroundColor: "#10B981", paddingVertical: 16, borderRadius: 12, alignItems: "center", justifyContent: "center", gap: 8 },
+  modalBtnSecondary: { flex: 1, flexDirection: "row", backgroundColor: "#F3F4F6", paddingVertical: 16, borderRadius: 12, alignItems: "center", justifyContent: "center", gap: 8 },
+  modalBtnSecondaryText: { color: "#4B5563", fontSize: 16, fontWeight: "700" },
+  modalBtnDanger: { flex: 1, flexDirection: "row", backgroundColor: "#FEF2F2", paddingVertical: 16, borderRadius: 12, alignItems: "center", justifyContent: "center", gap: 8 },
+  modalBtnDangerText: { color: "#B91C1C", fontSize: 16, fontWeight: "700" }
+});
+
+// --- undefined ---
+StyleSheet.create({
+  center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F8F9FA" },
+  screen: { flex: 1, backgroundColor: "#F8F9FA" },
+  headerContainer: { flexDirection: "row", alignItems: "center", paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
+  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#E5E7EB", alignItems: "center", justifyContent: "center" },
+  header: { fontSize: 32, fontWeight: "900", color: "#1A2B4A", letterSpacing: -1 },
+  
+  tabContainer: { flexDirection: "row", marginHorizontal: 20, backgroundColor: "#E5E7EB", padding: 4, borderRadius: 12, marginBottom: 16 },
+  tab: { flex: 1, paddingVertical: 8, alignItems: "center", borderRadius: 8 },
+  activeTab: { backgroundColor: "#FFFFFF", ...Platform.select({ ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 }, android: { elevation: 2 } })
