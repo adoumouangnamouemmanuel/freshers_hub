@@ -1,10 +1,12 @@
+const AppError = require("../utils/AppError");
+const asyncHandler = require("../utils/asyncHandler");
 const { pool } = require("../services/db");
 
 /**
  * GET /notifications
  * Returns the user's notifications with unread count.
  */
-async function handleGetNotifications(req, res) {
+const handleGetNotifications = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const client = await pool.connect();
   try {
@@ -29,19 +31,16 @@ async function handleGetNotifications(req, res) {
       notifications,
       unreadCount: countRows[0]?.unreadCount || 0,
     });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
-}
+});
 
 /**
  * PATCH /notifications/:id/read
  * Marks a single notification as read.
  */
-async function handleMarkRead(req, res) {
+const handleMarkRead = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
   const client = await pool.connect();
@@ -53,23 +52,20 @@ async function handleMarkRead(req, res) {
     );
 
     if (rowCount === 0) {
-      return res.status(404).json({ error: "Notification not found or already read" });
+      throw new AppError("Notification not found or already read", 404);
     }
 
     res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
-}
+});
 
 /**
  * PATCH /notifications/read-all
  * Marks all of the user's notifications as read.
  */
-async function handleMarkAllRead(req, res) {
+const handleMarkAllRead = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const client = await pool.connect();
   try {
@@ -80,19 +76,16 @@ async function handleMarkAllRead(req, res) {
     );
 
     res.json({ success: true, markedCount: rowCount });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
-}
+});
 
 /**
  * GET /notifications/unread-count
  * Returns just the unread count (lightweight endpoint for badge polling).
  */
-async function handleUnreadCount(req, res) {
+const handleUnreadCount = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const client = await pool.connect();
   try {
@@ -104,13 +97,10 @@ async function handleUnreadCount(req, res) {
     );
 
     res.json({ unreadCount: rows[0]?.unreadCount || 0 });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
-}
+});
 
 module.exports = {
   handleGetNotifications,
