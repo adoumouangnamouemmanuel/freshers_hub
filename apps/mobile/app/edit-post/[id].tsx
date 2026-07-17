@@ -9,7 +9,8 @@ import {
   KeyboardAvoidingView, 
   Platform, 
   Alert 
-} from "react-native";
+} from "react-native"; 
+import globalStyles from '../../styles';
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -162,6 +163,9 @@ export default function EditPostScreen() {
 }
 
 const styles = StyleSheet.create({
+  ...globalStyles.layout,
+  ...globalStyles.typography,
+  ...globalStyles.components,
   screen: {
     flex: 1,
     backgroundColor: "#F8F9FA",
