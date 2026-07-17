@@ -7,27 +7,27 @@ const groupRoutes = require("./src/routes/groupRoutes");
 const eventRoutes = require("./src/routes/eventRoutes");
 const notificationRoutes = require("./src/routes/notificationRoutes");
 const supportRoutes = require("./src/routes/supportRoutes");
+const logger = require("./src/utils/logger");
+const errorHandler = require("./src/middleware/errorHandler");
+const config = require("./src/config");
 
 const app = express();
-const port = Number(process.env.PORT || 4000);
+const port = config.port;
 
 // Logging middleware
 app.use((req, res, next) => {
   const start = Date.now();
-  const timestamp = new Date().toISOString();
   
-  // Listen for when the response finishes
   res.on("finish", () => {
     const duration = Date.now() - start;
-    const logLine = `[${timestamp}] ${req.method} ${req.originalUrl} ${res.statusCode} - ${duration}ms`;
+    const logLine = `${req.method} ${req.originalUrl} ${res.statusCode} - ${duration}ms`;
     
-    // Log colors based on status code
     if (res.statusCode >= 500) {
-      console.error(`\x1b[31m${logLine}\x1b[0m`); // Red for server errors
+      logger.error(logLine);
     } else if (res.statusCode >= 400) {
-      console.warn(`\x1b[33m${logLine}\x1b[0m`); // Yellow for client errors
+      logger.warn(logLine);
     } else {
-      console.log(`\x1b[32m${logLine}\x1b[0m`); // Green for success
+      logger.info(logLine);
     }
   });
   
@@ -73,11 +73,8 @@ app.use((req, res) => {
 });
 
 // Global error handler
-app.use((err, req, res, next) => {
-  console.error("\x1b[31m[Server Error]\x1b[0m", err);
-  res.status(500).json({ error: "Internal Server Error" });
-});
+app.use(errorHandler);
 
 app.listen(port, () => {
-  console.log(`Fresher Hub API (Express) listening on http://localhost:${port}`);
+  logger.info(`Fresher Hub API (Express) listening on http://localhost:${port}`);
 });
