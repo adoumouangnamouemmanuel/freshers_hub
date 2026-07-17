@@ -1,3 +1,4 @@
+const logger = require('../utils/logger');
 const fs = require("fs");
 const path = require("path");
 const { Pool } = require("pg");
