@@ -1,23 +1,24 @@
 const { pool } = require("../services/db");
-const { loadUserBundle, issueTokens, hashToken } = require("../services/authService");
+const { loadUserBundle, issueTokens, hashToken, generateOTP, generatePasswordResetToken } = require("../services/authService");
 const AppError = require("../utils/AppError");
 const asyncHandler = require("../utils/asyncHandler");
+const logger = require("../utils/logger");
 
 const handleLogin = asyncHandler(async (req, res) => {
-  const { email, password } = req.body || {};
-  if (!email || !password) {
-    throw new AppError("email and password are required", 400);
-  }
+  const { email, password } = req.body;
+  logger.info(`Login attempt for email: ${email}`);
 
   const client = await pool.connect();
   try {
     const user = await loadUserBundle(client, String(email).trim());
 
     if (!user) {
+      logger.warn(`Login failed: User not found (${email})`);
       throw new AppError("User not found", 404);
     }
 
     if (!user.is_activated || !user.password_hash) {
+      logger.warn(`Login failed: Account not activated (${email})`);
       const err = new AppError("Account not activated", 409);
       err.needsActivation = true;
       err.email = user.email;
@@ -34,10 +35,13 @@ const handleLogin = asyncHandler(async (req, res) => {
     );
 
     if (!verification.rows[0]?.matches) {
+      logger.warn(`Login failed: Invalid credentials (${email})`);
       throw new AppError("Invalid credentials", 401);
     }
 
     const tokens = await issueTokens(client, user);
+    logger.info(`Login successful for email: ${email}`);
+    
     res.json({
       user: {
         id: user.id,
@@ -48,17 +52,17 @@ const handleLogin = asyncHandler(async (req, res) => {
       },
       ...tokens,
     });
+  } catch (error) {
+    logger.error(`Login error for ${email}: ${error.message}`);
+    throw error;
   } finally {
     client.release();
   }
 });
 
 const handleActivate = asyncHandler(async (req, res) => {
-  const { email, otp, password } = req.body || {};
-  
-  if (!email || !otp || !password) {
-    throw new AppError("email, otp, and password are required", 400);
-  }
+  const { email, otp, password } = req.body;
+  logger.info(`Activation attempt for email: ${email}`);
 
   const client = await pool.connect();
   try {
@@ -76,12 +80,15 @@ const handleActivate = asyncHandler(async (req, res) => {
 
     const record = rows[0];
     if (!record) {
+      logger.warn(`Activation failed: Record not found (${email})`);
       throw new AppError("Activation record not found", 404);
     }
     if (record.consumed_at) {
+      logger.warn(`Activation failed: OTP already used (${email})`);
       throw new AppError("OTP already used", 409);
     }
     if (new Date(record.expires_at).getTime() < Date.now()) {
+      logger.warn(`Activation failed: OTP expired (${email})`);
       throw new AppError("OTP expired", 410);
     }
 
@@ -95,6 +102,7 @@ const handleActivate = asyncHandler(async (req, res) => {
     );
 
     if (!otpCheck.rows[0]?.matches) {
+      logger.warn(`Activation failed: Invalid OTP (${email})`);
       throw new AppError("Invalid OTP", 401);
     }
 
@@ -123,6 +131,7 @@ const handleActivate = asyncHandler(async (req, res) => {
     const user = await loadUserBundle(client, String(email).trim());
     const tokens = await issueTokens(client, user);
 
+    logger.info(`Activation successful for email: ${email}`);
     res.json({
       activated: true,
       user: {
@@ -134,16 +143,17 @@ const handleActivate = asyncHandler(async (req, res) => {
       },
       ...tokens,
     });
+  } catch (error) {
+    logger.error(`Activation error for ${email}: ${error.message}`);
+    throw error;
   } finally {
     client.release();
   }
 });
 
 const handleRefresh = asyncHandler(async (req, res) => {
-  const { refreshToken } = req.body || {};
-  if (!refreshToken) {
-    throw new AppError("refreshToken is required", 400);
-  }
+  const { refreshToken } = req.body;
+  logger.info(`Refresh token request`);
 
   const client = await pool.connect();
   try {
@@ -162,6 +172,7 @@ const handleRefresh = asyncHandler(async (req, res) => {
 
     const record = rows[0];
     if (!record) {
+      logger.warn(`Refresh failed: Invalid token`);
       throw new AppError("Invalid refresh token", 401);
     }
 
@@ -177,6 +188,7 @@ const handleRefresh = asyncHandler(async (req, res) => {
     const user = await loadUserBundle(client, record.email);
     const tokens = await issueTokens(client, user);
 
+    logger.info(`Refresh successful for email: ${user.email}`);
     res.json({
       user: {
         id: user.id,
@@ -187,6 +199,154 @@ const handleRefresh = asyncHandler(async (req, res) => {
       },
       ...tokens,
     });
+  } catch (error) {
+    logger.error(`Refresh token error: ${error.message}`);
+    throw error;
+  } finally {
+    client.release();
+  }
+});
+
+const handleRequestOtp = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  logger.info(`OTP request for email: ${email}`);
+
+  const client = await pool.connect();
+  try {
+    const user = await loadUserBundle(client, String(email).trim());
+    
+    if (!user) {
+      logger.warn(`OTP request failed: User not found (${email})`);
+      throw new AppError("User not found", 404);
+    }
+
+    await generateOTP(client, user);
+    logger.info(`OTP successfully generated for email: ${email}`);
+    
+    res.json({ success: true, message: "OTP sent to email (mocked to terminal)" });
+  } catch (error) {
+    logger.error(`OTP request error for ${email}: ${error.message}`);
+    throw error;
+  } finally {
+    client.release();
+  }
+});
+
+const handleForgotPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  logger.info(`Forgot password request for email: ${email}`);
+
+  const client = await pool.connect();
+  try {
+    const user = await loadUserBundle(client, String(email).trim());
+    
+    if (!user) {
+      logger.warn(`Forgot password request failed: User not found (${email})`);
+      throw new AppError("User not found", 404);
+    }
+
+    await generatePasswordResetToken(client, user);
+    logger.info(`Password reset token successfully generated for email: ${email}`);
+    
+    res.json({ success: true, message: "Password reset link sent to email (mocked to terminal)" });
+  } catch (error) {
+    logger.error(`Forgot password error for ${email}: ${error.message}`);
+    throw error;
+  } finally {
+    client.release();
+  }
+});
+
+const handleResetPassword = asyncHandler(async (req, res) => {
+  const { email, token, newPassword } = req.body;
+  logger.info(`Reset password attempt for email: ${email}`);
+
+  const client = await pool.connect();
+  try {
+    const user = await loadUserBundle(client, String(email).trim());
+    if (!user) {
+      throw new AppError("User not found", 404);
+    }
+
+    const tokenHash = hashToken(String(token).trim());
+    
+    const { rows } = await client.query(
+      `
+        SELECT * FROM password_resets
+        WHERE user_id = $1 AND token_hash = $2
+      `,
+      [user.id, tokenHash]
+    );
+
+    const record = rows[0];
+    if (!record) {
+      logger.warn(`Reset password failed: Invalid token (${email})`);
+      throw new AppError("Invalid or expired token", 400);
+    }
+    if (record.consumed_at) {
+      logger.warn(`Reset password failed: Token already consumed (${email})`);
+      throw new AppError("Token already used", 409);
+    }
+    if (new Date(record.expires_at).getTime() < Date.now()) {
+      logger.warn(`Reset password failed: Token expired (${email})`);
+      throw new AppError("Token expired", 410);
+    }
+
+    await client.query(
+      `
+        UPDATE credentials
+        SET password_hash = crypt($2, gen_salt('bf')),
+            updated_at = now()
+        WHERE user_id = $1
+      `,
+      [user.id, String(newPassword)]
+    );
+
+    await client.query(
+      `
+        UPDATE password_resets
+        SET consumed_at = now()
+        WHERE user_id = $1 AND token_hash = $2
+      `,
+      [user.id, tokenHash]
+    );
+
+    logger.info(`Password successfully reset for email: ${email}`);
+    res.json({ success: true, message: "Password has been successfully reset" });
+  } catch (error) {
+    logger.error(`Reset password error for ${email}: ${error.message}`);
+    throw error;
+  } finally {
+    client.release();
+  }
+});
+
+const handleLogout = asyncHandler(async (req, res) => {
+  const { refreshToken } = req.body;
+  logger.info(`Logout request`);
+
+  if (!refreshToken) {
+    return res.json({ success: true });
+  }
+
+  const client = await pool.connect();
+  try {
+    const tokenHash = hashToken(String(refreshToken).trim());
+    
+    await client.query(
+      `
+        UPDATE refresh_tokens
+        SET revoked_at = now()
+        WHERE token_hash = $1
+      `,
+      [tokenHash]
+    );
+    
+    logger.info(`Logout successful, token revoked`);
+    res.json({ success: true, message: "Logged out successfully" });
+  } catch (error) {
+    logger.error(`Logout error: ${error.message}`);
+    throw error;
   } finally {
     client.release();
   }
@@ -196,4 +356,8 @@ module.exports = {
   handleLogin,
   handleActivate,
   handleRefresh,
+  handleRequestOtp,
+  handleForgotPassword,
+  handleResetPassword,
+  handleLogout,
 };
