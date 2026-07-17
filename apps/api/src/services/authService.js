@@ -1,3 +1,4 @@
+const logger = require('../utils/logger');
 const crypto = require("crypto");
 
 const jwtSecret = process.env.JWT_SECRET || "dev-secret-change-me";
