@@ -12,7 +12,7 @@ import {
   ScrollView,
   Switch
 } from "react-native"; 
-import globalStyles from './styles';
+import globalStyles from '../styles';
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
