@@ -1,3 +1,5 @@
+const AppError = require("../utils/AppError");
+const asyncHandler = require("../utils/asyncHandler");
 const { pool } = require("../services/db");
 
 /**
@@ -5,7 +7,7 @@ const { pool } = require("../services/db");
  * Creates a post + event in one transaction.
  * Body: { title, content, eventDate, eventTime, location, organizer, dressCode, capacity, rsvpEnabled, visibility, targetGroupIds }
  */
-async function handleCreateEvent(req, res) {
+const handleCreateEvent = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const {
     title,
@@ -22,9 +24,7 @@ async function handleCreateEvent(req, res) {
   } = req.body || {};
 
   if (!title?.trim() || !content?.trim() || !eventDate || !eventTime) {
-    return res.status(400).json({
-      error: "title, content, eventDate, and eventTime are required",
-    });
+    throw new AppError("title, content, eventDate, and eventTime are required", 400);
   }
 
   const client = await pool.connect();
@@ -83,20 +83,16 @@ async function handleCreateEvent(req, res) {
     await client.query("COMMIT");
 
     res.status(201).json({ post, event });
-  } catch (err) {
-    await client.query("ROLLBACK");
-    console.error(err);
-    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
-}
+});
 
 /**
  * GET /events
  * Returns upcoming events visible to the authenticated user.
  */
-async function handleGetEvents(req, res) {
+const handleGetEvents = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const client = await pool.connect();
   try {
@@ -128,19 +124,16 @@ async function handleGetEvents(req, res) {
       [userId]
     );
     res.json({ events: rows });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
-}
+});
 
 /**
  * GET /events/:id
  * Returns a single event with RSVP details.
  */
-async function handleGetEventById(req, res) {
+const handleGetEventById = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
   const client = await pool.connect();
@@ -163,29 +156,26 @@ async function handleGetEventById(req, res) {
     );
 
     if (rows.length === 0) {
-      return res.status(404).json({ error: "Event not found" });
+      throw new AppError("Event not found", 404);
     }
     res.json({ event: rows[0] });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
-}
+});
 
 /**
  * POST /events/:id/rsvp
  * Body: { status: 'going' | 'maybe' | 'declined' }
  */
-async function handleRsvp(req, res) {
+const handleRsvp = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const userId = req.user.id;
   const { status = "going" } = req.body || {};
 
   const validStatuses = ["going", "maybe", "declined"];
   if (!validStatuses.includes(status)) {
-    return res.status(400).json({ error: `status must be one of: ${validStatuses.join(", ")}` });
+    throw new AppError(`status must be one of: ${validStatuses.join(", ")}`, 400);
   }
 
   const client = await pool.connect();
@@ -199,16 +189,16 @@ async function handleRsvp(req, res) {
     );
 
     if (eventRows.length === 0) {
-      return res.status(404).json({ error: "Event not found" });
+      throw new AppError("Event not found", 404);
     }
 
     const event = eventRows[0];
     if (!event.rsvp_enabled) {
-      return res.status(400).json({ error: "RSVP is not enabled for this event" });
+      throw new AppError("RSVP is not enabled for this event", 400);
     }
 
     if (status === "going" && event.capacity && event.goingCount >= event.capacity) {
-      return res.status(400).json({ error: "Event is at full capacity" });
+      throw new AppError("Event is at full capacity", 400);
     }
 
     // Upsert RSVP
@@ -229,19 +219,16 @@ async function handleRsvp(req, res) {
     );
 
     res.json({ rsvp: rows[0], counts: countRows[0] });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
-}
+});
 
 /**
  * GET /events/:id/rsvps
  * Returns list of RSVPs for an event.
  */
-async function handleGetRsvps(req, res) {
+const handleGetRsvps = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const client = await pool.connect();
   try {
@@ -255,13 +242,10 @@ async function handleGetRsvps(req, res) {
       [id]
     );
     res.json({ rsvps: rows });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
-}
+});
 
 module.exports = {
   handleCreateEvent,
