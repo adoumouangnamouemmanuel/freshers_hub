@@ -1,8 +1,9 @@
 const { pool } = require("../services/db");
 const { verifyJwt } = require("../services/authService");
+const AppError = require("../utils/AppError");
+const asyncHandler = require("../utils/asyncHandler");
 
-async function handleGetPosts(req, res) {
-  // Try to extract user from auth header (optional — unauthed users see only public)
+const handleGetPosts = asyncHandler(async (req, res) => {
   let userId = null;
   const authHeader = req.headers.authorization || "";
   const token = authHeader.replace(/^Bearer\s+/i, "");
@@ -17,7 +18,6 @@ async function handleGetPosts(req, res) {
     let params;
 
     if (userId) {
-      // Authenticated: see public posts + targeted posts where user is in a target group
       query = `
         SELECT 
           p.id, p.title, p.content, p.category, p.visibility,
@@ -45,7 +45,6 @@ async function handleGetPosts(req, res) {
       `;
       params = [userId];
     } else {
-      // Unauthenticated: public posts only, no event RSVP info
       query = `
         SELECT 
           p.id, p.title, p.content, p.category, p.visibility,
@@ -68,31 +67,28 @@ async function handleGetPosts(req, res) {
 
     const { rows } = await client.query(query, params);
     res.json({ posts: rows });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
-}
+});
 
-async function handleCreatePost(req, res) {
+const handleCreatePost = asyncHandler(async (req, res) => {
   const authHeader = req.headers.authorization || "";
   const token = authHeader.replace(/^Bearer\s+/i, "");
   if (!token) {
-    return res.status(401).json({ error: "Missing token" });
+    throw new AppError("Missing token", 401);
   }
   
   const payload = verifyJwt(token);
   if (!payload || !payload.roles) {
-    return res.status(401).json({ error: "Invalid token" });
+    throw new AppError("Invalid token", 401);
   }
   
   const allowedRoles = ["staff", "faculty", "student_leader", "admin", "club_lead"];
   const hasAccess = payload.roles.some(r => allowedRoles.includes(r));
   
   if (!hasAccess) {
-    return res.status(403).json({ error: "Insufficient permissions to create post" });
+    throw new AppError("Insufficient permissions to create post", 403);
   }
   
   const {
@@ -108,7 +104,7 @@ async function handleCreatePost(req, res) {
   const cleanCategory = String(category).trim();
   
   if (!cleanTitle || !cleanContent) {
-    return res.status(400).json({ error: "Title and content are required" });
+    throw new AppError("Title and content are required", 400);
   }
   
   const client = await pool.connect();
@@ -154,14 +150,13 @@ async function handleCreatePost(req, res) {
     res.status(201).json({ post });
   } catch (err) {
     await client.query("ROLLBACK");
-    console.error(err);
-    res.status(500).json({ error: err.message });
+    throw err;
   } finally {
     client.release();
   }
-}
+});
 
-async function handleGetPostById(req, res) {
+const handleGetPostById = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const client = await pool.connect();
   try {
@@ -176,25 +171,22 @@ async function handleGetPostById(req, res) {
     `, [id]);
     
     if (rows.length === 0) {
-      return res.status(404).json({ error: "Post not found" });
+      throw new AppError("Post not found", 404);
     }
     res.json({ post: rows[0] });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
-}
+});
 
-async function handleUpdatePost(req, res) {
+const handleUpdatePost = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const authHeader = req.headers.authorization || "";
   const token = authHeader.replace(/^Bearer\s+/i, "");
-  if (!token) return res.status(401).json({ error: "Missing token" });
+  if (!token) throw new AppError("Missing token", 401);
   
   const payload = verifyJwt(token);
-  if (!payload) return res.status(401).json({ error: "Invalid token" });
+  if (!payload) throw new AppError("Invalid token", 401);
 
   const { title, content, category } = req.body || {};
   const cleanTitle = String(title || "").trim();
@@ -202,17 +194,17 @@ async function handleUpdatePost(req, res) {
   const cleanCategory = String(category || "").trim();
 
   if (!cleanTitle || !cleanContent) {
-    return res.status(400).json({ error: "Title and content are required" });
+    throw new AppError("Title and content are required", 400);
   }
 
   const client = await pool.connect();
   try {
     const { rows: postRows } = await client.query('SELECT author_id FROM posts WHERE id = $1', [id]);
-    if (postRows.length === 0) return res.status(404).json({ error: "Post not found" });
+    if (postRows.length === 0) throw new AppError("Post not found", 404);
     
     const isAuthor = postRows[0].author_id === payload.sub;
     const isAdmin = payload.roles && payload.roles.includes("admin");
-    if (!isAuthor && !isAdmin) return res.status(403).json({ error: "Not authorized to edit this post" });
+    if (!isAuthor && !isAdmin) throw new AppError("Not authorized to edit this post", 403);
 
     const { rows } = await client.query(`
       UPDATE posts
@@ -222,41 +214,35 @@ async function handleUpdatePost(req, res) {
     `, [cleanTitle, cleanContent, cleanCategory, id]);
 
     res.json({ post: rows[0] });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
-}
+});
 
-async function handleDeletePost(req, res) {
+const handleDeletePost = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const authHeader = req.headers.authorization || "";
   const token = authHeader.replace(/^Bearer\s+/i, "");
-  if (!token) return res.status(401).json({ error: "Missing token" });
+  if (!token) throw new AppError("Missing token", 401);
   
   const payload = verifyJwt(token);
-  if (!payload) return res.status(401).json({ error: "Invalid token" });
+  if (!payload) throw new AppError("Invalid token", 401);
 
   const client = await pool.connect();
   try {
     const { rows: postRows } = await client.query('SELECT author_id FROM posts WHERE id = $1', [id]);
-    if (postRows.length === 0) return res.status(404).json({ error: "Post not found" });
+    if (postRows.length === 0) throw new AppError("Post not found", 404);
     
     const isAuthor = postRows[0].author_id === payload.sub;
     const isAdmin = payload.roles && payload.roles.includes("admin");
-    if (!isAuthor && !isAdmin) return res.status(403).json({ error: "Not authorized to delete this post" });
+    if (!isAuthor && !isAdmin) throw new AppError("Not authorized to delete this post", 403);
 
     await client.query('DELETE FROM posts WHERE id = $1', [id]);
     res.json({ success: true });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
   } finally {
     client.release();
   }
-}
+});
 
 module.exports = {
   handleGetPosts,
