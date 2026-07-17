@@ -2,13 +2,14 @@ import { useRouter } from "expo-router";
 import {
   Pressable,
   ScrollView,
-  StyleSheet,
   Text,
   View,
   ActivityIndicator,
   RefreshControl,
-  Image
-} from "react-native";
+  Image,
+  StyleSheet
+} from "react-native"; 
+import globalStyles from '../../styles';
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Link } from "expo-router";
 
@@ -557,6 +558,9 @@ export default function FeedScreen() {
 }
 
 const styles = StyleSheet.create({
+  ...globalStyles.layout,
+  ...globalStyles.typography,
+  ...globalStyles.components,
   screen: {
     flex: 1,
     backgroundColor: "#F4F5F7",

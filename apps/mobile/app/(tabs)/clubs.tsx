@@ -1,5 +1,6 @@
-import { StyleSheet, Text, View, Pressable, ScrollView, ActivityIndicator, TextInput, Image, RefreshControl } from "react-native";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { StyleSheet, Text, View, Pressable, ScrollView, ActivityIndicator, TextInput, Image, RefreshControl } from "react-native"; 
+import globalStyles from '../../styles';
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
 import { apiRequest } from "@/lib/api";
 import { useAuth } from "@/context/auth-context";
@@ -212,6 +213,9 @@ export default function ClubsScreen() {
 }
 
 const styles = StyleSheet.create({
+  ...globalStyles.layout,
+  ...globalStyles.typography,
+  ...globalStyles.components,
   fabContainer: {
     position: 'absolute',
     right: 24,

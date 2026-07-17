@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View, Pressable, ScrollView, Linking, ActivityIndicator, Platform, RefreshControl, Image, TouchableOpacity } from "react-native";
+import { StyleSheet, Text, View, Pressable, ScrollView, Linking, ActivityIndicator, Platform, RefreshControl, Image, TouchableOpacity } from "react-native"; 
+import globalStyles from '../styles';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
@@ -339,6 +340,9 @@ export default function SupportScreen() {
 }
 
 const styles = StyleSheet.create({
+  ...globalStyles.layout,
+  ...globalStyles.typography,
+  ...globalStyles.components,
   center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F4F7FB" },
   screen: { flex: 1, backgroundColor: "#F4F7FB" },
   headerContainer: {

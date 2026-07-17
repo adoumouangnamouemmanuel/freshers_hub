@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, View, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, Platform, TextInput } from "react-native";
+import { StyleSheet, Text, View, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, Platform, TextInput } from "react-native"; 
+import globalStyles from '../styles';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../context/auth-context";
@@ -149,6 +150,9 @@ export default function StudentsScreen() {
 }
 
 const styles = StyleSheet.create({
+  ...globalStyles.layout,
+  ...globalStyles.typography,
+  ...globalStyles.components,
   center: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#F8F9FA" },
   screen: { flex: 1, backgroundColor: "#F8F9FA" },
   headerContainer: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 },
