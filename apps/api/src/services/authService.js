@@ -41,6 +41,7 @@ function verifyJwt(token) {
 
     return payload;
   } catch (err) {
+    logger.error("Error verifying JWT:", err);
     return null;
   }
 }
@@ -54,6 +55,7 @@ function hashToken(token) {
 }
 
 async function loadUserBundle(client, email) {
+  logger.info(`Loading user bundle for ${email}`);
   const userResult = await client.query(
     `
       SELECT
@@ -69,7 +71,10 @@ async function loadUserBundle(client, email) {
   );
 
   const user = userResult.rows[0];
-  if (!user) return null;
+  if (!user) {
+    logger.info(`User bundle load failed: no user found for ${email}`);
+    return null;
+  }
 
   const rolesResult = await client.query(
     `
@@ -97,6 +102,7 @@ async function loadUserBundle(client, email) {
 }
 
 async function issueTokens(client, user) {
+  logger.info(`Issuing tokens for user ${user.id}`);
   const roles = Array.isArray(user.roles) ? user.roles : [];
   const accessToken = signJwt({
     sub: user.id,
@@ -121,6 +127,57 @@ async function issueTokens(client, user) {
   return { accessToken, refreshToken };
 }
 
+async function generateOTP(client, user) {
+  const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits
+  logger.info(`Generating OTP for user ${user.email}`);
+  
+  await client.query(
+    `
+      INSERT INTO activation_codes (user_id, otp_hash, expires_at, created_at)
+      VALUES ($1, crypt($2, gen_salt('bf')), now() + interval '15 minutes', now())
+      ON CONFLICT (user_id) DO UPDATE
+      SET otp_hash = EXCLUDED.otp_hash,
+          expires_at = EXCLUDED.expires_at,
+          created_at = EXCLUDED.created_at,
+          consumed_at = NULL
+    `,
+    [user.id, otp]
+  );
+
+  // MOCK DELIVERY: Print OTP to console instead of sending email/SMS
+  console.log(`\n==============================================`);
+  console.log(`[MOCK DELIVERY] OTP for ${user.email} is: ${otp}`);
+  console.log(`==============================================\n`);
+  
+  return otp;
+}
+
+async function generatePasswordResetToken(client, user) {
+  const token = crypto.randomBytes(32).toString('hex');
+  const tokenHash = hashToken(token);
+  logger.info(`Generating password reset token for user ${user.email}`);
+
+  await client.query(
+    `
+      INSERT INTO password_resets (user_id, token_hash, expires_at, created_at)
+      VALUES ($1, $2, now() + interval '1 hour', now())
+      ON CONFLICT (user_id) DO UPDATE
+      SET token_hash = EXCLUDED.token_hash,
+          expires_at = EXCLUDED.expires_at,
+          created_at = EXCLUDED.created_at,
+          consumed_at = NULL
+    `,
+    [user.id, tokenHash]
+  );
+
+  // MOCK DELIVERY: Print reset link to console instead of sending email
+  console.log(`\n==============================================`);
+  console.log(`[MOCK DELIVERY] Password reset token for ${user.email} is: ${token}`);
+  console.log(`==============================================\n`);
+  
+  return token;
+}
+
 module.exports = {
   signJwt,
   verifyJwt,
@@ -128,4 +185,6 @@ module.exports = {
   hashToken,
   loadUserBundle,
   issueTokens,
+  generateOTP,
+  generatePasswordResetToken,
 };
