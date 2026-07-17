@@ -1,8 +1,10 @@
+const AppError = require("../utils/AppError");
+const asyncHandler = require("../utils/asyncHandler");
 const { pool } = require("../services/db");
 const supportAdminRepository = require("../repositories/supportAdminRepository");
 
 // Dashboard Overview
-async function getAdminDashboardStats(req, res) {
+const getAdminDashboardStats = asyncHandler(async (req, res) => {
   try {
     const stats = await supportAdminRepository.getDashboardStats();
 
@@ -32,35 +34,35 @@ async function getAdminDashboardStats(req, res) {
       needsAttention,
     });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Server error" });
+    
+    throw new AppError("Server error", 500);
   }
-}
+});
 
 // Get Peer Coaches
-async function getAdminCoaches(req, res) {
+const getAdminCoaches = asyncHandler(async (req, res) => {
   try {
     const rows = await supportAdminRepository.getAdminCoaches();
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: "Server error" });
+    throw new AppError("Server error", 500);
   }
-}
+});
 
 // Get Freshers
-async function getAdminFreshers(req, res) {
+const getAdminFreshers = asyncHandler(async (req, res) => {
   try {
     const rows = await supportAdminRepository.getAdminFreshers();
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: "Server error" });
+    throw new AppError("Server error", 500);
   }
-}
+});
 
 // Assign Fresher to Coach
-async function assignFresherToCoach(req, res) {
+const assignFresherToCoach = asyncHandler(async (req, res) => {
   const { fresherId, coachId, academicYearId } = req.body;
-  if (!fresherId || !coachId) return res.status(400).json({ error: "Missing ids" });
+  if (!fresherId || !coachId) throw new AppError("Missing ids", 400);
 
   try {
     const assignment = await supportAdminRepository.assignFresherToCoach(
@@ -68,121 +70,121 @@ async function assignFresherToCoach(req, res) {
     );
     res.json({ success: true, assignment });
   } catch (err) {
-    res.status(500).json({ error: "Server error" });
+    throw new AppError("Server error", 500);
   }
-}
+});
 
 // Bulk Assign Freshers (Round Robin)
-async function bulkAssignFreshers(req, res) {
+const bulkAssignFreshers = asyncHandler(async (req, res) => {
   const { academicYearId } = req.body;
   try {
     const assignedCount = await supportAdminRepository.bulkAssignFreshers(academicYearId, req.user.id);
     res.json({ success: true, assignedCount });
   } catch (err) {
     if (err.message === "No active coaches found") {
-      return res.status(400).json({ error: err.message });
+      throw new AppError(err.message, 400);
     }
-    res.status(500).json({ error: "Server error" });
+    throw new AppError("Server error", 500);
   }
-}
+});
 
 // Promote Student to Coach
-async function promoteToCoach(req, res) {
+const promoteToCoach = asyncHandler(async (req, res) => {
   const { studentId } = req.body;
-  if (!studentId) return res.status(400).json({ error: "Missing studentId" });
+  if (!studentId) throw new AppError("Missing studentId", 400);
   try {
     await supportAdminRepository.promoteToCoach(studentId);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: "Server error" });
+    throw new AppError("Server error", 500);
   }
-}
+});
 
 // Get Announcements
-async function getAnnouncements(req, res) {
+const getAnnouncements = asyncHandler(async (req, res) => {
   try {
     const rows = await supportAdminRepository.getAnnouncements();
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: "Server error" });
+    throw new AppError("Server error", 500);
   }
-}
+});
 
 // Post Announcement
-async function postAnnouncement(req, res) {
+const postAnnouncement = asyncHandler(async (req, res) => {
   const { targetAudience, title, content } = req.body;
   try {
     const announcement = await supportAdminRepository.postAnnouncement(req.user.id, targetAudience, title, content);
     res.json(announcement);
   } catch (err) {
-    res.status(500).json({ error: "Server error" });
+    throw new AppError("Server error", 500);
   }
-}
+});
 
 // Update Announcement
-async function updateAnnouncement(req, res) {
+const updateAnnouncement = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { title, content } = req.body;
   try {
     const updated = await supportAdminRepository.updateAnnouncement(id, req.user.id, title, content);
-    if (!updated) return res.status(404).json({ error: "Not found" });
+    if (!updated) throw new AppError("Not found", 404);
     res.json(updated);
   } catch (err) {
-    res.status(500).json({ error: "Server error" });
+    throw new AppError("Server error", 500);
   }
-}
+});
 
 // Delete Announcement
-async function deleteAnnouncement(req, res) {
+const deleteAnnouncement = asyncHandler(async (req, res) => {
   const { id } = req.params;
   try {
     await supportAdminRepository.deleteAnnouncement(id, req.user.id);
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ error: "Server error" });
+    throw new AppError("Server error", 500);
   }
-}
+});
 
 // Flag report
-async function flagReport(req, res) {
+const flagReport = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { needsFollowUp } = req.body;
   try {
     const report = await supportAdminRepository.flagReport(id, needsFollowUp);
     res.json(report);
   } catch (err) {
-    res.status(500).json({ error: "Server error" });
+    throw new AppError("Server error", 500);
   }
-}
+});
 
 // Get Reports
-async function getAdminReports(req, res) {
+const getAdminReports = asyncHandler(async (req, res) => {
   try {
     const rows = await supportAdminRepository.getAdminReports();
     res.json(rows);
   } catch (err) {
-    res.status(500).json({ error: "Server error" });
+    throw new AppError("Server error", 500);
   }
-}
+});
 
 // Log Follow Up
-async function logComplianceFollowUp(req, res) {
+const logComplianceFollowUp = asyncHandler(async (req, res) => {
   const { fresherId, academicYearId, notes } = req.body;
   try {
     const log = await supportAdminRepository.logComplianceFollowUp(fresherId, academicYearId, notes, req.user.id);
     res.json(log);
   } catch (err) {
-    res.status(500).json({ error: "Server error" });
+    throw new AppError("Server error", 500);
   }
-}
+});
 
 // Get User Profile (for public view)
-async function getAdminUserProfile(req, res) {
+const getAdminUserProfile = asyncHandler(async (req, res) => {
   const { id } = req.params;
   try {
     const userProfile = await supportAdminRepository.getUserProfile(id);
     
-    if (!userProfile) return res.status(404).json({ error: "User not found" });
+    if (!userProfile) throw new AppError("User not found", 404);
     
     if (userProfile.roles && userProfile.roles.includes('peer_coach')) {
       const assignedFreshers = await supportAdminRepository.getAssignedFreshersForCoach(id);
@@ -232,39 +234,39 @@ async function getAdminUserProfile(req, res) {
 
     res.json(userProfile);
   } catch (err) {
-    console.error("GET ADMIN USER PROFILE ERROR:", err);
-    res.status(500).json({ error: err.message, stack: err.stack });
+    
+    throw new AppError(err.message, 500);
   }
-}
+});
 
 // Get Admin Sessions
-async function getAdminSessions(req, res) {
+const getAdminSessions = asyncHandler(async (req, res) => {
   try {
     const rows = await supportAdminRepository.getAdminSessions();
     res.json(rows);
   } catch (err) {
-    console.error("Error getting admin sessions:", err);
-    res.status(500).json({ error: "Internal server error" });
+    
+    throw new AppError("Internal server error", 500);
   }
-}
+});
 
 // Get Admin Students
-async function getAdminStudents(req, res) {
+const getAdminStudents = asyncHandler(async (req, res) => {
   try {
     const directory = await supportAdminRepository.getAdminStudents();
     res.json(directory);
   } catch (err) {
-    console.error("Error getting admin directory:", err);
-    res.status(500).json({ error: "Internal server error" });
+    
+    throw new AppError("Internal server error", 500);
   }
-}
+});
 
 // Book a session as an admin
-async function adminBookSession(req, res) {
+const adminBookSession = asyncHandler(async (req, res) => {
   const { unitId, academicYearId, studentId, providerId, withType, scheduledAt, location, isMandatory, description } = req.body;
   
   if (!unitId || !academicYearId || !studentId || !providerId || !scheduledAt) {
-    return res.status(400).json({ error: "Missing required fields" });
+    throw new AppError("Missing required fields", 400);
   }
 
   try {
@@ -273,10 +275,10 @@ async function adminBookSession(req, res) {
     );
     res.status(201).json(session);
   } catch (err) {
-    console.error("Error admin booking session:", err);
-    res.status(500).json({ error: "Internal server error" });
+    
+    throw new AppError("Internal server error", 500);
   }
-}
+});
 
 module.exports = {
   getAdminDashboardStats,
