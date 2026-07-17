@@ -10,8 +10,9 @@ const validate = (schema) => (req, res, next) => {
     });
     next();
   } catch (error) {
-    logger.warn('Validation error', { error: error.errors });
-    const message = error.errors.map(err => err.message).join(', ');
+    logger.warn('Validation error', { error: error.message });
+    const errorsArray = error.errors || error.issues || [];
+    const message = errorsArray.length ? errorsArray.map(err => err.message).join(', ') : error.message;
     return next(new AppError(`Validation failed: ${message}`, 400));
   }
 };
