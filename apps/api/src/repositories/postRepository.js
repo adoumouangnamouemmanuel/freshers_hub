@@ -131,7 +131,11 @@ const insertNotificationsForTargets = async (client, { title, category, postId, 
 const updatePost = async (client, postId, { title, content, category }) => {
   const { rows } = await client.query(`
     UPDATE posts
-    SET title = $1, content = $2, category = $3, updated_at = now()
+    SET 
+      title = COALESCE($1, title), 
+      content = COALESCE($2, content), 
+      category = COALESCE($3, category), 
+      updated_at = now()
     WHERE id = $4
     RETURNING id, title, content, category, created_at as "createdAt"
   `, [title, content, category, postId]);
