@@ -1,10 +1,12 @@
 const { pool } = require("../services/db");
 const { loadUserBundle, issueTokens, hashToken } = require("../services/authService");
+const AppError = require("../utils/AppError");
+const asyncHandler = require("../utils/asyncHandler");
 
-async function handleLogin(req, res) {
+const handleLogin = asyncHandler(async (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) {
-    return res.status(400).json({ error: "email and password are required" });
+    throw new AppError("email and password are required", 400);
   }
 
   const client = await pool.connect();
@@ -12,15 +14,14 @@ async function handleLogin(req, res) {
     const user = await loadUserBundle(client, String(email).trim());
 
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      throw new AppError("User not found", 404);
     }
 
     if (!user.is_activated || !user.password_hash) {
-      return res.status(409).json({
-        error: "Account not activated",
-        needsActivation: true,
-        email: user.email,
-      });
+      const err = new AppError("Account not activated", 409);
+      err.needsActivation = true;
+      err.email = user.email;
+      throw err;
     }
 
     const verification = await client.query(
@@ -33,7 +34,7 @@ async function handleLogin(req, res) {
     );
 
     if (!verification.rows[0]?.matches) {
-      return res.status(401).json({ error: "Invalid credentials" });
+      throw new AppError("Invalid credentials", 401);
     }
 
     const tokens = await issueTokens(client, user);
@@ -47,19 +48,16 @@ async function handleLogin(req, res) {
       },
       ...tokens,
     });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
   } finally {
     client.release();
   }
-}
+});
 
-async function handleActivate(req, res) {
+const handleActivate = asyncHandler(async (req, res) => {
   const { email, otp, password } = req.body || {};
   
   if (!email || !otp || !password) {
-    return res.status(400).json({ error: "email, otp, and password are required" });
+    throw new AppError("email, otp, and password are required", 400);
   }
 
   const client = await pool.connect();
@@ -78,13 +76,13 @@ async function handleActivate(req, res) {
 
     const record = rows[0];
     if (!record) {
-      return res.status(404).json({ error: "Activation record not found" });
+      throw new AppError("Activation record not found", 404);
     }
     if (record.consumed_at) {
-      return res.status(409).json({ error: "OTP already used" });
+      throw new AppError("OTP already used", 409);
     }
     if (new Date(record.expires_at).getTime() < Date.now()) {
-      return res.status(410).json({ error: "OTP expired" });
+      throw new AppError("OTP expired", 410);
     }
 
     const otpCheck = await client.query(
@@ -97,7 +95,7 @@ async function handleActivate(req, res) {
     );
 
     if (!otpCheck.rows[0]?.matches) {
-      return res.status(401).json({ error: "Invalid OTP" });
+      throw new AppError("Invalid OTP", 401);
     }
 
     await client.query(
@@ -136,18 +134,15 @@ async function handleActivate(req, res) {
       },
       ...tokens,
     });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
   } finally {
     client.release();
   }
-}
+});
 
-async function handleRefresh(req, res) {
+const handleRefresh = asyncHandler(async (req, res) => {
   const { refreshToken } = req.body || {};
   if (!refreshToken) {
-    return res.status(400).json({ error: "refreshToken is required" });
+    throw new AppError("refreshToken is required", 400);
   }
 
   const client = await pool.connect();
@@ -167,7 +162,7 @@ async function handleRefresh(req, res) {
 
     const record = rows[0];
     if (!record) {
-      return res.status(401).json({ error: "Invalid refresh token" });
+      throw new AppError("Invalid refresh token", 401);
     }
 
     await client.query(
@@ -192,13 +187,10 @@ async function handleRefresh(req, res) {
       },
       ...tokens,
     });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Internal server error" });
   } finally {
     client.release();
   }
-}
+});
 
 module.exports = {
   handleLogin,
