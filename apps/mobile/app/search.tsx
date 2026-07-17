@@ -7,7 +7,8 @@ import {
   TextInput, 
   ScrollView,
   ActivityIndicator 
-} from "react-native";
+} from "react-native"; 
+import globalStyles from './styles';
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -239,6 +240,9 @@ export default function SearchScreen() {
 }
 
 const styles = StyleSheet.create({
+  ...globalStyles.layout,
+  ...globalStyles.typography,
+  ...globalStyles.components,
   screen: { flex: 1, backgroundColor: "#F8F9FA" },
   header: {
     flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 12,
