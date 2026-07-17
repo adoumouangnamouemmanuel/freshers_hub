@@ -1,6 +1,8 @@
 const { pool } = require("../services/db");
+const logger = require("../utils/logger");
+const asyncHandler = require("../utils/asyncHandler");
 
-async function handleFaqSearch(req, res) {
+const handleFaqSearch = asyncHandler(async (req, res) => {
   const query = req.query.q || "";
 
   if (!query) {
@@ -15,7 +17,7 @@ async function handleFaqSearch(req, res) {
     );
     res.json({ results: rows });
   } catch (err) {
-    console.log("FAQ DB error (falling back to mock data):", err.message);
+    logger.warn("FAQ DB error (falling back to mock data): " + err.message);
     
     const mockFaqs = [
       { id: '1', category: 'Housing', question: 'How do I apply for a hostel?', answer: 'Hostel applications open in July via the SIS portal. Ensure you have paid your housing deposit.' },
@@ -35,7 +37,7 @@ async function handleFaqSearch(req, res) {
   } finally {
     client.release();
   }
-}
+});
 
 module.exports = {
   handleFaqSearch,
