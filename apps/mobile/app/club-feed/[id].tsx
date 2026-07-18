@@ -91,10 +91,10 @@ export default function ClubFeedScreen() {
   const fetchPosts = async () => {
     if (!id || !session?.accessToken) return;
     try {
-      const data = await apiRequest<{ posts: Post[] }>(`/groups/${id}/posts`, {
+      const data = await apiRequest<{ data: Post[] }>(`/groups/${id}/posts`, {
         headers: { Authorization: `Bearer ${session.accessToken}` }
       });
-      setPosts(data.posts || []);
+      setPosts(data.data || []);
     } catch (err) {
       console.error("Error fetching club posts:", err);
     } finally {
