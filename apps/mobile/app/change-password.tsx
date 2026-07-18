@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Alert } from "react-native"; 
-import { useState } from "react";
+import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Alert, Animated } from "react-native"; 
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -12,6 +12,24 @@ export default function ChangePasswordScreen() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
 
   const handleSave = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -31,9 +49,7 @@ export default function ChangePasswordScreen() {
 
     setIsLoading(true);
     try {
-      // TODO: Implement actual API call to change password
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
       Alert.alert("Success", "Password changed successfully", [
         { text: "OK", onPress: () => router.back() }
       ]);
@@ -62,59 +78,61 @@ export default function ChangePasswordScreen() {
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.formCard}>
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Current Password</Text>
-            <View style={styles.inputContainer}>
-              <IconSymbol name="lock" size={20} color="#A93C40" />
-              <TextInput
-                style={styles.input}
-                value={currentPassword}
-                onChangeText={setCurrentPassword}
-                placeholder="Enter current password"
-                placeholderTextColor="#9CA3AF"
-                secureTextEntry
-              />
+        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+          <View style={styles.formCard}>
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Current Password</Text>
+              <View style={styles.inputContainer}>
+                <IconSymbol name="lock" size={20} color="#A93C40" />
+                <TextInput
+                  style={styles.input}
+                  value={currentPassword}
+                  onChangeText={setCurrentPassword}
+                  placeholder="Enter current password"
+                  placeholderTextColor="#9CA3AF"
+                  secureTextEntry
+                />
+              </View>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>New Password</Text>
+              <View style={styles.inputContainer}>
+                <IconSymbol name="lock" size={20} color="#A93C40" />
+                <TextInput
+                  style={styles.input}
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  placeholder="Enter new password"
+                  placeholderTextColor="#9CA3AF"
+                  secureTextEntry
+                />
+              </View>
+            </View>
+
+            <View style={styles.formGroup}>
+              <Text style={styles.label}>Confirm New Password</Text>
+              <View style={styles.inputContainer}>
+                <IconSymbol name="lock" size={20} color="#A93C40" />
+                <TextInput
+                  style={styles.input}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  placeholder="Confirm new password"
+                  placeholderTextColor="#9CA3AF"
+                  secureTextEntry
+                />
+              </View>
             </View>
           </View>
 
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>New Password</Text>
-            <View style={styles.inputContainer}>
-              <IconSymbol name="lock" size={20} color="#A93C40" />
-              <TextInput
-                style={styles.input}
-                value={newPassword}
-                onChangeText={setNewPassword}
-                placeholder="Enter new password"
-                placeholderTextColor="#9CA3AF"
-                secureTextEntry
-              />
-            </View>
+          <View style={styles.infoCard}>
+            <IconSymbol name="info.circle.fill" size={20} color="#A93C40" />
+            <Text style={styles.infoText}>
+              Password must be at least 6 characters. Make sure it&apos;s something you can remember!
+            </Text>
           </View>
-
-          <View style={styles.formGroup}>
-            <Text style={styles.label}>Confirm New Password</Text>
-            <View style={styles.inputContainer}>
-              <IconSymbol name="lock" size={20} color="#A93C40" />
-              <TextInput
-                style={styles.input}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                placeholder="Confirm new password"
-                placeholderTextColor="#9CA3AF"
-                secureTextEntry
-              />
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.infoCard}>
-          <IconSymbol name="info.circle.fill" size={20} color="#A93C40" />
-          <Text style={styles.infoText}>
-            Password must be at least 6 characters. Make sure it&apos;s something you can remember!
-          </Text>
-        </View>
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -140,13 +158,8 @@ const styles = StyleSheet.create({
   content: { padding: 20, gap: 24 },
   formCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 20,
+    borderRadius: 16,
     padding: 24,
-    shadowColor: "#1A2B4A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
     borderWidth: 1,
     borderColor: "#F0F2F5",
   },
