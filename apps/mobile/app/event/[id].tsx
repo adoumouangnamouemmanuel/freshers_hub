@@ -5,6 +5,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { useAuth } from "@/context/auth-context";
 import { apiRequest } from "@/lib/api";
+import { hasRole } from "@/lib/permissions";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 
 type Event = {
@@ -108,7 +109,7 @@ export default function EventDetailScreen() {
               method: "DELETE",
               headers: { Authorization: `Bearer ${session?.accessToken}` }
             });
-            router.replace("/(tabs)/");
+            router.back();
           } catch (err) {
             Alert.alert("Error", "Failed to delete event.");
           }
@@ -137,7 +138,7 @@ export default function EventDetailScreen() {
     );
   }
 
-  const isOwner = session?.user.id === event.authorId || session?.user.roles.some((r: any) => r.name === "admin");
+  const isOwner = session?.user.id === event.authorId || hasRole(session?.user.roles || [], "admin");
   const formattedDate = new Date(event.eventDate).toLocaleDateString(undefined, { 
     weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' 
   });
