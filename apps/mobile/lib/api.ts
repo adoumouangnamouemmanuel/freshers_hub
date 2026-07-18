@@ -17,7 +17,13 @@ export async function apiRequest<T>(
   const body = text ? JSON.parse(text) : {};
 
   if (!response.ok) {
-    const error = new Error(body.error || "Request failed");
+    const errorMsg =
+      typeof body.message === "string"
+        ? body.message
+        : typeof body.error === "string"
+          ? body.error
+          : "Request failed";
+    const error = new Error(errorMsg);
     (error as Error & { status?: number; body?: unknown }).status =
       response.status;
     (error as Error & { status?: number; body?: unknown }).body = body;
