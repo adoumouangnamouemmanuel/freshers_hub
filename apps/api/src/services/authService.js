@@ -54,21 +54,40 @@ function hashToken(token) {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
 
-async function loadUserBundle(client, email) {
-  logger.info(`Loading user bundle for ${email}`);
-  const userResult = await client.query(
-    `
-      SELECT
-        u.id, u.email, u.full_name, u.phone, u.class_year, u.country, u.major, u.avatar_url, u.created_at,
-        c.password_hash, c.is_activated, c.activated_at,
-        sp.school_id, sp.identifier, sp.graduation_year
-      FROM users u
-      LEFT JOIN credentials c ON c.user_id = u.id
-      LEFT JOIN student_profiles sp ON sp.user_id = u.id
-      WHERE lower(u.email) = lower($1)
-    `,
-    [email]
-  );
+async function loadUserBundle(client, email, userId) {
+  // Support loading by email or userId
+  let userResult;
+  if (userId) {
+    logger.info(`Loading user bundle for userId: ${userId}`);
+    userResult = await client.query(
+      `
+        SELECT
+          u.id, u.email, u.full_name, u.phone, u.class_year, u.country, u.major, u.avatar_url, u.created_at,
+          c.password_hash, c.is_activated, c.activated_at,
+          sp.school_id, sp.identifier, sp.graduation_year
+        FROM users u
+        LEFT JOIN credentials c ON c.user_id = u.id
+        LEFT JOIN student_profiles sp ON sp.user_id = u.id
+        WHERE u.id = $1
+      `,
+      [userId]
+    );
+  } else {
+    logger.info(`Loading user bundle for ${email}`);
+    userResult = await client.query(
+      `
+        SELECT
+          u.id, u.email, u.full_name, u.phone, u.class_year, u.country, u.major, u.avatar_url, u.created_at,
+          c.password_hash, c.is_activated, c.activated_at,
+          sp.school_id, sp.identifier, sp.graduation_year
+        FROM users u
+        LEFT JOIN credentials c ON c.user_id = u.id
+        LEFT JOIN student_profiles sp ON sp.user_id = u.id
+        WHERE lower(u.email) = lower($1)
+      `,
+      [email]
+    );
+  }
 
   const user = userResult.rows[0];
   if (!user) {
