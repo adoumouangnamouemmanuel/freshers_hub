@@ -14,6 +14,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useAuth } from "@/context/auth-context";
 import { apiRequest } from "@/lib/api";
+import { hasRole } from "@/lib/permissions";
 
 type Post = {
   id: string;
@@ -75,7 +76,7 @@ export default function PostScreen() {
   };
 
   const isAlert = post?.category.toLowerCase() === "alert";
-  const canEditOrDelete = session?.user.id === post?.authorId || session?.user.roles.some(r => r.name === "admin");
+  const canEditOrDelete = session?.user.id === post?.authorId || hasRole(session?.user.roles || [], "admin");
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
