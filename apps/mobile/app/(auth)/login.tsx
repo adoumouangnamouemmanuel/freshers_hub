@@ -61,7 +61,7 @@ export default function LoginScreen() {
       });
 
       if (!res.exists) {
-        setError("No account found with this email");
+        setError("Invalid email or password");
         return;
       }
 
@@ -80,6 +80,22 @@ export default function LoginScreen() {
 
       setStep("password");
     } catch (e) {
+      const err = e as Error & { status?: number; retryAfter?: number };
+      
+      // Handle rate limit (429) on check-email
+      if (err.status === 429) {
+        const retryAfter = err.retryAfter || 60;
+        router.push({
+          pathname: "/(auth)/rate-limit",
+          params: {
+            reason: "login_rate_limit",
+            retryAfter: retryAfter.toString(),
+            message: err.message,
+          },
+        });
+        return;
+      }
+      
       setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
       setLoading(false);
@@ -105,7 +121,25 @@ export default function LoginScreen() {
         router.replace("/(tabs)");
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Invalid password");
+      const error = e as Error & { status?: number; retryAfter?: number };
+      
+      // Handle account lockout (423) or rate limit (429)
+      if (error.status === 423 || error.status === 429) {
+        const retryAfter = error.retryAfter || 30; // default 30 seconds
+        const reason = error.status === 423 ? "account_lockout" : "login_rate_limit";
+        
+        router.push({
+          pathname: "/(auth)/rate-limit",
+          params: {
+            reason,
+            retryAfter: retryAfter.toString(),
+            message: error.message,
+          },
+        });
+        return;
+      }
+      
+      setError("Invalid email or password");
     } finally {
       setLoading(false);
     }
