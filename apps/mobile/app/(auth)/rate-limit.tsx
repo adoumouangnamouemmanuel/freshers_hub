@@ -400,7 +400,7 @@ export default function RateLimitScreen() {
                 </View>
                 <View style={s.infoRow}>
                   <View style={[s.infoDot, { backgroundColor: accentColor }]} />
-                  <Text style={s.infoText}>Check your spam folder if you haven&apos;t received the code</Text>
+                  <Text style={s.infoText}>Check your spaem folder if you haven&apos;t received the code</Text>
                 </View>
               </>
             )}
