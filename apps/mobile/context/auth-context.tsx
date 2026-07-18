@@ -1,14 +1,28 @@
 import type { ReactNode } from "react";
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import {
-  activateWithOtp,
   clearSession,
+  forgotPassword as forgotPasswordApi,
   loadSession,
   loginWithPassword,
+  logout as logoutApi,
   refreshSession,
+  requestOtp as requestOtpApi,
   saveSession,
+  setPassword as setPasswordApi,
   type AuthSession,
+  verifyOtp as verifyOtpApi,
+  verifyResetOtp as verifyResetOtpApi,
+  setNewPassword as setNewPasswordApi,
 } from "@/lib/auth";
 
 type AuthContextValue = {
@@ -18,7 +32,14 @@ type AuthContextValue = {
     email: string,
     password: string,
   ) => Promise<{ needsActivation?: boolean; email?: string }>;
-  activate: (email: string, otp: string, password: string) => Promise<void>;
+  verifyOtp: (email: string, otp: string) => Promise<{ success: boolean; message: string; email: string }>;
+  setPassword: (email: string, password: string) => Promise<void>;
+  requestOtp: (email: string) => Promise<{ success: boolean; message: string }>;
+  forgotPassword: (
+    email: string,
+  ) => Promise<{ success: boolean; message: string }>;
+  verifyResetOtp: (email: string, otp: string) => Promise<{ success: boolean; message: string }>;
+  setNewPassword: (email: string, otp: string, newPassword: string) => Promise<void>;
   signOut: () => Promise<void>;
 };
 
@@ -47,9 +68,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!exp) return;
 
     // Refresh 2 minutes before expiry
-    const msUntilRefresh = (exp * 1000) - Date.now() - (2 * 60 * 1000);
+    const msUntilRefresh =
+      exp * 1000 - Date.now() - 2 * 60 * 1000;
     if (msUntilRefresh <= 0) {
-      // Already expired or about to, refresh immediately
       refreshSession(currentSession.refreshToken)
         .then(async (newSession) => {
           await saveSession(newSession);
@@ -57,7 +78,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           scheduleRefresh(newSession);
         })
         .catch(() => {
-          // Refresh failed — session truly expired, sign out
           clearSession().then(() => setSession(null));
         });
       return;
@@ -95,19 +115,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       isReady,
       session,
+
       signIn: async (email, password) => {
         const result = await loginWithPassword(email, password);
 
         if (!result.ok) {
-          if ('needsActivation' in result && result.needsActivation) {
+          if ("needsActivation" in result && result.needsActivation) {
             return { needsActivation: true, email: result.email };
           }
-
-          if ('error' in result) {
+          if ("error" in result) {
             throw new Error(result.error);
           }
-
-          throw new Error('Login failed');
+          throw new Error("Login failed");
         }
 
         await saveSession(result.session);
@@ -115,16 +134,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         scheduleRefresh(result.session);
         return {};
       },
-      activate: async (email, otp, password) => {
-        const nextSession = await activateWithOtp(email, otp, password);
-        await saveSession(nextSession);
-        setSession(nextSession);
-        scheduleRefresh(nextSession);
+
+  verifyOtp: async (email: string, otp: string) => {
+    return verifyOtpApi(email, otp);
+  },
+
+  setPassword: async (email: string, password: string) => {
+    const nextSession = await setPasswordApi(email, password);
+    await saveSession(nextSession);
+    setSession(nextSession);
+    scheduleRefresh(nextSession);
+  },
+
+      requestOtp: async (email) => {
+        return requestOtpApi(email);
       },
+
+      forgotPassword: async (email) => {
+        return forgotPasswordApi(email);
+      },
+
+  verifyResetOtp: async (email: string, otp: string) => {
+    return verifyResetOtpApi(email, otp);
+  },
+
+  setNewPassword: async (email: string, otp: string, newPassword: string) => {
+    await setNewPasswordApi(email, otp, newPassword);
+  },
+
       signOut: async () => {
+        const currentRefreshToken = session?.refreshToken;
         if (refreshTimerRef.current) clearTimeout(refreshTimerRef.current);
         await clearSession();
         setSession(null);
+        // Best-effort server-side logout
+        if (currentRefreshToken) {
+          logoutApi(currentRefreshToken).catch(() => {});
+        }
       },
     }),
     [isReady, session, scheduleRefresh],
@@ -135,10 +181,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-
   if (!context) {
     throw new Error("useAuth must be used within AuthProvider");
   }
-
   return context;
 }
