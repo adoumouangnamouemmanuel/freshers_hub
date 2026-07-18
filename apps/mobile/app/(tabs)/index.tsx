@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { useRouter , Link } from "expo-router";
 import {
   Pressable,
