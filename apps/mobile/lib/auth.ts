@@ -45,45 +45,30 @@ function getWebStorage() {
   if (Platform.OS !== "web" || typeof window === "undefined") {
     return null;
   }
-
   return window.localStorage;
 }
 
 async function getItem(key: string) {
   const storage = getWebStorage();
-  if (storage) {
-    return storage.getItem(key);
-  }
-
+  if (storage) return storage.getItem(key);
   return AsyncStorage.getItem(key);
 }
 
 async function setItem(key: string, value: string) {
   const storage = getWebStorage();
-  if (storage) {
-    storage.setItem(key, value);
-    return;
-  }
-
+  if (storage) { storage.setItem(key, value); return; }
   await AsyncStorage.setItem(key, value);
 }
 
 async function removeItem(key: string) {
   const storage = getWebStorage();
-  if (storage) {
-    storage.removeItem(key);
-    return;
-  }
-
+  if (storage) { storage.removeItem(key); return; }
   await AsyncStorage.removeItem(key);
 }
 
 export async function loadSession() {
   const value = await getItem(SESSION_KEY);
-  if (!value) {
-    return null;
-  }
-
+  if (!value) return null;
   return JSON.parse(value) as AuthSession;
 }
 
@@ -95,6 +80,8 @@ export async function clearSession() {
   await removeItem(SESSION_KEY);
 }
 
+/* ─────────────── Auth API calls ─────────────── */
+
 export async function loginWithPassword(
   email: string,
   password: string,
@@ -104,7 +91,6 @@ export async function loginWithPassword(
       method: "POST",
       body: JSON.stringify({ email, password }),
     });
-
     return { ok: true, session };
   } catch (error) {
     const status = (error as Error & { status?: number }).status;
@@ -115,21 +101,23 @@ export async function loginWithPassword(
     if (status === 409 && body?.needsActivation) {
       return { ok: false, needsActivation: true, email: body.email || email };
     }
-
     return { ok: false, error: (error as Error).message };
   }
 }
 
-export async function activateWithOtp(
-  email: string,
-  otp: string,
-  password: string,
-) {
-  const session = await apiRequest<AuthSession>("/auth/activate", {
-    method: "POST",
-    body: JSON.stringify({ email, otp, password }),
-  });
+export async function verifyOtp(email: string, otp: string) {
+  const result = await apiRequest<{ success: boolean; message: string; email: string }>(
+    "/auth/verify-otp",
+    { method: "POST", body: JSON.stringify({ email, otp }) },
+  );
+  return result;
+}
 
+export async function setPassword(email: string, password: string) {
+  const session = await apiRequest<AuthSession>("/auth/set-password", {
+    method: "POST",
+    body: JSON.stringify({ email, password }),
+  });
   return session;
 }
 
@@ -138,6 +126,48 @@ export async function refreshSession(refreshToken: string) {
     method: "POST",
     body: JSON.stringify({ refreshToken }),
   });
-
   return session;
+}
+
+export async function requestOtp(email: string) {
+  const result = await apiRequest<{ success: boolean; message: string }>(
+    "/auth/request-otp",
+    { method: "POST", body: JSON.stringify({ email }) },
+  );
+  return result;
+}
+
+export async function forgotPassword(email: string) {
+  const result = await apiRequest<{ success: boolean; message: string }>(
+    "/auth/forgot-password",
+    { method: "POST", body: JSON.stringify({ email }) },
+  );
+  return result;
+}
+
+export async function verifyResetOtp(email: string, otp: string) {
+  const result = await apiRequest<{ success: boolean; message: string }>(
+    "/auth/verify-reset-otp",
+    { method: "POST", body: JSON.stringify({ email, otp }) },
+  );
+  return result;
+}
+
+export async function setNewPassword(email: string, otp: string, newPassword: string) {
+  const result = await apiRequest<{ success: boolean; message: string }>(
+    "/auth/set-new-password",
+    { method: "POST", body: JSON.stringify({ email, otp, newPassword }) },
+  );
+  return result;
+}
+
+export async function logout(refreshToken: string) {
+  try {
+    await apiRequest("/auth/logout", {
+      method: "POST",
+      body: JSON.stringify({ refreshToken }),
+    });
+  } catch {
+    // Swallow — we clear local session regardless
+  }
 }
