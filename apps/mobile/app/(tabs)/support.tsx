@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View, Pressable, ScrollView, Linking, ActivityIndicator, Platform, RefreshControl, Image, TouchableOpacity } from "react-native"; 
-import globalStyles from '../styles';
+import globalStyles from '../../styles';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
