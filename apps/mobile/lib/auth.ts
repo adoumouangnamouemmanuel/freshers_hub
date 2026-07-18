@@ -18,6 +18,12 @@ export type AuthUser = {
   id: string;
   email: string;
   fullName: string;
+  phone?: string;
+  country?: string;
+  major?: string;
+  avatarUrl?: string;
+  classYear?: number;
+  createdAt?: string;
   roles: AuthRole[];
   studentProfile: StudentProfile | null;
 };
