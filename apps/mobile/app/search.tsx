@@ -8,7 +8,7 @@ import {
   ScrollView,
   ActivityIndicator 
 } from "react-native"; 
-import globalStyles from './styles';
+import globalStyles from '../styles';
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -144,7 +144,7 @@ export default function SearchScreen() {
         ) : !hasResults && !isFaqLoading ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateTitle}>No results found</Text>
-            <Text style={styles.emptyStateDesc}>We couldn't find anything matching "{searchQuery}"</Text>
+            <Text style={styles.emptyStateDesc}>We couldn&apos;t find anything matching &quot;{searchQuery}&quot;</Text>
           </View>
         ) : (
           <View style={styles.resultsList}>
