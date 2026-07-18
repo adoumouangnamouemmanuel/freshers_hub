@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View, ScrollView, ActivityIndicator, TouchableOpacity, TextInput, Alert, RefreshControl, Pressable } from "react-native";
 import { useRouter } from "expo-router";
-import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from '@expo/vector-icons';
 import { apiRequest } from "@/lib/api";
 import { useAuth } from "@/context/auth-context";
@@ -298,7 +298,7 @@ export default function ClubAdminScreen() {
           
           {recentPosts.length === 0 ? (
             <View style={styles.card}>
-              <Text style={styles.emptyText}>No posts yet. Tap "Manage Feed" to create one.</Text>
+              <Text style={styles.emptyText}>No posts yet. Tap &quot;Manage Feed&quot; to create one.</Text>
             </View>
           ) : (
             <View style={{ gap: 12 }}>
