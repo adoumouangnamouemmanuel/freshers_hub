@@ -86,6 +86,8 @@ const MAPPING = {
   'laptopcomputer': 'laptop-mac',
   'log-out': 'logout',
   'gearshape.fill': 'settings',
+  'eye': 'visibility',
+  'eye.slash': 'visibility-off',
   // Profile & Settings
   'lock.fill': 'lock',
   'lock': 'lock-outline',
