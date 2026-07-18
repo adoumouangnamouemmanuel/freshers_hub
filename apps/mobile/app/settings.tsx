@@ -1,5 +1,5 @@
-import { View, Text, StyleSheet, Pressable, ScrollView, Switch, Alert } from "react-native"; 
-import { useState, useEffect } from "react";
+import { View, Text, StyleSheet, Pressable, ScrollView, Switch, Alert, Animated } from "react-native"; 
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -50,6 +50,25 @@ export default function SettingsScreen() {
     Alert.alert("Privacy Settings", "Coming soon! This feature is under development.");
   };
 
+  // Animation for fade-in effect
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
   return (
     <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
       <View style={styles.header}>
@@ -64,7 +83,7 @@ export default function SettingsScreen() {
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.section}>
+        <Animated.View style={[styles.section, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <Text style={styles.sectionTitle}>Account</Text>
           <View style={styles.card}>
             <Pressable style={styles.menuItem} onPress={handleChangePassword}>
@@ -104,9 +123,9 @@ export default function SettingsScreen() {
               <IconSymbol name="chevron.right" size={18} color="#9CA3AF" />
             </Pressable>
           </View>
-        </View>
+        </Animated.View>
 
-        <View style={styles.section}>
+        <Animated.View style={[styles.section, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <Text style={styles.sectionTitle}>Preferences</Text>
           <View style={styles.card}>
             <View style={styles.settingRow}>
@@ -164,9 +183,9 @@ export default function SettingsScreen() {
               />
             </View>
           </View>
-        </View>
+        </Animated.View>
 
-        <View style={styles.section}>
+        <Animated.View style={[styles.section, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
           <Text style={styles.sectionTitle}>About</Text>
           <View style={styles.card}>
             <View style={styles.menuItem}>
@@ -179,7 +198,7 @@ export default function SettingsScreen() {
               </View>
             </View>
           </View>
-        </View>
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -211,13 +230,8 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 20,
+    borderRadius: 16,
     padding: 20,
-    shadowColor: "#1A2B4A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 3,
     borderWidth: 1,
     borderColor: "#F0F2F5",
   },
