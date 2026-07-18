@@ -4,6 +4,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useRouter, useLocalSearchParams, Stack } from "expo-router";
 import { useAuth } from "../../context/auth-context";
 import { IconSymbol } from "../../components/ui/icon-symbol";
+import { hasRole } from "@/lib/permissions";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Image } from "expo-image";
@@ -18,8 +19,8 @@ export default function ScheduleSessionScreen() {
   const { session } = useAuth();
   const token = session?.accessToken;
   const insets = useSafeAreaInsets();
-  const isCoachAdmin = session?.user.roles.some((r: any) => r.name === "coach_admin" || r.name === "admin");
-  const isCoach = session?.user.roles.some((r: any) => r.name === "peer_coach");
+  const isCoachAdmin = hasRole(session?.user.roles || [], "coach_admin") || hasRole(session?.user.roles || [], "admin");
+  const isCoach = hasRole(session?.user.roles || [], "peer_coach");
 
   const [loading, setLoading] = useState(false);
   
