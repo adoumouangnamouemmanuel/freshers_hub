@@ -10,9 +10,12 @@ const {
   handleSetPassword,
   handleVerifyResetOtp,
   handleSetNewPassword,
+  handleChangePassword,
+  handleUpdateProfile,
 } = require("../controllers/authController");
 const validate = require("../middleware/validate");
 const { rateLimit } = require("../middleware/rateLimiter");
+const { requireAuth } = require("../middleware/authMiddleware");
 const {
   loginSchema,
   refreshSchema,
@@ -21,7 +24,9 @@ const {
   resetPasswordSchema,
   checkEmailSchema,
   verifyOtpSchema,
-  setPasswordSchema
+  setPasswordSchema,
+  changePasswordSchema,
+  updateProfileSchema
 } = require("../schemas/authSchemas");
 
 const router = express.Router();
@@ -36,5 +41,7 @@ router.post("/logout", handleLogout);
 router.post("/check-email", validate(checkEmailSchema), handleCheckEmail);
 router.post("/verify-otp", validate(verifyOtpSchema), handleVerifyOtp);
 router.post("/set-password", validate(setPasswordSchema), handleSetPassword);
+router.post("/change-password", requireAuth, validate(changePasswordSchema), handleChangePassword);
+router.put("/profile", requireAuth, validate(updateProfileSchema), handleUpdateProfile);
 
 module.exports = router;
