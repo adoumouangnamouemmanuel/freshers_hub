@@ -10,19 +10,19 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
+  // Switch,
   Text,
   View,
 } from "react-native";
 import {
   SafeAreaView,
-  useSafeAreaInsets,
+  // useSafeAreaInsets,
 } from "react-native-safe-area-context";
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { session, signOut } = useAuth();
-  const insets = useSafeAreaInsets();
+  // const insets = useSafeAreaInsets();
 
   // Settings state
   const [darkMode, setDarkMode] = useState(false);
@@ -45,22 +45,22 @@ export default function ProfileScreen() {
     });
   }, []);
 
-  const toggleDarkMode = async (val: boolean) => {
-    setDarkMode(val);
-    await AsyncStorage.setItem("@dark_mode", String(val));
-  };
-  const toggleEventNotifs = async (val: boolean) => {
-    setEventNotifs(val);
-    await AsyncStorage.setItem("@notifs_events", String(val));
-  };
-  const toggleClubNotifs = async (val: boolean) => {
-    setClubNotifs(val);
-    await AsyncStorage.setItem("@notifs_clubs", String(val));
-  };
-  const togglePushNotifs = async (val: boolean) => {
-    setPushNotifs(val);
-    await AsyncStorage.setItem("@notifs_push", String(val));
-  };
+  // const toggleDarkMode = async (val: boolean) => {
+  //   setDarkMode(val);
+  //   await AsyncStorage.setItem("@dark_mode", String(val));
+  // };
+  // const toggleEventNotifs = async (val: boolean) => {
+  //   setEventNotifs(val);
+  //   await AsyncStorage.setItem("@notifs_events", String(val));
+  // };
+  // const toggleClubNotifs = async (val: boolean) => {
+  //   setClubNotifs(val);
+  //   await AsyncStorage.setItem("@notifs_clubs", String(val));
+  // };
+  // const togglePushNotifs = async (val: boolean) => {
+  //   setPushNotifs(val);
+  //   await AsyncStorage.setItem("@notifs_push", String(val));
+  // };
 
   const handleSignOut = async () => {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
