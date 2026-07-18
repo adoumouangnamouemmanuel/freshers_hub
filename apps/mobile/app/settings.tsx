@@ -39,7 +39,7 @@ export default function SettingsScreen() {
   };
 
   const handleChangePassword = () => {
-    router.push("/(auth)/forgot-password");
+    router.push("/change-password");
   };
 
   const handleNotificationSettings = () => {
