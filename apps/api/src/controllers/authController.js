@@ -552,6 +552,108 @@ const handleCheckEmail = asyncHandler(async (req, res) => {
   }
 });
 
+// Change password (authenticated)
+const handleChangePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.user?.id; // From auth middleware
+  logger.info(`Change password request for user: ${userId}`);
+
+  if (!userId) {
+    throw new AppError("Authentication required", 401);
+  }
+
+  const client = await pool.connect();
+  try {
+    // Verify current password
+    const verification = await client.query(
+      `
+        SELECT password_hash = crypt($2, password_hash) AS matches
+        FROM credentials
+        WHERE user_id = $1
+      `,
+      [userId, String(currentPassword)],
+    );
+
+    if (!verification.rows[0]?.matches) {
+      logger.warn(`Change password failed: Invalid current password for user ${userId}`);
+      throw new AppError("Current password is incorrect", 400);
+    }
+
+    // Update password
+    await client.query(
+      `
+        UPDATE credentials
+        SET password_hash = crypt($2, gen_salt('bf')),
+            updated_at = now()
+        WHERE user_id = $1
+      `,
+      [userId, String(newPassword)],
+    );
+
+    logger.info(`Password changed successfully for user: ${userId}`);
+    res.json({ success: true, message: "Password changed successfully" });
+  } catch (error) {
+    logger.error(`Change password error for user ${userId}: ${error.message}`);
+    throw error;
+  } finally {
+    client.release();
+  }
+});
+
+// Update user profile
+const handleUpdateProfile = asyncHandler(async (req, res) => {
+  const { phone, major, avatarUrl } = req.body;
+  const userId = req.user?.id; // From auth middleware
+  logger.info(`Update profile request for user: ${userId}`);
+
+  if (!userId) {
+    throw new AppError("Authentication required", 401);
+  }
+
+  const client = await pool.connect();
+  try {
+    // Update user profile
+    await client.query(
+      `
+        UPDATE users
+        SET phone = $2,
+            major = $3,
+            avatar_url = $4,
+            updated_at = now()
+        WHERE id = $1
+      `,
+      [userId, phone || null, major || null, avatarUrl || null],
+    );
+
+    // Get updated user data
+    const user = await authService.loadUserBundle(client, null, userId);
+    const tokens = await authService.issueTokens(client, user);
+
+    logger.info(`Profile updated successfully for user: ${userId}`);
+    res.json({
+      user: {
+        id: user.id,
+        email: user.email,
+        fullName: user.full_name,
+        phone: user.phone,
+        country: user.country,
+        major: user.major,
+        avatarUrl: user.avatar_url,
+        classYear: user.class_year,
+        roles: user.roles,
+        studentProfile: user.student_profile,
+        createdAt: user.created_at,
+      },
+      ...tokens,
+    });
+  } catch (error) {
+    logger.error(`Update profile error for user ${userId}: ${error.message}`);
+    throw error;
+  } finally {
+    client.release();
+  }
+});
+
 const handleLogout = asyncHandler(async (req, res) => {
   const { refreshToken } = req.body;
   logger.info(`Logout request`);
@@ -594,4 +696,6 @@ module.exports = {
   handleSetNewPassword,
   handleCheckEmail,
   handleLogout,
+  handleChangePassword,
+  handleUpdateProfile,
 };
