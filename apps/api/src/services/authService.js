@@ -152,30 +152,29 @@ async function generateOTP(client, user) {
   return otp;
 }
 
-async function generatePasswordResetToken(client, user) {
-  const token = crypto.randomBytes(32).toString('hex');
-  const tokenHash = hashToken(token);
-  logger.info(`Generating password reset token for user ${user.email}`);
+async function generatePasswordResetOtp(client, user) {
+  const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits
+  logger.info(`Generating password reset OTP for user ${user.email}`);
 
   await client.query(
     `
       INSERT INTO password_resets (user_id, token_hash, expires_at, created_at)
-      VALUES ($1, $2, now() + interval '1 hour', now())
+      VALUES ($1, crypt($2, gen_salt('bf')), now() + interval '15 minutes', now())
       ON CONFLICT (user_id) DO UPDATE
       SET token_hash = EXCLUDED.token_hash,
           expires_at = EXCLUDED.expires_at,
           created_at = EXCLUDED.created_at,
           consumed_at = NULL
     `,
-    [user.id, tokenHash]
+    [user.id, otp]
   );
 
-  // MOCK DELIVERY: Print reset link to console instead of sending email
+  // MOCK DELIVERY: Print OTP to console instead of sending email/SMS
   console.log(`\n==============================================`);
-  console.log(`[MOCK DELIVERY] Password reset token for ${user.email} is: ${token}`);
+  console.log(`[MOCK DELIVERY] Password reset OTP for ${user.email} is: ${otp}`);
   console.log(`==============================================\n`);
   
-  return token;
+  return otp;
 }
 
 module.exports = {
@@ -186,5 +185,5 @@ module.exports = {
   loadUserBundle,
   issueTokens,
   generateOTP,
-  generatePasswordResetToken,
+  generatePasswordResetOtp,
 };
