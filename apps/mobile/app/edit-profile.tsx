@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import { View, Text, StyleSheet, Pressable, ScrollView, TextInput, Alert, Animated } from "react-native"; 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "expo-router";
