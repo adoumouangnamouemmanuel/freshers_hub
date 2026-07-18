@@ -60,19 +60,19 @@ const handleLogin = asyncHandler(async (req, res) => {
   }
 });
 
-const handleActivate = asyncHandler(async (req, res) => {
-  const { email, otp, password } = req.body;
-  logger.info(`Activation attempt for email: ${email}`);
+// Step 1: Verify OTP and mark it as used
+const handleVerifyOtp = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+  logger.info(`OTP verification attempt for email: ${email}`);
 
   const client = await pool.connect();
   try {
     const { rows } = await client.query(
       `
         SELECT
-          u.id, u.email, ac.otp_hash, ac.expires_at, ac.consumed_at, c.is_activated
+          u.id, u.email, ac.otp_hash, ac.expires_at, ac.consumed_at
         FROM users u
         JOIN activation_codes ac ON ac.user_id = u.id
-        LEFT JOIN credentials c ON c.user_id = u.id
         WHERE lower(u.email) = lower($1)
       `,
       [String(email).trim()]
@@ -80,15 +80,15 @@ const handleActivate = asyncHandler(async (req, res) => {
 
     const record = rows[0];
     if (!record) {
-      logger.warn(`Activation failed: Record not found (${email})`);
-      throw new AppError("Activation record not found", 404);
+      logger.warn(`OTP verification failed: Record not found (${email})`);
+      throw new AppError("Verification record not found", 404);
     }
     if (record.consumed_at) {
-      logger.warn(`Activation failed: OTP already used (${email})`);
+      logger.warn(`OTP verification failed: OTP already used (${email})`);
       throw new AppError("OTP already used", 409);
     }
     if (new Date(record.expires_at).getTime() < Date.now()) {
-      logger.warn(`Activation failed: OTP expired (${email})`);
+      logger.warn(`OTP verification failed: OTP expired (${email})`);
       throw new AppError("OTP expired", 410);
     }
 
@@ -102,10 +102,49 @@ const handleActivate = asyncHandler(async (req, res) => {
     );
 
     if (!otpCheck.rows[0]?.matches) {
-      logger.warn(`Activation failed: Invalid OTP (${email})`);
+      logger.warn(`OTP verification failed: Invalid OTP (${email})`);
       throw new AppError("Invalid OTP", 401);
     }
 
+    // Mark OTP as consumed
+    await client.query(
+      `
+        UPDATE activation_codes
+        SET consumed_at = now()
+        WHERE user_id = $1
+      `,
+      [record.id]
+    );
+
+    logger.info(`OTP verified successfully for email: ${email}`);
+    res.json({ 
+      success: true, 
+      message: "OTP verified. Please set your password.",
+      email: record.email 
+    });
+  } catch (error) {
+    logger.error(`OTP verification error for ${email}: ${error.message}`);
+    throw error;
+  } finally {
+    client.release();
+  }
+});
+
+// Step 2: Set password and complete activation
+const handleSetPassword = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+  logger.info(`Set password attempt for email: ${email}`);
+
+  const client = await pool.connect();
+  try {
+    const user = await authService.loadUserBundle(client, String(email).trim());
+
+    if (!user) {
+      logger.warn(`Set password failed: User not found (${email})`);
+      throw new AppError("User not found", 404);
+    }
+
+    // Set password and activate
     await client.query(
       `
         INSERT INTO credentials (user_id, password_hash, is_activated, activated_at)
@@ -116,35 +155,26 @@ const handleActivate = asyncHandler(async (req, res) => {
             activated_at = EXCLUDED.activated_at,
             updated_at = now()
       `,
-      [record.id, String(password)]
+      [user.id, String(password)]
     );
 
-    await client.query(
-      `
-        UPDATE activation_codes
-        SET consumed_at = now()
-        WHERE user_id = $1
-      `,
-      [record.id]
-    );
+    const updatedUser = await authService.loadUserBundle(client, String(email).trim());
+    const tokens = await authService.issueTokens(client, updatedUser);
 
-    const user = await authService.loadUserBundle(client, String(email).trim());
-    const tokens = await authService.issueTokens(client, user);
-
-    logger.info(`Activation successful for email: ${email}`);
+    logger.info(`Password set and activation successful for email: ${email}`);
     res.json({
       activated: true,
       user: {
-        id: user.id,
-        email: user.email,
-        fullName: user.full_name,
-        roles: user.roles,
-        studentProfile: user.student_profile,
+        id: updatedUser.id,
+        email: updatedUser.email,
+        fullName: updatedUser.full_name,
+        roles: updatedUser.roles,
+        studentProfile: updatedUser.student_profile,
       },
       ...tokens,
     });
   } catch (error) {
-    logger.error(`Activation error for ${email}: ${error.message}`);
+    logger.error(`Set password error for ${email}: ${error.message}`);
     throw error;
   } finally {
     client.release();
@@ -245,10 +275,11 @@ const handleForgotPassword = asyncHandler(async (req, res) => {
       throw new AppError("User not found", 404);
     }
 
-    await authService.generatePasswordResetToken(client, user);
-    logger.info(`Password reset token successfully generated for email: ${email}`);
+    // Generate OTP for password reset
+    await authService.generatePasswordResetOtp(client, user);
+    logger.info(`Password reset OTP generated for email: ${email}`);
     
-    res.json({ success: true, message: "Password reset link sent to email (mocked to terminal)" });
+    res.json({ success: true, message: "OTP sent to email (mocked to terminal)" });
   } catch (error) {
     logger.error(`Forgot password error for ${email}: ${error.message}`);
     throw error;
@@ -257,9 +288,10 @@ const handleForgotPassword = asyncHandler(async (req, res) => {
   }
 });
 
-const handleResetPassword = asyncHandler(async (req, res) => {
-  const { email, token, newPassword } = req.body;
-  logger.info(`Reset password attempt for email: ${email}`);
+// Step 1: Verify reset OTP
+const handleVerifyResetOtp = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+  logger.info(`Verify reset OTP for email: ${email}`);
 
   const client = await pool.connect();
   try {
@@ -268,53 +300,122 @@ const handleResetPassword = asyncHandler(async (req, res) => {
       throw new AppError("User not found", 404);
     }
 
-    const tokenHash = authService.hashToken(String(token).trim());
-    
     const { rows } = await client.query(
       `
-        SELECT * FROM password_resets
-        WHERE user_id = $1 AND token_hash = $2
+        SELECT pr.token_hash, pr.expires_at, pr.consumed_at
+        FROM password_resets pr
+        WHERE pr.user_id = $1
+        ORDER BY pr.created_at DESC
+        LIMIT 1
       `,
-      [user.id, tokenHash]
+      [user.id]
     );
 
     const record = rows[0];
     if (!record) {
-      logger.warn(`Reset password failed: Invalid token (${email})`);
-      throw new AppError("Invalid or expired token", 400);
+      logger.warn(`Verify reset OTP failed: No OTP found (${email})`);
+      throw new AppError("Invalid or expired OTP", 400);
     }
     if (record.consumed_at) {
-      logger.warn(`Reset password failed: Token already consumed (${email})`);
-      throw new AppError("Token already used", 409);
+      logger.warn(`Verify reset OTP failed: OTP already used (${email})`);
+      throw new AppError("OTP already used", 409);
     }
     if (new Date(record.expires_at).getTime() < Date.now()) {
-      logger.warn(`Reset password failed: Token expired (${email})`);
-      throw new AppError("Token expired", 410);
+      logger.warn(`Verify reset OTP failed: OTP expired (${email})`);
+      throw new AppError("OTP expired", 410);
     }
 
-    await client.query(
+    const otpCheck = await client.query(
       `
-        UPDATE credentials
-        SET password_hash = crypt($2, gen_salt('bf')),
-            updated_at = now()
+        SELECT crypt($2, token_hash) = token_hash AS matches
+        FROM password_resets
         WHERE user_id = $1
       `,
+      [user.id, String(otp).trim()]
+    );
+
+    if (!otpCheck.rows[0]?.matches) {
+      logger.warn(`Verify reset OTP failed: Invalid OTP (${email})`);
+      throw new AppError("Invalid OTP", 401);
+    }
+
+    logger.info(`Reset OTP verified successfully for email: ${email}`);
+    res.json({ success: true, message: "OTP verified. Please set your new password." });
+  } catch (error) {
+    logger.error(`Verify reset OTP error for ${email}: ${error.message}`);
+    throw error;
+  } finally {
+    client.release();
+  }
+});
+
+// Step 2: Set new password
+const handleSetNewPassword = asyncHandler(async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+  logger.info(`Set new password for email: ${email}`);
+
+  const client = await pool.connect();
+  try {
+    const user = await authService.loadUserBundle(client, String(email).trim());
+    if (!user) {
+      throw new AppError("User not found", 404);
+    }
+
+    // Verify OTP again
+    const { rows } = await client.query(
+      `
+        SELECT pr.token_hash, pr.expires_at, pr.consumed_at
+        FROM password_resets pr
+        WHERE pr.user_id = $1
+        ORDER BY pr.created_at DESC
+        LIMIT 1
+      `,
+      [user.id]
+    );
+
+    const record = rows[0];
+    if (!record || record.consumed_at || new Date(record.expires_at).getTime() < Date.now()) {
+      throw new AppError("Invalid or expired OTP", 400);
+    }
+
+    const otpCheck = await client.query(
+      `
+        SELECT crypt($2, token_hash) = token_hash AS matches
+        FROM password_resets
+        WHERE user_id = $1
+      `,
+      [user.id, String(otp).trim()]
+    );
+
+    if (!otpCheck.rows[0]?.matches) {
+      throw new AppError("Invalid OTP", 401);
+    }
+
+    // Update password
+    await client.query(
+      `
+      UPDATE credentials
+      SET password_hash = crypt($2, gen_salt('bf')),
+          updated_at = now()
+      WHERE user_id = $1
+    `,
       [user.id, String(newPassword)]
     );
 
+    // Mark OTP as consumed
     await client.query(
       `
-        UPDATE password_resets
-        SET consumed_at = now()
-        WHERE user_id = $1 AND token_hash = $2
-      `,
-      [user.id, tokenHash]
+      UPDATE password_resets
+      SET consumed_at = now()
+      WHERE user_id = $1
+    `,
+      [user.id]
     );
 
     logger.info(`Password successfully reset for email: ${email}`);
     res.json({ success: true, message: "Password has been successfully reset" });
   } catch (error) {
-    logger.error(`Reset password error for ${email}: ${error.message}`);
+    logger.error(`Set new password error for ${email}: ${error.message}`);
     throw error;
   } finally {
     client.release();
@@ -378,11 +479,13 @@ const handleLogout = asyncHandler(async (req, res) => {
 
 module.exports = {
   handleLogin,
-  handleActivate,
+  handleVerifyOtp,
+  handleSetPassword,
   handleRefresh,
   handleRequestOtp,
   handleForgotPassword,
-  handleResetPassword,
+  handleVerifyResetOtp,
+  handleSetNewPassword,
   handleCheckEmail,
   handleLogout,
 };
