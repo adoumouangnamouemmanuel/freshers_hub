@@ -21,11 +21,13 @@ import { apiRequest } from "@/lib/api";
 const C = {
   bg: "#FFFFFF",
   maroon: "#6B1D2A",
-  grayBg: "#F5F5F7",
-  border: "#E5E5EA",
-  error: "#FF3B30",
+  maroonLight: "#8B2E3D",
+  grayBg: "#F9F9FB",
+  border: "#E8E8ED",
+  error: "#DC3545",
+  success: "#28A745",
   text: "#1C1C1E",
-  textSec: "#8E8E93",
+  textSec: "#86868B",
 };
 
 type CheckEmailResponse = {
@@ -81,7 +83,7 @@ export default function LoginScreen() {
       setStep("password");
     } catch (e) {
       const err = e as Error & { status?: number; retryAfter?: number };
-      
+
       // Handle rate limit (429) on check-email
       if (err.status === 429) {
         const retryAfter = err.retryAfter || 60;
@@ -95,7 +97,7 @@ export default function LoginScreen() {
         });
         return;
       }
-      
+
       setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
       setLoading(false);
@@ -122,12 +124,13 @@ export default function LoginScreen() {
       }
     } catch (e) {
       const error = e as Error & { status?: number; retryAfter?: number };
-      
+
       // Handle account lockout (423) or rate limit (429)
       if (error.status === 423 || error.status === 429) {
         const retryAfter = error.retryAfter || 30; // default 30 seconds
-        const reason = error.status === 423 ? "account_lockout" : "login_rate_limit";
-        
+        const reason =
+          error.status === 423 ? "account_lockout" : "login_rate_limit";
+
         router.push({
           pathname: "/(auth)/rate-limit",
           params: {
@@ -138,7 +141,7 @@ export default function LoginScreen() {
         });
         return;
       }
-      
+
       setError("Invalid email or password");
     } finally {
       setLoading(false);
@@ -162,13 +165,16 @@ export default function LoginScreen() {
 
           {step === "email" ? (
             <>
-              <Text style={s.welcomeTitle}>Welcome</Text>
+              <Text style={s.welcomeTitle}>Welcome Back</Text>
               <Text style={s.welcomeSub}>
                 Sign in to your Fresher Hub account
               </Text>
             </>
           ) : (
-            <Text style={s.passwordSub}>Enter your password to continue</Text>
+            <>
+              <Text style={s.passwordTitle}>Verify Password</Text>
+              <Text style={s.passwordSub}>Enter your password to continue</Text>
+            </>
           )}
 
           <View style={s.form}>
@@ -298,85 +304,138 @@ const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
   body: {
     flex: 1,
-    paddingHorizontal: 32,
+    paddingHorizontal: 28,
+    paddingTop: 24,
+    paddingBottom: 32,
     justifyContent: "center",
     alignItems: "center",
   },
   logoWrap: {
-    width: 130,
-    height: 130,
+    width: 140,
+    height: 140,
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 20,
+    marginBottom: 32,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  logo: { width: 110, height: 110 },
+  logo: { width: 120, height: 120 },
   welcomeTitle: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: "800",
     color: C.maroon,
-    letterSpacing: -0.5,
-    marginBottom: 4,
+    letterSpacing: -0.8,
+    marginBottom: 8,
   },
-  welcomeSub: { fontSize: 15, color: C.textSec, marginBottom: 16 },
-  passwordSub: { fontSize: 15, color: C.textSec, marginBottom: 16 },
-  form: { width: "100%", gap: 14 },
+  welcomeSub: {
+    fontSize: 15,
+    color: C.textSec,
+    marginBottom: 28,
+    fontWeight: "400",
+    lineHeight: 22,
+  },
+  passwordTitle: {
+    fontSize: 28,
+    fontWeight: "700",
+    color: C.maroon,
+    letterSpacing: -0.5,
+    marginBottom: 6,
+  },
+  passwordSub: {
+    fontSize: 15,
+    color: C.textSec,
+    marginBottom: 28,
+    fontWeight: "400",
+  },
+  form: { width: "100%", gap: 16 },
   inputWrap: {
     backgroundColor: C.grayBg,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 14,
+    borderWidth: 1.5,
     borderColor: C.border,
     overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
   },
   input: {
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 15,
     fontSize: 16,
     color: C.text,
+    fontWeight: "500",
   },
-  inputErr: { borderColor: C.error, backgroundColor: "#FFF5F5" },
+  inputErr: { borderColor: C.error, backgroundColor: "#FFF7F7" },
   emailDisplay: {
     backgroundColor: C.grayBg,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: 14,
+    borderWidth: 1.5,
     borderColor: C.border,
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 14,
+    paddingVertical: 15,
+    marginBottom: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
   },
-  emailLabelText: { fontSize: 16, color: C.text, fontWeight: "500" },
+  emailLabelText: { fontSize: 16, color: C.text, fontWeight: "600" },
   pwRow: { flexDirection: "row", alignItems: "center" },
   pwInput: {
     flex: 1,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 15,
     fontSize: 16,
     color: C.text,
+    fontWeight: "500",
   },
-  eyeBtn: { paddingHorizontal: 14, paddingVertical: 12 },
-  forgot: { alignSelf: "flex-end", marginBottom: 4, marginTop: -4 },
-  forgotText: { fontSize: 13, fontWeight: "600", color: C.maroon },
+  eyeBtn: { paddingHorizontal: 14, paddingVertical: 13 },
+  forgot: { alignSelf: "flex-end", marginBottom: 4, marginTop: 4 },
+  forgotText: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: C.maroon,
+    letterSpacing: 0.2,
+  },
   error: {
     fontSize: 13,
     color: C.error,
     fontWeight: "600",
     textAlign: "center",
-    marginBottom: 4,
+    marginTop: 4,
+    marginBottom: 8,
   },
   btn: {
     backgroundColor: C.maroon,
-    borderRadius: 12,
+    borderRadius: 14,
     paddingVertical: 16,
     alignItems: "center",
-    marginTop: 4,
+    marginTop: 12,
+    shadowColor: "#6B1D2A",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
   },
-  btnPressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
-  btnDisabled: { opacity: 0.5 },
+  btnPressed: { opacity: 0.9, transform: [{ scale: 0.98 }] },
+  btnDisabled: { opacity: 0.6 },
   btnText: {
     fontSize: 16,
     fontWeight: "700",
     color: "#FFF",
     letterSpacing: 0.3,
   },
-  backLink: { marginTop: 20, paddingVertical: 8 },
-  backLinkText: { fontSize: 14, color: C.maroon, fontWeight: "600" },
+  backLink: { marginTop: 24, paddingVertical: 10 },
+  backLinkText: {
+    fontSize: 14,
+    color: C.maroon,
+    fontWeight: "600",
+    letterSpacing: 0.2,
+  },
 });
