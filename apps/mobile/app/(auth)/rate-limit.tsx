@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Animated,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -32,10 +33,10 @@ type RateLimitReason =
   | "otp_request_limit" 
   | "password_reset_limit";
 
-// Modern icon components using clean shapes
+// Clean, minimal icon components with consistent maroon styling
 function LockIcon() {
   return (
-    <View style={[iconStyles.container, { backgroundColor: "#FDF2F4", borderColor: "#FDDDE0" }]}>
+    <View style={[iconStyles.container, { backgroundColor: C.maroonBg }]}>
       <View style={iconStyles.lockBody}>
         <View style={iconStyles.lockShackle} />
         <View style={iconStyles.lockKeyhole} />
@@ -46,7 +47,7 @@ function LockIcon() {
 
 function ClockIcon() {
   return (
-    <View style={[iconStyles.container, { backgroundColor: "#FFF8F0", borderColor: "#FEE4C8" }]}>
+    <View style={[iconStyles.container, { backgroundColor: C.maroonBg }]}>
       <View style={iconStyles.clockFace}>
         <View style={iconStyles.clockHandHour} />
         <View style={iconStyles.clockHandMinute} />
@@ -58,7 +59,7 @@ function ClockIcon() {
 
 function MailIcon() {
   return (
-    <View style={[iconStyles.container, { backgroundColor: "#F0F7FF", borderColor: "#C8E2FF" }]}>
+    <View style={[iconStyles.container, { backgroundColor: C.maroonBg }]}>
       <View style={iconStyles.mailEnvelope}>
         <View style={iconStyles.mailFlap} />
       </View>
@@ -68,7 +69,7 @@ function MailIcon() {
 
 function KeyIcon() {
   return (
-    <View style={[iconStyles.container, { backgroundColor: "#F3F0FF", borderColor: "#D8CFFE" }]}>
+    <View style={[iconStyles.container, { backgroundColor: C.maroonBg }]}>
       <View style={iconStyles.keyHead} />
       <View style={iconStyles.keyShaft} />
       <View style={iconStyles.keyNotch} />
@@ -78,13 +79,17 @@ function KeyIcon() {
 
 const iconStyles = StyleSheet.create({
   container: {
-    width: 80,
-    height: 80,
-    borderRadius: 20,
+    width: 88,
+    height: 88,
+    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 1.5,
-    marginBottom: 24,
+    marginBottom: 28,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 2,
   },
   // Lock
   lockBody: {
@@ -119,8 +124,8 @@ const iconStyles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    borderWidth: 3,
-    borderColor: "#E67E22",
+    borderWidth: 2.5,
+    borderColor: C.maroon,
   },
   clockHandHour: {
     position: "absolute",
@@ -128,7 +133,7 @@ const iconStyles = StyleSheet.create({
     left: 17.5,
     width: 2.5,
     height: 10,
-    backgroundColor: "#E67E22",
+    backgroundColor: C.maroon,
     borderRadius: 1.5,
     transform: [{ rotate: "-30deg" }],
     transformOrigin: "bottom",
@@ -139,7 +144,7 @@ const iconStyles = StyleSheet.create({
     left: 17.5,
     width: 2,
     height: 14,
-    backgroundColor: "#E67E22",
+    backgroundColor: C.maroon,
     borderRadius: 1,
   },
   clockCenter: {
@@ -149,14 +154,14 @@ const iconStyles = StyleSheet.create({
     width: 3,
     height: 3,
     borderRadius: 1.5,
-    backgroundColor: "#E67E22",
+    backgroundColor: C.maroon,
   },
   // Mail
   mailEnvelope: {
     width: 32,
     height: 22,
     borderRadius: 3,
-    backgroundColor: "#3B82F6",
+    backgroundColor: C.maroon,
     alignItems: "center",
     justifyContent: "center",
   },
@@ -168,16 +173,16 @@ const iconStyles = StyleSheet.create({
     borderLeftWidth: 16,
     borderRightWidth: 16,
     borderBottomWidth: 12,
-    borderLeftColor: "#3B82F6",
-    borderRightColor: "#3B82F6",
-    borderBottomColor: "#2563EB",
+    borderLeftColor: C.maroon,
+    borderRightColor: C.maroon,
+    borderBottomColor: C.maroonLight,
   },
   // Key
   keyHead: {
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: "#7C3AED",
+    backgroundColor: C.maroon,
     marginRight: -6,
     zIndex: 1,
   },
@@ -186,7 +191,7 @@ const iconStyles = StyleSheet.create({
     left: 34,
     width: 16,
     height: 4,
-    backgroundColor: "#7C3AED",
+    backgroundColor: C.maroon,
     borderRadius: 2,
     top: 6,
   },
@@ -196,7 +201,7 @@ const iconStyles = StyleSheet.create({
     top: 10,
     width: 8,
     height: 3,
-    backgroundColor: "#7C3AED",
+    backgroundColor: C.maroon,
     borderRadius: 1.5,
   },
 });
@@ -207,7 +212,6 @@ export default function RateLimitScreen() {
   
   const reason = useMemo(() => (params.reason || "account_lockout") as RateLimitReason, [params.reason]);
   const retryAfter = useMemo(() => parseInt(params.retryAfter || "0", 10), [params.retryAfter]);
-  // const message = useMemo(() => params.message || "", [params.message]);
   
   const [countdown, setCountdown] = useState(retryAfter);
   const pulseAnim = useState(new Animated.Value(1))[0];
@@ -322,105 +326,159 @@ export default function RateLimitScreen() {
 
   return (
     <SafeAreaView style={s.screen}>
-      <View style={s.container}>
-        {/* Top section with icon and title */}
-        <View style={s.topSection}>
-          {getIcon()}
-          <Text style={s.title}>{getTitle()}</Text>
-          <Text style={s.description}>{getDescription()}</Text>
-        </View>
+      <ScrollView 
+        contentContainerStyle={s.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={s.container}>
+          {/* Top section with icon and title */}
+          <View style={s.topSection}>
+            {getIcon()}
+            <Text style={s.title}>{getTitle()}</Text>
+            <Text style={s.description}>{getDescription()}</Text>
+          </View>
 
-        {/* Countdown timer */}
-        {countdown > 0 ? (
-          <Animated.View style={[s.countdownContainer, { transform: [{ scale: pulseAnim }] }]}>
-            <View style={[s.countdownCircle, { borderColor: accentColor }]}>
-              <Text style={[s.countdownText, { color: accentColor }]}>{formatTime(countdown)}</Text>
-              <Text style={[s.countdownLabel, { color: accentColor }]}>Waiting period</Text>
+          {/* Countdown timer */}
+          {countdown > 0 ? (
+            <Animated.View style={[s.countdownContainer, { transform: [{ scale: pulseAnim }] }]}>
+              <View style={[s.countdownCircle, { borderColor: accentColor }]}>
+                <Text style={[s.countdownText, { color: accentColor }]}>{formatTime(countdown)}</Text>
+                <Text style={[s.countdownLabel, { color: accentColor }]}>Waiting period</Text>
+              </View>
+            </Animated.View>
+          ) : (
+            <View style={s.successContainer}>
+              <View style={[s.successDot, { backgroundColor: C.success }]} />
+              <Text style={s.successText}>You may try again now</Text>
             </View>
-          </Animated.View>
-        ) : (
-          <View style={s.successContainer}>
-            <View style={[s.successDot, { backgroundColor: C.success }]} />
-            <Text style={s.successText}>You may try again now</Text>
-          </View>
-        )}
-
-        {/* Info card */}
-        <View style={s.infoCard}>
-          <Text style={s.infoTitle}>What happens next?</Text>
-          <View style={s.infoRow}>
-            <View style={[s.infoDot, { backgroundColor: accentColor }]} />
-            <Text style={s.infoText}>Wait for the timer to complete</Text>
-          </View>
-          <View style={s.infoRow}>
-            <View style={[s.infoDot, { backgroundColor: accentColor }]} />
-            <Text style={s.infoText}>
-              {reason === "otp_request_limit" 
-                ? "Navigate back once the waiting period ends" 
-                : "Use the Forgot password? option if needed"}
-            </Text>
-          </View>
-          <View style={s.infoRow}>
-            <View style={[s.infoDot, { backgroundColor: accentColor }]} />
-            <Text style={s.infoText}>Contact support if you believe this is an error</Text>
-          </View>
-        </View>
-
-        {/* Actions */}
-        <View style={s.actionsContainer}>
-          {actionButton && (
-            <Pressable
-              style={[s.primaryButton, { backgroundColor: accentColor }]}
-              onPress={actionButton.onPress}
-            >
-              <Text style={s.primaryButtonText}>{actionButton.label}</Text>
-            </Pressable>
           )}
 
-          {(reason === "account_lockout" || reason === "login_rate_limit") && (
+          {/* Info card */}
+          <View style={s.infoCard}>
+            <Text style={s.infoTitle}>What happens next?</Text>
+            {reason === "account_lockout" && (
+              <>
+                <View style={s.infoRow}>
+                  <View style={[s.infoDot, { backgroundColor: accentColor }]} />
+                  <Text style={s.infoText}>Wait for the 30-minute lockout to expire</Text>
+                </View>
+                <View style={s.infoRow}>
+                  <View style={[s.infoDot, { backgroundColor: accentColor }]} />
+                  <Text style={s.infoText}>Use the Forgot password? option to reset your password</Text>
+                </View>
+                <View style={s.infoRow}>
+                  <View style={[s.infoDot, { backgroundColor: accentColor }]} />
+                  <Text style={s.infoText}>Contact support if you believe this is an error</Text>
+                </View>
+              </>
+            )}
+            {reason === "login_rate_limit" && (
+              <>
+                <View style={s.infoRow}>
+                  <View style={[s.infoDot, { backgroundColor: accentColor }]} />
+                  <Text style={s.infoText}>Wait for the 15-minute window to reset</Text>
+                </View>
+                <View style={s.infoRow}>
+                  <View style={[s.infoDot, { backgroundColor: accentColor }]} />
+                  <Text style={s.infoText}>You will have 5 fresh login attempts after the wait</Text>
+                </View>
+                <View style={s.infoRow}>
+                  <View style={[s.infoDot, { backgroundColor: accentColor }]} />
+                  <Text style={s.infoText}>Use the Forgot password? option if you cannot remember your password</Text>
+                </View>
+              </>
+            )}
+            {reason === "otp_request_limit" && (
+              <>
+                <View style={s.infoRow}>
+                  <View style={[s.infoDot, { backgroundColor: accentColor }]} />
+                  <Text style={s.infoText}>Wait for the 1-hour limit to reset</Text>
+                </View>
+                <View style={s.infoRow}>
+                  <View style={[s.infoDot, { backgroundColor: accentColor }]} />
+                  <Text style={s.infoText}>You can request up to 3 OTPs per hour</Text>
+                </View>
+                <View style={s.infoRow}>
+                  <View style={[s.infoDot, { backgroundColor: accentColor }]} />
+                  <Text style={s.infoText}>Check your spam folder if you haven&apos;t received the code</Text>
+                </View>
+              </>
+            )}
+            {reason === "password_reset_limit" && (
+              <>
+                <View style={s.infoRow}>
+                  <View style={[s.infoDot, { backgroundColor: accentColor }]} />
+                  <Text style={s.infoText}>Wait for the 1-hour limit to reset</Text>
+                </View>
+                <View style={s.infoRow}>
+                  <View style={[s.infoDot, { backgroundColor: accentColor }]} />
+                  <Text style={s.infoText}>You can request up to 3 password resets per hour</Text>
+                </View>
+                <View style={s.infoRow}>
+                  <View style={[s.infoDot, { backgroundColor: accentColor }]} />
+                  <Text style={s.infoText}>Check your spam folder if you haven&apos;t received the code</Text>
+                </View>
+              </>
+            )}
+          </View>
+
+          {/* Actions */}
+          <View style={s.actionsContainer}>
+            {actionButton && (
+              <Pressable
+                style={[s.primaryButton, { backgroundColor: accentColor }]}
+                onPress={actionButton.onPress}
+              >
+                <Text style={s.primaryButtonText}>{actionButton.label}</Text>
+              </Pressable>
+            )}
+
+            {(reason === "account_lockout" || reason === "login_rate_limit") && (
+              <Pressable
+                style={s.secondaryButton}
+                onPress={() => router.replace("/(auth)/forgot-password")}
+              >
+                <Text style={[s.secondaryButtonText, { color: accentColor }]}>Reset Password</Text>
+              </Pressable>
+            )}
+
             <Pressable
-              style={s.secondaryButton}
-              onPress={() => router.replace("/(auth)/forgot-password")}
+              style={s.tertiaryButton}
+              onPress={() => {
+                if (reason === "account_lockout" || reason === "login_rate_limit") {
+                  router.replace("/(auth)/login");
+                } else {
+                  router.back();
+                }
+              }}
             >
-              <Text style={[s.secondaryButtonText, { color: accentColor }]}>Reset Password</Text>
+              <Text style={s.tertiaryButtonText}>Go Back</Text>
             </Pressable>
-          )}
+          </View>
 
-          <Pressable
-            style={s.tertiaryButton}
-            onPress={() => {
-              if (reason === "account_lockout" || reason === "login_rate_limit") {
-                router.replace("/(auth)/login");
-              } else {
-                router.back();
-              }
-            }}
-          >
-            <Text style={s.tertiaryButtonText}>Go Back</Text>
-          </Pressable>
+          {/* Footer */}
+          <View style={s.footer}>
+            <Text style={s.footerText}>Need help? Contact support@fresherhub.com</Text>
+          </View>
         </View>
-
-        {/* Footer */}
-        <View style={s.footer}>
-          <Text style={s.footerText}>Need help? Contact support@fresherhub.com</Text>
-        </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
 
 const s = StyleSheet.create({
   screen: { flex: 1, backgroundColor: C.bg },
+  scrollContent: { flexGrow: 1 },
   container: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingTop: 40,
-    paddingBottom: 24,
+    paddingTop: 48,
+    paddingBottom: 32,
     justifyContent: "space-between",
   },
   topSection: {
     alignItems: "center",
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
   },
   title: {
     fontSize: 28,
@@ -434,53 +492,57 @@ const s = StyleSheet.create({
     fontSize: 15,
     color: C.textSec,
     textAlign: "center",
-    lineHeight: 22,
+    lineHeight: 24,
     paddingHorizontal: 8,
+    fontWeight: "400",
   },
   countdownContainer: {
     alignItems: "center",
-    marginVertical: 8,
+    marginVertical: 12,
   },
   countdownCircle: {
-    width: 160,
-    height: 160,
-    borderRadius: 80,
+    width: 168,
+    height: 168,
+    borderRadius: 84,
     backgroundColor: C.card,
     alignItems: "center",
     justifyContent: "center",
-    borderWidth: 3,
-    shadowColor: "#000",
+    borderWidth: 2,
+    borderColor: C.maroon,
+    shadowColor: "#6B1D2A",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 6,
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
   },
   countdownText: {
-    fontSize: 38,
+    fontSize: 42,
     fontWeight: "700",
-    letterSpacing: 2,
+    letterSpacing: 1,
     fontVariant: ["tabular-nums"],
+    color: C.maroon,
   },
   countdownLabel: {
     fontSize: 13,
     fontWeight: "500",
-    marginTop: 4,
-    opacity: 0.7,
+    marginTop: 6,
+    color: C.textSec,
+    opacity: 0.8,
   },
   successContainer: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    marginVertical: 32,
-    gap: 10,
+    marginVertical: 40,
+    gap: 12,
   },
   successDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
   successText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: "600",
     color: C.success,
   },
@@ -488,12 +550,14 @@ const s = StyleSheet.create({
     backgroundColor: C.card,
     borderRadius: 16,
     padding: 20,
-    marginBottom: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: C.border,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
   },
   infoTitle: {
     fontSize: 15,
@@ -504,40 +568,43 @@ const s = StyleSheet.create({
   infoRow: {
     flexDirection: "row",
     alignItems: "flex-start",
-    marginBottom: 12,
+    marginBottom: 14,
     gap: 12,
   },
   infoDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginTop: 6,
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    marginTop: 7,
+    backgroundColor: C.maroon,
   },
   infoText: {
     flex: 1,
     fontSize: 14,
     color: C.textSec,
-    lineHeight: 20,
+    lineHeight: 21,
+    fontWeight: "400",
   },
   actionsContainer: {
     gap: 12,
-    paddingTop: 8,
+    paddingTop: 12,
   },
   primaryButton: {
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 4,
+    backgroundColor: C.maroon,
+    shadowColor: "#6B1D2A",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
   },
   primaryButtonText: {
     fontSize: 16,
     fontWeight: "600",
     color: "#FFF",
-    letterSpacing: 0.2,
+    letterSpacing: 0.3,
   },
   secondaryButton: {
     borderRadius: 12,
@@ -545,11 +612,12 @@ const s = StyleSheet.create({
     alignItems: "center",
     backgroundColor: C.card,
     borderWidth: 1.5,
-    borderColor: C.border,
+    borderColor: C.maroon,
   },
   secondaryButtonText: {
     fontSize: 16,
     fontWeight: "600",
+    color: C.maroon,
   },
   tertiaryButton: {
     paddingVertical: 12,
@@ -562,7 +630,10 @@ const s = StyleSheet.create({
   },
   footer: {
     alignItems: "center",
-    paddingTop: 12,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: C.border,
+    marginTop: 8,
   },
   footerText: {
     fontSize: 13,
