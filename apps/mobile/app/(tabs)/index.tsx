@@ -47,7 +47,7 @@ type Post = {
 type CoachAssignment = { id: string; peer_coach_id: string; coach_name: string; avatar_url: string | null; };
 type BuddyPairing = { id: string; buddy_id: string; buddy_name: string; avatar_url: string | null; };
 type AssignedFresher = { id: string; fresher_id: string; fresher_name: string; avatar_url: string | null; };
-type Group = { id: string; name: string; image_url: string | null; is_leader: boolean; member_count?: number; category?: string; };
+type Group = { id: string; name: string; image_url: string | null; isLeader: boolean; member_count?: number; category?: string; };
 type Session = { id: string; session_date: string; start_time: string; status: string; };
 type AdminStats = { unassigned_freshers?: number; total_freshers?: number; };
 
@@ -205,7 +205,7 @@ export default function FeedScreen() {
 
     try {
       const promises: Promise<any>[] = [
-        apiRequest<{ posts: Post[] }>("/posts", { headers }).then(d => setPosts(d.posts || [])),
+        apiRequest<{ data: Post[] }>("/posts", { headers }).then(d => setPosts(d.data || [])),
         apiRequest<{ unreadCount: number }>("/notifications/unread-count", { headers }).then(d => setUnreadCount(d.unreadCount || 0))
       ];
 
@@ -224,7 +224,7 @@ export default function FeedScreen() {
 
       if (isContinuingStudent || isClubLead || isFresher) {
         promises.push(
-          apiRequest<{groups: Group[]}>("/groups/my", { headers }).then(d => setMyGroups(d.groups || [])).catch(() => {})
+          apiRequest<{data: Group[]}>("/groups/my", { headers }).then(d => setMyGroups(d.data || [])).catch(() => {})
         );
       }
 
@@ -283,7 +283,7 @@ export default function FeedScreen() {
   });
 
   const nextSession = upcomingSessions.length > 0 ? upcomingSessions[0] : null;
-  const myLedClubs = myGroups.filter(g => g.is_leader);
+  const myLedClubs = myGroups.filter(g => g.isLeader);
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
@@ -391,10 +391,10 @@ export default function FeedScreen() {
           )}
 
           {/* CONTINUING STUDENT CARDS (Clubs they are just a member of) */}
-          {(isContinuingStudent || isFresher) && myGroups.filter(g => !g.is_leader).length > 0 && (
+          {(isContinuingStudent || isFresher) && myGroups.filter(g => !g.isLeader).length > 0 && (
             <View style={styles.cardsStack}>
               <Text style={[styles.cardSectionTitle, { marginTop: 12 }]}>Your Clubs</Text>
-              {myGroups.filter(g => !g.is_leader).map(club => (
+              {myGroups.filter(g => !g.isLeader).map(club => (
                 <Pressable key={club.id} style={styles.joinedClubCard} onPress={() => router.push("/(tabs)/clubs")}>
                   <View style={styles.clubRow}>
                     {club.image_url ? (
