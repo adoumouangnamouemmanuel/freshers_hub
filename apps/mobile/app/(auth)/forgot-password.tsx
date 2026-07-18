@@ -42,9 +42,26 @@ export default function ForgotPasswordScreen() {
     setLoading(true); setError("");
     try {
       await forgotPassword(email.trim());
+      // Always show success message (prevents user enumeration)
       setSent(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
+      const err = e as Error & { status?: number; retryAfter?: number };
+      
+      // Handle rate limit (429) - navigate to rate-limit screen
+      if (err.status === 429) {
+        const retryAfter = err.retryAfter || 3600;
+        router.replace({
+          pathname: "/(auth)/rate-limit",
+          params: {
+            reason: "password_reset_limit",
+            retryAfter: retryAfter.toString(),
+            message: err.message,
+          },
+        });
+        return;
+      }
+      
+      setError("Something went wrong. Please try again.");
     } finally { setLoading(false); }
   };
 
@@ -53,7 +70,7 @@ export default function ForgotPasswordScreen() {
       <SafeAreaView style={s.screen}>
         <View style={s.center}>
           <Text style={s.title}>Check your email</Text>
-          <Text style={s.desc}>A verification code has been sent to{'\n'}{email}</Text>
+          <Text style={s.desc}>If an account exists and is activated,{'\n'}a verification code has been sent to{'\n'}{email}</Text>
           <View style={s.devBox}>
             <Text style={s.devText}>Dev: check the server console for the OTP</Text>
           </View>
