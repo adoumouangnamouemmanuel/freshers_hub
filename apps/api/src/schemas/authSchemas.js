@@ -61,6 +61,21 @@ const setPasswordSchema = z.object({
   }),
 });
 
+const changePasswordSchema = z.object({
+  body: z.object({
+    currentPassword: z.string().min(1, 'Current password is required'),
+    newPassword: z.string().min(6, 'New password must be at least 6 characters'),
+  }),
+});
+
+const updateProfileSchema = z.object({
+  body: z.object({
+    phone: z.string().optional(),
+    major: z.string().optional(),
+    avatarUrl: z.string().optional(),
+  }),
+});
+
 module.exports = {
   loginSchema,
   activateSchema,
@@ -71,4 +86,6 @@ module.exports = {
   checkEmailSchema,
   verifyOtpSchema,
   setPasswordSchema,
+  changePasswordSchema,
+  updateProfileSchema,
 };
