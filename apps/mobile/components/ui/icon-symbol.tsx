@@ -1,11 +1,11 @@
 // Fallback for using MaterialIcons on Android and web.
 
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import { SymbolWeight, SymbolViewProps } from 'expo-symbols';
+import { SymbolWeight } from 'expo-symbols';
 import { ComponentProps } from 'react';
 import { OpaqueColorValue, type StyleProp, type TextStyle } from 'react-native';
 
-type IconMapping = Partial<Record<string, ComponentProps<typeof MaterialIcons>['name']>>;
+// type IconMapping = Partial<Record<string, ComponentProps<typeof MaterialIcons>['name']>>;
 
 /**
  * Add your SF Symbols to Material Icons mappings here.
@@ -84,6 +84,16 @@ const MAPPING = {
   'video.fill': 'videocam',
   'play.tv.fill': 'live-tv',
   'laptopcomputer': 'laptop-mac',
+  'log-out': 'logout',
+  // Profile & Settings
+  'lock.fill': 'lock',
+  'lock': 'lock-outline',
+  'moon.fill': 'dark-mode',
+  'moon': 'dark-mode',
+  'globe.fill': 'language',
+  'globe': 'language',
+  'square.and.arrow.up.fill': 'share',
+  'square.and.arrow.up': 'share',
 };
 
 export type IconSymbolName = keyof typeof MAPPING;
