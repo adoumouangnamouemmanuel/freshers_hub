@@ -3,7 +3,11 @@ const authService = require("../services/authService");
 const AppError = require("../utils/AppError");
 const asyncHandler = require("../utils/asyncHandler");
 const logger = require("../utils/logger");
-const { checkAccountLockout, recordFailedLogin, clearFailedLogins } = require("../middleware/rateLimiter");
+const {
+  checkAccountLockout,
+  recordFailedLogin,
+  clearFailedLogins,
+} = require("../middleware/rateLimiter");
 
 const handleLogin = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
@@ -40,38 +44,46 @@ const handleLogin = asyncHandler(async (req, res) => {
         FROM credentials
         WHERE user_id = $1
       `,
-      [user.id, String(password)]
+      [user.id, String(password)],
     );
 
     if (!verification.rows[0]?.matches) {
-      logger.warn(`Login failed: Invalid credentials (${email}) from IP: ${clientIp}`);
+      logger.warn(
+        `Login failed: Invalid credentials (${email}) from IP: ${clientIp}`,
+      );
       // Record failed login attempt
       recordFailedLogin(email);
-      
+
       // TODO: Send alert to Sentry/DataDog after 3 failed attempts
       // TODO: Implement CAPTCHA after 3 failed attempts
       // TODO: Add device fingerprinting for suspicious login detection
-      
+
       throw new AppError("Invalid credentials", 401);
     }
 
     // Clear failed login attempts on successful login
     clearFailedLogins(email);
-    
+
     logger.info(`Successful login for ${email} from IP: ${clientIp}`);
     // TODO: Log successful login to monitoring service
     // TODO: Send email notification for new login from unrecognized device
 
     const tokens = await authService.issueTokens(client, user);
     logger.info(`Login successful for email: ${email}`);
-    
+
     res.json({
       user: {
         id: user.id,
         email: user.email,
         fullName: user.full_name,
+        phone: user.phone,
+        country: user.country,
+        major: user.major,
+        avatarUrl: user.avatar_url,
+        classYear: user.class_year,
         roles: user.roles,
         studentProfile: user.student_profile,
+        createdAt: user.created_at,
       },
       ...tokens,
     });
@@ -98,7 +110,7 @@ const handleVerifyOtp = asyncHandler(async (req, res) => {
         JOIN activation_codes ac ON ac.user_id = u.id
         WHERE lower(u.email) = lower($1)
       `,
-      [String(email).trim()]
+      [String(email).trim()],
     );
 
     const record = rows[0];
@@ -121,7 +133,7 @@ const handleVerifyOtp = asyncHandler(async (req, res) => {
         FROM activation_codes
         WHERE user_id = $1
       `,
-      [record.id, String(otp).trim()]
+      [record.id, String(otp).trim()],
     );
 
     if (!otpCheck.rows[0]?.matches) {
@@ -136,14 +148,14 @@ const handleVerifyOtp = asyncHandler(async (req, res) => {
         SET consumed_at = now()
         WHERE user_id = $1
       `,
-      [record.id]
+      [record.id],
     );
 
     logger.info(`OTP verified successfully for email: ${email}`);
-    res.json({ 
-      success: true, 
+    res.json({
+      success: true,
       message: "OTP verified. Please set your password.",
-      email: record.email 
+      email: record.email,
     });
   } catch (error) {
     logger.error(`OTP verification error for ${email}: ${error.message}`);
@@ -178,24 +190,32 @@ const handleSetPassword = asyncHandler(async (req, res) => {
             activated_at = EXCLUDED.activated_at,
             updated_at = now()
       `,
-      [user.id, String(password)]
+      [user.id, String(password)],
     );
 
-    const updatedUser = await authService.loadUserBundle(client, String(email).trim());
+    const updatedUser = await authService.loadUserBundle(
+      client,
+      String(email).trim(),
+    );
     const tokens = await authService.issueTokens(client, updatedUser);
 
     logger.info(`Password set and activation successful for email: ${email}`);
     // TODO: Send welcome email with account activation confirmation
     // TODO: Log activation event to monitoring service
-    
+
     res.json({
-      activated: true,
       user: {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        fullName: updatedUser.full_name,
-        roles: updatedUser.roles,
-        studentProfile: updatedUser.student_profile,
+        id: user.id,
+        email: user.email,
+        fullName: user.full_name,
+        phone: user.phone,
+        country: user.country,
+        major: user.major,
+        avatarUrl: user.avatar_url,
+        classYear: user.class_year,
+        roles: user.roles,
+        studentProfile: user.student_profile,
+        createdAt: user.created_at,
       },
       ...tokens,
     });
@@ -223,7 +243,7 @@ const handleRefresh = asyncHandler(async (req, res) => {
           AND rt.revoked_at IS NULL
           AND rt.expires_at > now()
       `,
-      [tokenHash]
+      [tokenHash],
     );
 
     const record = rows[0];
@@ -238,7 +258,7 @@ const handleRefresh = asyncHandler(async (req, res) => {
         SET revoked_at = now()
         WHERE id = $1
       `,
-      [record.id]
+      [record.id],
     );
 
     const user = await authService.loadUserBundle(client, record.email);
@@ -250,8 +270,14 @@ const handleRefresh = asyncHandler(async (req, res) => {
         id: user.id,
         email: user.email,
         fullName: user.full_name,
+        phone: user.phone,
+        country: user.country,
+        major: user.major,
+        avatarUrl: user.avatar_url,
+        classYear: user.class_year,
         roles: user.roles,
         studentProfile: user.student_profile,
+        createdAt: user.created_at,
       },
       ...tokens,
     });
@@ -270,25 +296,34 @@ const handleRequestOtp = asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
     const user = await authService.loadUserBundle(client, String(email).trim());
-    
+
     if (!user) {
       logger.warn(`OTP request failed: User not found (${email})`);
       // Don't reveal if user exists
-      res.json({ success: true, message: "If an account exists, an OTP has been sent" });
+      res.json({
+        success: true,
+        message: "If an account exists, an OTP has been sent",
+      });
       return;
     }
 
     if (user.is_activated && user.password_hash) {
       logger.warn(`OTP request failed: Account already activated (${email})`);
       // Don't reveal account status
-      res.json({ success: true, message: "If an account exists, an OTP has been sent" });
+      res.json({
+        success: true,
+        message: "If an account exists, an OTP has been sent",
+      });
       return;
     }
 
     await authService.generateOTP(client, user);
     logger.info(`OTP successfully generated for email: ${email}`);
-    
-    res.json({ success: true, message: "If an account exists, an OTP has been sent" });
+
+    res.json({
+      success: true,
+      message: "If an account exists, an OTP has been sent",
+    });
   } catch (error) {
     logger.error(`OTP request error for ${email}: ${error.message}`);
     throw error;
@@ -304,27 +339,38 @@ const handleForgotPassword = asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
     const user = await authService.loadUserBundle(client, String(email).trim());
-    
+
     if (!user) {
       logger.warn(`Forgot password request failed: User not found (${email})`);
       // Don't reveal if user exists
-      res.json({ success: true, message: "If an account exists, a reset code has been sent" });
+      res.json({
+        success: true,
+        message: "If an account exists, a reset code has been sent",
+      });
       return;
     }
 
     // Only allow password reset for activated accounts
     if (!user.is_activated || !user.password_hash) {
-      logger.warn(`Forgot password request failed: Account not activated (${email})`);
+      logger.warn(
+        `Forgot password request failed: Account not activated (${email})`,
+      );
       // Don't reveal account status
-      res.json({ success: true, message: "If an account exists, a reset code has been sent" });
+      res.json({
+        success: true,
+        message: "If an account exists, a reset code has been sent",
+      });
       return;
     }
 
     // Generate OTP for password reset
     await authService.generatePasswordResetOtp(client, user);
     logger.info(`Password reset OTP generated for email: ${email}`);
-    
-    res.json({ success: true, message: "If an account exists, a reset code has been sent" });
+
+    res.json({
+      success: true,
+      message: "If an account exists, a reset code has been sent",
+    });
   } catch (error) {
     logger.error(`Forgot password error for ${email}: ${error.message}`);
     throw error;
@@ -353,7 +399,7 @@ const handleVerifyResetOtp = asyncHandler(async (req, res) => {
         ORDER BY pr.created_at DESC
         LIMIT 1
       `,
-      [user.id]
+      [user.id],
     );
 
     const record = rows[0];
@@ -376,7 +422,7 @@ const handleVerifyResetOtp = asyncHandler(async (req, res) => {
         FROM password_resets
         WHERE user_id = $1
       `,
-      [user.id, String(otp).trim()]
+      [user.id, String(otp).trim()],
     );
 
     if (!otpCheck.rows[0]?.matches) {
@@ -385,7 +431,10 @@ const handleVerifyResetOtp = asyncHandler(async (req, res) => {
     }
 
     logger.info(`Reset OTP verified successfully for email: ${email}`);
-    res.json({ success: true, message: "OTP verified. Please set your new password." });
+    res.json({
+      success: true,
+      message: "OTP verified. Please set your new password.",
+    });
   } catch (error) {
     logger.error(`Verify reset OTP error for ${email}: ${error.message}`);
     throw error;
@@ -415,11 +464,15 @@ const handleSetNewPassword = asyncHandler(async (req, res) => {
         ORDER BY pr.created_at DESC
         LIMIT 1
       `,
-      [user.id]
+      [user.id],
     );
 
     const record = rows[0];
-    if (!record || record.consumed_at || new Date(record.expires_at).getTime() < Date.now()) {
+    if (
+      !record ||
+      record.consumed_at ||
+      new Date(record.expires_at).getTime() < Date.now()
+    ) {
       throw new AppError("Invalid or expired code", 400);
     }
 
@@ -429,7 +482,7 @@ const handleSetNewPassword = asyncHandler(async (req, res) => {
         FROM password_resets
         WHERE user_id = $1
       `,
-      [user.id, String(otp).trim()]
+      [user.id, String(otp).trim()],
     );
 
     if (!otpCheck.rows[0]?.matches) {
@@ -444,7 +497,7 @@ const handleSetNewPassword = asyncHandler(async (req, res) => {
           updated_at = now()
       WHERE user_id = $1
     `,
-      [user.id, String(newPassword)]
+      [user.id, String(newPassword)],
     );
 
     // Mark OTP as consumed
@@ -454,14 +507,17 @@ const handleSetNewPassword = asyncHandler(async (req, res) => {
       SET consumed_at = now()
       WHERE user_id = $1
     `,
-      [user.id]
+      [user.id],
     );
 
     logger.info(`Password successfully reset for email: ${email}`);
     // TODO: Send email notification confirming password change
     // TODO: Log password reset event to monitoring service for fraud detection
-    
-    res.json({ success: true, message: "Password has been successfully reset" });
+
+    res.json({
+      success: true,
+      message: "Password has been successfully reset",
+    });
   } catch (error) {
     logger.error(`Set new password error for ${email}: ${error.message}`);
     throw error;
@@ -484,7 +540,9 @@ const handleCheckEmail = asyncHandler(async (req, res) => {
     }
 
     const activated = !!(user.is_activated && user.password_hash);
-    logger.info(`Check email success: exists=true, activated=${activated} (${email})`);
+    logger.info(
+      `Check email success: exists=true, activated=${activated} (${email})`,
+    );
     res.json({ exists: true, activated });
   } catch (error) {
     logger.error(`Check email error for ${email}: ${error.message}`);
@@ -505,16 +563,16 @@ const handleLogout = asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
     const tokenHash = authService.hashToken(String(refreshToken).trim());
-    
+
     await client.query(
       `
         UPDATE refresh_tokens
         SET revoked_at = now()
         WHERE token_hash = $1
       `,
-      [tokenHash]
+      [tokenHash],
     );
-    
+
     logger.info(`Logout successful, token revoked`);
     res.json({ success: true, message: "Logged out successfully" });
   } catch (error) {
