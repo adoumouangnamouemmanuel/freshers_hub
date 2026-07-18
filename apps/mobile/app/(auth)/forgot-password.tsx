@@ -1,5 +1,5 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -29,6 +29,8 @@ const C = {
   textSec: "#86868B",
 };
 
+const RESEND_COOLDOWN = 60;
+
 export default function ForgotPasswordScreen() {
   const router = useRouter();
   const { forgotPassword } = useAuth();
@@ -36,6 +38,13 @@ export default function ForgotPasswordScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [sent, setSent] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setInterval(() => setCooldown((c) => c - 1), 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
 
   const submit = async () => {
     Keyboard.dismiss();
@@ -49,6 +58,7 @@ export default function ForgotPasswordScreen() {
       await forgotPassword(email.trim());
       // Always show success message (prevents user enumeration)
       setSent(true);
+      setCooldown(RESEND_COOLDOWN); // Start resend cooldown immediately
     } catch (e) {
       const err = e as Error & { status?: number; retryAfter?: number };
 
@@ -91,9 +101,13 @@ export default function ForgotPasswordScreen() {
           {/* Resend with cooldown */}
           <View style={s.resendRow}>
             <Text style={s.resendPrompt}>Did not receive the code? </Text>
-            <Pressable onPress={submit} disabled={loading}>
-              <Text style={[s.resendLink, loading && s.resendDisabled]}>Resend</Text>
-            </Pressable>
+            {cooldown > 0 ? (
+              <Text style={s.resendCooldown}>Resend in {cooldown}s</Text>
+            ) : (
+              <Pressable onPress={() => { setCooldown(RESEND_COOLDOWN); submit(); }} disabled={loading}>
+                <Text style={[s.resendLink, loading && s.resendDisabled]}>Resend</Text>
+              </Pressable>
+            )}
           </View>
 
           <Pressable
@@ -352,5 +366,10 @@ const s = StyleSheet.create({
   },
   resendDisabled: {
     opacity: 0.5,
+  },
+  resendCooldown: {
+    fontSize: 14,
+    color: C.textSec,
+    fontWeight: "500",
   },
 });
