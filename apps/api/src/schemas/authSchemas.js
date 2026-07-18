@@ -41,6 +41,12 @@ const resetPasswordSchema = z.object({
   }),
 });
 
+const checkEmailSchema = z.object({
+  body: z.object({
+    email: z.string().email('Invalid email format').min(1, 'Email is required'),
+  }),
+});
+
 module.exports = {
   loginSchema,
   activateSchema,
@@ -48,4 +54,5 @@ module.exports = {
   requestOtpSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
+  checkEmailSchema,
 };
