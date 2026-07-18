@@ -2,10 +2,20 @@ import { AuthRole } from "./auth";
 
 /**
  * Checks if the user has a specific role by name.
+ * Handles both string arrays (from JWT) and object arrays (from login response).
  */
-export function hasRole(roles: AuthRole[], roleName: string): boolean {
+export function hasRole(roles: AuthRole[] | string[], roleName: string): boolean {
   if (!roles || !Array.isArray(roles)) return false;
-  return roles.some((role) => role.name === roleName);
+  return roles.some((role) => {
+    // Handle string roles (from JWT token)
+    if (typeof role === "string") {
+      console.log("Checking role:", role, "against", roleName);
+      return role === roleName;
+    }
+    // Handle object roles (from login/refresh response)
+    console.log("Checking role object:", role, "against", roleName);
+    return role.name === roleName;
+  });
 }
 
 /**
