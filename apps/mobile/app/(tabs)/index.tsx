@@ -15,7 +15,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useAuth } from "@/context/auth-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { apiRequest } from "@/lib/api";
-import { hasRole, formatRoleName } from "@/lib/permissions";
+import { hasRole } from "@/lib/permissions";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 // import AsyncStorage from "@react-native-async-storage/async-storage";
