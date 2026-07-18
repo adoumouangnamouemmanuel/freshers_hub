@@ -85,6 +85,7 @@ const MAPPING = {
   'play.tv.fill': 'live-tv',
   'laptopcomputer': 'laptop-mac',
   'log-out': 'logout',
+  'gearshape.fill': 'settings',
   // Profile & Settings
   'lock.fill': 'lock',
   'lock': 'lock-outline',
