@@ -3,6 +3,8 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { useAuth } from "@/context/auth-context";
+import { apiRequest } from "@/lib/api";
 
 export default function ChangePasswordScreen() {
   const router = useRouter();
@@ -34,6 +36,8 @@ export default function ChangePasswordScreen() {
     ]).start();
   }, []);
 
+  const { session } = useAuth();
+
   const handleSave = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       Alert.alert("Error", "All fields are required");
@@ -52,12 +56,21 @@ export default function ChangePasswordScreen() {
 
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      Alert.alert("Success", "Password changed successfully", [
-        { text: "OK", onPress: () => router.back() }
-      ]);
-    } catch (error) {
-      Alert.alert("Error", "Failed to change password. Please try again.");
+      const response = await apiRequest<{ success: boolean; message?: string }>("/auth/change-password", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session?.accessToken}` },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      
+      if (response.success) {
+        Alert.alert("Success", "Password changed successfully", [
+          { text: "OK", onPress: () => router.back() }
+        ]);
+      } else {
+        throw new Error(response.message || "Failed to change password");
+      }
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to change password. Please try again.");
     } finally {
       setIsLoading(false);
     }
