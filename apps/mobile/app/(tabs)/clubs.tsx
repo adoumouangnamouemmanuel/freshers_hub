@@ -33,11 +33,11 @@ export default function ClubsScreen() {
     try {
       const headers = session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : undefined;
       const [allRes, myRes] = await Promise.all([
-        apiRequest<{ groups: Club[] }>("/groups", { headers }),
-        apiRequest<{ groups: Club[] }>("/groups/my", { headers })
+        apiRequest<{ data: Club[] }>("/groups", { headers }),
+        apiRequest<{ data: Club[] }>("/groups/my", { headers })
       ]);
-      setClubs(allRes.groups || []);
-      setMyClubs(myRes.groups || []);
+      setClubs(allRes.data || []);
+      setMyClubs(myRes.data || []);
     } catch (err) {
       console.error("Error fetching clubs:", err);
     } finally {
