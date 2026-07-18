@@ -11,6 +11,9 @@ export default function ChangePasswordScreen() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -90,8 +93,11 @@ export default function ChangePasswordScreen() {
                   onChangeText={setCurrentPassword}
                   placeholder="Enter current password"
                   placeholderTextColor="#9CA3AF"
-                  secureTextEntry
+                  secureTextEntry={!showCurrent}
                 />
+                <Pressable onPress={() => setShowCurrent(!showCurrent)}>
+                  <IconSymbol name={showCurrent ? "eye.slash" : "eye"} size={20} color="#6B7280" />
+                </Pressable>
               </View>
             </View>
 
@@ -105,8 +111,11 @@ export default function ChangePasswordScreen() {
                   onChangeText={setNewPassword}
                   placeholder="Enter new password"
                   placeholderTextColor="#9CA3AF"
-                  secureTextEntry
+                  secureTextEntry={!showNew}
                 />
+                <Pressable onPress={() => setShowNew(!showNew)}>
+                  <IconSymbol name={showNew ? "eye.slash" : "eye"} size={20} color="#6B7280" />
+                </Pressable>
               </View>
             </View>
 
@@ -120,8 +129,11 @@ export default function ChangePasswordScreen() {
                   onChangeText={setConfirmPassword}
                   placeholder="Confirm new password"
                   placeholderTextColor="#9CA3AF"
-                  secureTextEntry
+                  secureTextEntry={!showConfirm}
                 />
+                <Pressable onPress={() => setShowConfirm(!showConfirm)}>
+                  <IconSymbol name={showConfirm ? "eye.slash" : "eye"} size={20} color="#6B7280" />
+                </Pressable>
               </View>
             </View>
           </View>
