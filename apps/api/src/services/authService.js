@@ -59,7 +59,7 @@ async function loadUserBundle(client, email) {
   const userResult = await client.query(
     `
       SELECT
-        u.id, u.email, u.full_name, u.phone, u.class_year, u.country, u.major, u.avatar_url,
+        u.id, u.email, u.full_name, u.phone, u.class_year, u.country, u.major, u.avatar_url, u.created_at,
         c.password_hash, c.is_activated, c.activated_at,
         sp.school_id, sp.identifier, sp.graduation_year
       FROM users u
@@ -90,6 +90,7 @@ async function loadUserBundle(client, email) {
 
   return {
     ...user,
+    created_at: user.created_at,
     roles: rolesResult.rows,
     student_profile: user.school_id
       ? {
