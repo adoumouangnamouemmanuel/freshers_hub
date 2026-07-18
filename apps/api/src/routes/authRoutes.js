@@ -12,6 +12,7 @@ const {
   handleSetNewPassword,
 } = require("../controllers/authController");
 const validate = require("../middleware/validate");
+const { rateLimit } = require("../middleware/rateLimiter");
 const {
   loginSchema,
   refreshSchema,
@@ -25,10 +26,10 @@ const {
 
 const router = express.Router();
 
-router.post("/login", validate(loginSchema), handleLogin);
+router.post("/login", validate(loginSchema), rateLimit("login"), handleLogin);
 router.post("/refresh", validate(refreshSchema), handleRefresh);
-router.post("/request-otp", validate(requestOtpSchema), handleRequestOtp);
-router.post("/forgot-password", validate(forgotPasswordSchema), handleForgotPassword);
+router.post("/request-otp", validate(requestOtpSchema), rateLimit("otpRequest"), handleRequestOtp);
+router.post("/forgot-password", validate(forgotPasswordSchema), rateLimit("passwordReset"), handleForgotPassword);
 router.post("/verify-reset-otp", validate(verifyOtpSchema), handleVerifyResetOtp);
 router.post("/set-new-password", validate(setPasswordSchema), handleSetNewPassword);
 router.post("/logout", handleLogout);
