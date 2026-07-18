@@ -40,6 +40,7 @@ type AuthContextValue = {
   ) => Promise<{ success: boolean; message: string }>;
   verifyResetOtp: (email: string, otp: string) => Promise<{ success: boolean; message: string }>;
   setNewPassword: (email: string, otp: string, newPassword: string) => Promise<void>;
+  updateUser: (updatedFields: Partial<AuthSession["user"]>) => void;
   signOut: () => Promise<void>;
 };
 
@@ -99,6 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     loadSession()
       .then((storedSession) => {
+        console.log("Loaded session from storage:", storedSession);
         setSession(storedSession);
         if (storedSession) scheduleRefresh(storedSession);
       })
@@ -129,6 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           throw new Error("Login failed");
         }
 
+        console.log("Login result session:", result.session);
         await saveSession(result.session);
         setSession(result.session);
         scheduleRefresh(result.session);
@@ -160,6 +163,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   setNewPassword: async (email: string, otp: string, newPassword: string) => {
     await setNewPasswordApi(email, otp, newPassword);
+  },
+
+  updateUser: (updatedFields: Partial<AuthSession["user"]>) => {
+    setSession((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        user: { ...current.user, ...updatedFields },
+      };
+    });
   },
 
       signOut: async () => {
