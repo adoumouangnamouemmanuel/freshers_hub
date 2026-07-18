@@ -1,4 +1,4 @@
-import { useRouter } from "expo-router";
+import { useRouter , Link } from "expo-router";
 import {
   Pressable,
   ScrollView,
@@ -11,7 +11,6 @@ import {
 } from "react-native"; 
 import globalStyles from '../../styles';
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { Link } from "expo-router";
 
 import { useAuth } from "@/context/auth-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
