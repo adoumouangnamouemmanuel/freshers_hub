@@ -17,6 +17,8 @@ export default function TabLayout() {
   const { session } = useAuth();
   const tabBarHeight = TAB_BASE_H + insets.bottom;
   
+  console.log("Session roles:", session?.user?.roles);
+  console.log("Session user:", session?.user);
   const showClubAdmin = session?.user?.roles ? isClubLead(session.user.roles) : false;
   const showCoachAdmin = session?.user?.roles ? isCoachAdmin(session.user.roles) : false;
   const showPeerCoach = session?.user?.roles ? isCoach(session.user.roles) : false;
