@@ -20,7 +20,7 @@ export default function ScheduleSessionScreen() {
   const token = session?.accessToken;
   const insets = useSafeAreaInsets();
   const isCoachAdmin = hasRole(session?.user.roles || [], "coach_admin") || hasRole(session?.user.roles || [], "admin");
-  const isCoach = hasRole(session?.user.roles || [], "peer_coach");
+  // const isCoach = hasRole(session?.user.roles || [], "peer_coach");
 
   const [loading, setLoading] = useState(false);
   
