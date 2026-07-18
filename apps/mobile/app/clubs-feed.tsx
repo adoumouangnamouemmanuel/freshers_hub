@@ -153,7 +153,7 @@ export default function ClubsFeedScreen() {
             <View style={styles.emptyContainer}>
               <IconSymbol name="newspaper.fill" size={48} color="#9CA3AF" />
               <Text style={styles.emptyTitle}>No Posts Yet</Text>
-              <Text style={styles.emptySubtitle}>The clubs you belong to haven't posted anything recently.</Text>
+              <Text style={styles.emptySubtitle}>The clubs you belong to haven&apos;t posted anything recently.</Text>
             </View>
           ) : (
             posts.map((post, idx) => (
