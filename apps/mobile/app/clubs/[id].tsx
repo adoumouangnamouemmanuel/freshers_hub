@@ -10,7 +10,7 @@ type Member = {
   id: string;
   full_name: string;
   avatar_url?: string;
-  is_leader: boolean;
+  isLeader: boolean;
 };
 
 type ClubDetails = {
@@ -41,10 +41,10 @@ export default function ClubDetailsScreen() {
   const fetchClubDetails = async () => {
     if (!id || !session?.accessToken) return;
     try {
-      const data = await apiRequest<{ group: ClubDetails }>(`/groups/${id}`, {
+      const data = await apiRequest<{ data: ClubDetails }>(`/groups/${id}`, {
         headers: { Authorization: `Bearer ${session.accessToken}` }
       });
-      setClub(data.group);
+      setClub(data.data);
     } catch (err) {
       console.error("Error fetching club details:", err);
     } finally {
@@ -74,7 +74,7 @@ export default function ClubDetailsScreen() {
         setClub({
           ...club,
           memberCount: club.memberCount + 1,
-          members: [...club.members, { id: session.user.id, full_name: session.user.fullName || 'You', is_leader: false }]
+          members: [...club.members, { id: session.user.id, full_name: session.user.fullName || 'You', isLeader: false }]
         });
       }
     } catch (err) {
@@ -215,9 +215,9 @@ export default function ClubDetailsScreen() {
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Members</Text>
-            {club.members.filter(m => !m.is_leader).length > 0 ? (
+            {club.members.filter(m => !m.isLeader).length > 0 ? (
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.membersScroll}>
-                {club.members.filter(m => !m.is_leader).map(member => (
+                {club.members.filter(m => !m.isLeader).map(member => (
                   <View key={member.id} style={styles.smallMemberCard}>
                     {member.avatar_url ? (
                       <Image source={{ uri: member.avatar_url }} style={styles.smallAvatar} />
