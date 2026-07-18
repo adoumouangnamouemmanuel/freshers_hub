@@ -1,12 +1,13 @@
 const express = require("express");
-const { 
-  handleLogin, 
-  handleActivate, 
+const {
+  handleLogin,
+  handleActivate,
   handleRefresh,
   handleRequestOtp,
   handleForgotPassword,
   handleResetPassword,
-  handleLogout
+  handleLogout,
+  handleCheckEmail,
 } = require("../controllers/authController");
 const validate = require("../middleware/validate");
 const {
@@ -15,7 +16,8 @@ const {
   refreshSchema,
   requestOtpSchema,
   forgotPasswordSchema,
-  resetPasswordSchema
+  resetPasswordSchema,
+  checkEmailSchema
 } = require("../schemas/authSchemas");
 
 const router = express.Router();
@@ -26,6 +28,7 @@ router.post("/refresh", validate(refreshSchema), handleRefresh);
 router.post("/request-otp", validate(requestOtpSchema), handleRequestOtp);
 router.post("/forgot-password", validate(forgotPasswordSchema), handleForgotPassword);
 router.post("/reset-password", validate(resetPasswordSchema), handleResetPassword);
-router.post("/logout", handleLogout); // No body validation strictly required for logout, but we can safely just process it
+router.post("/logout", handleLogout);
+router.post("/check-email", validate(checkEmailSchema), handleCheckEmail);
 
 module.exports = router;
