@@ -68,7 +68,27 @@ export default function ActivateScreen() {
   const handleResend = async () => {
     if (!email || cooldown > 0) return;
     setCooldown(RESEND_COOLDOWN);
-    try { await requestOtp(email); } catch { /* ignore */ }
+    try { 
+      await requestOtp(email); 
+    } catch (e) {
+      const err = e as Error & { status?: number; retryAfter?: number };
+      
+      // Handle rate limit (429) - navigate to rate-limit screen
+      if (err.status === 429) {
+        const retryAfter = err.retryAfter || 3600;
+        router.replace({
+          pathname: "/(auth)/rate-limit",
+          params: {
+            reason: "otp_request_limit",
+            retryAfter: retryAfter.toString(),
+            message: err.message,
+          },
+        });
+        return;
+      }
+      
+      setError("Failed to resend code. Please try again.");
+    }
   };
 
   const verifyOtp = async () => {
@@ -82,8 +102,25 @@ export default function ActivateScreen() {
       });
       // OTP verified, move to password step
       setStep("password");
+      setError(""); // Clear any previous errors
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Invalid OTP");
+      const err = e as Error & { status?: number; retryAfter?: number };
+      
+      // Handle rate limit (429) or lockout (423) - navigate to rate-limit screen
+      if (err.status === 429 || err.status === 423) {
+        const retryAfter = err.retryAfter || 30;
+        router.replace({
+          pathname: "/(auth)/rate-limit",
+          params: {
+            reason: "otp_request_limit",
+            retryAfter: retryAfter.toString(),
+            message: err.message,
+          },
+        });
+        return;
+      }
+      
+      setError("Invalid or expired code");
     } finally { setLoading(false); }
   };
 
@@ -100,7 +137,7 @@ export default function ActivateScreen() {
       setDone(true);
       setTimeout(() => router.replace("/(tabs)"), 1200);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to set password");
+      setError("Activation failed. Please try again.");
     } finally { setLoading(false); }
   };
 
