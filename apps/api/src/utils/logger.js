@@ -1,10 +1,10 @@
 const winston = require('winston');
 
-const { combine, timestamp, printf, colorize } = winston.format;
+const { combine, timestamp, printf } = winston.format;
 
-// Define custom log format
+// Simple log format without colorization issues
 const logFormat = printf(({ level, message, timestamp, stack }) => {
-  return `${timestamp} ${level}: ${stack || message}`;
+  return `${timestamp} [${level.toUpperCase()}]: ${stack || message}`;
 });
 
 const logger = winston.createLogger({
@@ -16,8 +16,10 @@ const logger = winston.createLogger({
   ),
   transports: [
     new winston.transports.Console({
+      // Force all output to stdout so it's visible in the terminal
+      stderrLevels: [],
       format: combine(
-        colorize(),
+        timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
         logFormat
       )
     })
