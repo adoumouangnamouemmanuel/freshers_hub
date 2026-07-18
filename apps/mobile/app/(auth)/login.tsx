@@ -1,7 +1,10 @@
+import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Image,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -13,107 +16,244 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/auth-context";
+import { apiRequest } from "@/lib/api";
 
-const RED   = "#A93C40";
-const RED_D = "#7E2D30";
-const GOLD  = "#C9933A";
-const NAVY  = "#1A2B4A";
-const GRAY  = "#9BA3AE";
-const LIGHT = "#F6F7F9";
-const WHITE = "#FFFFFF";
-const BORDER = "#E4E7EC";
+const C = {
+  bg: "#FFFFFF",
+  maroon: "#6B1D2A",
+  grayBg: "#F5F5F7",
+  border: "#E5E5EA",
+  error: "#FF3B30",
+  text: "#1C1C1E",
+  textSec: "#8E8E93",
+};
+
+type CheckEmailResponse = {
+  exists: boolean;
+  activated: boolean;
+};
 
 export default function LoginScreen() {
-  const router  = useRouter();
-  const { signIn } = useAuth();
+  const router = useRouter();
+  const { signIn, requestOtp } = useAuth();
 
-  const [email,       setEmail]       = useState("fresher.one@ashesi.edu.gh");
-  const [password,    setPassword]    = useState("");
-  const [submitting,  setSubmitting]  = useState(false);
-  const [error,       setError]       = useState("");
-  const [focused,     setFocused]     = useState<"email"|"pw"|null>(null);
+  const [step, setStep] = useState<"email" | "password">("email");
+  const [email, setEmail] = useState("fresher.one@ashesi.edu.gh");
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const pwRef = useRef<TextInput>(null);
 
-  const submit = async () => {
-    if (!password) { setError("Enter your password to continue."); return; }
-    setSubmitting(true); setError("");
+  const checkEmail = async () => {
+    Keyboard.dismiss();
+    if (!email.trim()) {
+      setError("Enter your email address");
+      return;
+    }
+    setLoading(true);
+    setError("");
+
     try {
-      const res = await signIn(email.trim(), password);
-      if ("needsActivation" in res && res.needsActivation) {
-        router.push({ pathname: "/(auth)/activate", params: { email: res.email || email } });
-      } else {
-        // Successful login — navigate explicitly (don't rely solely on the layout guard)
-        router.replace("/(tabs)");
+      const res = await apiRequest<CheckEmailResponse>("/auth/check-email", {
+        method: "POST",
+        body: JSON.stringify({ email: email.trim() }),
+      });
+
+      if (!res.exists) {
+        setError("No account found with this email");
+        return;
       }
+
+      if (!res.activated) {
+        try {
+          await requestOtp(email.trim());
+        } catch {
+          /* ignore */
+        }
+        router.push({
+          pathname: "/(auth)/activate",
+          params: { email: email.trim() },
+        });
+        return;
+      }
+
+      setStep("password");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Sign in failed");
+      setError(e instanceof Error ? e.message : "Something went wrong");
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
 
+  const submitPassword = async () => {
+    Keyboard.dismiss();
+    if (!password) {
+      setError("Enter your password");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    try {
+      const res = await signIn(email.trim(), password);
+      if ("needsActivation" in res && res.needsActivation) {
+        router.push({
+          pathname: "/(auth)/activate",
+          params: { email: res.email || email },
+        });
+      } else {
+        router.replace("/(tabs)");
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Invalid password");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={s.screen}>
-      <KeyboardAvoidingView style={s.kav} behavior={Platform.OS === "ios" ? "padding" : "height"}>
-        <View style={s.center}>
-
-          {/* ── Logo ── */}
-          <View style={s.logoBlock}>
-            <View style={s.logoCircle}>
-              <Text style={s.logoA}>A</Text>
-            </View>
-            <Text style={s.university}>ASHESI UNIVERSITY</Text>
-            <Text style={s.appTitle}>Fresher Hub</Text>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <View style={s.body}>
+          <View style={s.logoWrap}>
+            <Image
+              source={require("@/assets/images/ashesi_logo.png")}
+              style={s.logo}
+              resizeMode="contain"
+            />
           </View>
 
-          {/* ── Divider ── */}
-          <View style={s.divider} />
+          {step === "email" ? (
+            <>
+              <Text style={s.welcomeTitle}>Welcome</Text>
+              <Text style={s.welcomeSub}>
+                Sign in to your Fresher Hub account
+              </Text>
+            </>
+          ) : (
+            <Text style={s.passwordSub}>Enter your password to continue</Text>
+          )}
 
-          {/* ── Form ── */}
           <View style={s.form}>
-            <TextInput
-              autoCapitalize="none" autoCorrect={false}
-              keyboardType="email-address"
-              placeholder="Email address"
-              placeholderTextColor={GRAY}
-              style={[s.input, focused === "email" && s.inputOn]}
-              value={email}
-              onChangeText={setEmail}
-              onFocus={() => setFocused("email")}
-              onBlur={() => setFocused(null)}
-              returnKeyType="next"
-            />
-            <TextInput
-              placeholder="Password"
-              placeholderTextColor={GRAY}
-              secureTextEntry
-              style={[s.input, focused === "pw" && s.inputOn]}
-              value={password}
-              onChangeText={setPassword}
-              onFocus={() => setFocused("pw")}
-              onBlur={() => setFocused(null)}
-              returnKeyType="go"
-              onSubmitEditing={submit}
-            />
+            {step === "email" ? (
+              <View style={[s.inputWrap, error && s.inputErr]}>
+                <TextInput
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="email-address"
+                  placeholder="Email"
+                  placeholderTextColor={C.textSec}
+                  style={s.input}
+                  value={email}
+                  onChangeText={(t) => {
+                    setEmail(t);
+                    setError("");
+                  }}
+                  returnKeyType="go"
+                  onSubmitEditing={checkEmail}
+                  editable={!loading}
+                />
+              </View>
+            ) : (
+              <View style={s.emailDisplay}>
+                <Text style={s.emailLabelText}>{email}</Text>
+              </View>
+            )}
+
+            {step === "password" && (
+              <>
+                <View style={[s.inputWrap, error && s.inputErr]}>
+                  <View style={s.pwRow}>
+                    <TextInput
+                      ref={pwRef}
+                      placeholder="Password"
+                      placeholderTextColor={C.textSec}
+                      secureTextEntry={!showPw}
+                      style={s.pwInput}
+                      value={password}
+                      onChangeText={(t) => {
+                        setPassword(t);
+                        setError("");
+                      }}
+                      returnKeyType="go"
+                      onSubmitEditing={submitPassword}
+                      editable={!loading}
+                      autoFocus
+                    />
+                    <Pressable
+                      onPress={() => setShowPw(!showPw)}
+                      style={s.eyeBtn}
+                    >
+                      <Ionicons
+                        name={showPw ? "eye-off" : "eye"}
+                        size={22}
+                        color={C.textSec}
+                      />
+                    </Pressable>
+                  </View>
+                </View>
+
+                <Pressable
+                  style={s.forgot}
+                  onPress={() => router.push("/(auth)/forgot-password")}
+                >
+                  <Text style={s.forgotText}>Forgot password?</Text>
+                </Pressable>
+              </>
+            )}
 
             {error ? <Text style={s.error}>{error}</Text> : null}
 
-            <Pressable
-              style={({ pressed }) => [s.btn, pressed && s.btnDark, submitting && s.btnFaded]}
-              onPress={submit}
-              disabled={submitting}
-            >
-              {submitting
-                ? <ActivityIndicator color={WHITE} />
-                : <Text style={s.btnLabel}>Sign in</Text>}
-            </Pressable>
+            {step === "email" ? (
+              <Pressable
+                style={({ pressed }) => [
+                  s.btn,
+                  pressed && s.btnPressed,
+                  loading && s.btnDisabled,
+                ]}
+                onPress={checkEmail}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <Text style={s.btnText}>Continue</Text>
+                )}
+              </Pressable>
+            ) : (
+              <Pressable
+                style={({ pressed }) => [
+                  s.btn,
+                  pressed && s.btnPressed,
+                  loading && s.btnDisabled,
+                ]}
+                onPress={submitPassword}
+                disabled={loading}
+              >
+                {loading ? (
+                  <ActivityIndicator color="#FFF" />
+                ) : (
+                  <Text style={s.btnText}>Sign In</Text>
+                )}
+              </Pressable>
+            )}
           </View>
 
-          {/* ── Footer ── */}
-          <Text style={s.footer}>
-            First time? You'll be asked to set a password.
-          </Text>
-
+          {step === "password" && (
+            <Pressable
+              style={s.backLink}
+              onPress={() => {
+                setStep("email");
+                setError("");
+                setPassword("");
+              }}
+            >
+              <Text style={s.backLinkText}>← Use a different email</Text>
+            </Pressable>
+          )}
         </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -121,124 +261,88 @@ export default function LoginScreen() {
 }
 
 const s = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: WHITE },
-  kav: { flex: 1 },
-
-  center: {
+  screen: { flex: 1, backgroundColor: C.bg },
+  body: {
     flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
     paddingHorizontal: 32,
-    gap: 28,
-  },
-
-  /* Logo block */
-  logoBlock: {
+    justifyContent: "center",
     alignItems: "center",
-    gap: 10,
   },
-  logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    backgroundColor: RED,
+  logoWrap: {
+    width: 130,
+    height: 130,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: RED,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.35,
-    shadowRadius: 20,
-    elevation: 10,
+    marginBottom: 20,
+  },
+  logo: { width: 110, height: 110 },
+  welcomeTitle: {
+    fontSize: 32,
+    fontWeight: "800",
+    color: C.maroon,
+    letterSpacing: -0.5,
     marginBottom: 4,
   },
-  logoA: {
-    fontSize: 42,
-    fontWeight: "900",
-    color: WHITE,
-    lineHeight: 50,
-  },
-  university: {
-    fontSize: 10,
-    fontWeight: "800",
-    letterSpacing: 3,
-    color: GOLD,
-    textAlign: "center",
-  },
-  appTitle: {
-    fontSize: 28,
-    fontWeight: "900",
-    color: NAVY,
-    letterSpacing: -0.5,
-    textAlign: "center",
-  },
-
-  /* Divider */
-  divider: {
-    width: 40,
-    height: 2,
-    borderRadius: 2,
-    backgroundColor: BORDER,
-  },
-
-  /* Form */
-  form: {
-    width: "100%",
-    gap: 12,
+  welcomeSub: { fontSize: 15, color: C.textSec, marginBottom: 16 },
+  passwordSub: { fontSize: 15, color: C.textSec, marginBottom: 16 },
+  form: { width: "100%", gap: 14 },
+  inputWrap: {
+    backgroundColor: C.grayBg,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: C.border,
+    overflow: "hidden",
   },
   input: {
-    width: "100%",
-    backgroundColor: LIGHT,
-    borderWidth: 1.5,
-    borderColor: BORDER,
-    borderRadius: 16,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     fontSize: 16,
-    color: NAVY,
-    textAlign: "center",
+    color: C.text,
   },
-  inputOn: {
-    borderColor: RED,
-    backgroundColor: WHITE,
-    shadowColor: RED,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 2,
+  inputErr: { borderColor: C.error, backgroundColor: "#FFF5F5" },
+  emailDisplay: {
+    backgroundColor: C.grayBg,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: C.border,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 14,
   },
+  emailLabelText: { fontSize: 16, color: C.text, fontWeight: "500" },
+  pwRow: { flexDirection: "row", alignItems: "center" },
+  pwInput: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: C.text,
+  },
+  eyeBtn: { paddingHorizontal: 14, paddingVertical: 12 },
+  forgot: { alignSelf: "flex-end", marginBottom: 4, marginTop: -4 },
+  forgotText: { fontSize: 13, fontWeight: "600", color: C.maroon },
   error: {
-    textAlign: "center",
     fontSize: 13,
-    color: RED,
-    fontWeight: "500",
+    color: C.error,
+    fontWeight: "600",
+    textAlign: "center",
+    marginBottom: 4,
   },
   btn: {
-    width: "100%",
-    backgroundColor: RED,
-    borderRadius: 16,
-    paddingVertical: 18,
+    backgroundColor: C.maroon,
+    borderRadius: 12,
+    paddingVertical: 16,
     alignItems: "center",
-    shadowColor: RED,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 8,
     marginTop: 4,
   },
-  btnDark:  { backgroundColor: RED_D, shadowOpacity: 0.15 },
-  btnFaded: { opacity: 0.65, shadowOpacity: 0 },
-  btnLabel: {
-    fontSize: 17,
-    fontWeight: "800",
-    color: WHITE,
-    letterSpacing: 0.2,
+  btnPressed: { opacity: 0.85, transform: [{ scale: 0.98 }] },
+  btnDisabled: { opacity: 0.5 },
+  btnText: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#FFF",
+    letterSpacing: 0.3,
   },
-
-  /* Footer */
-  footer: {
-    fontSize: 13,
-    color: GRAY,
-    textAlign: "center",
-    lineHeight: 20,
-  },
+  backLink: { marginTop: 20, paddingVertical: 8 },
+  backLinkText: { fontSize: 14, color: C.maroon, fontWeight: "600" },
 });
