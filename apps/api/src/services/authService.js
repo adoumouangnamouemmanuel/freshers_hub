@@ -149,6 +149,10 @@ async function generateOTP(client, user) {
   console.log(`[MOCK DELIVERY] OTP for ${user.email} is: ${otp}`);
   console.log(`==============================================\n`);
   
+  // TODO: Replace with actual email service (e.g., SendGrid, AWS SES)
+  // TODO: Integrate with Sentry for monitoring email delivery failures
+  // Example: await sendEmail({ to: user.email, subject: 'Your OTP', body: `Your OTP is: ${otp}` });
+  
   return otp;
 }
 
@@ -173,6 +177,10 @@ async function generatePasswordResetOtp(client, user) {
   console.log(`\n==============================================`);
   console.log(`[MOCK DELIVERY] Password reset OTP for ${user.email} is: ${otp}`);
   console.log(`==============================================\n`);
+  
+  // TODO: Replace with actual email service (e.g., SendGrid, AWS SES)
+  // TODO: Integrate with Sentry for monitoring email delivery failures
+  // Example: await sendEmail({ to: user.email, subject: 'Password Reset Code', body: `Your reset code is: ${otp}` });
   
   return otp;
 }
