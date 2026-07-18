@@ -1,34 +1,39 @@
 const express = require("express");
 const {
   handleLogin,
-  handleActivate,
   handleRefresh,
   handleRequestOtp,
   handleForgotPassword,
-  handleResetPassword,
   handleLogout,
   handleCheckEmail,
+  handleVerifyOtp,
+  handleSetPassword,
+  handleVerifyResetOtp,
+  handleSetNewPassword,
 } = require("../controllers/authController");
 const validate = require("../middleware/validate");
 const {
   loginSchema,
-  activateSchema,
   refreshSchema,
   requestOtpSchema,
   forgotPasswordSchema,
   resetPasswordSchema,
-  checkEmailSchema
+  checkEmailSchema,
+  verifyOtpSchema,
+  setPasswordSchema
 } = require("../schemas/authSchemas");
 
 const router = express.Router();
 
 router.post("/login", validate(loginSchema), handleLogin);
-router.post("/activate", validate(activateSchema), handleActivate);
 router.post("/refresh", validate(refreshSchema), handleRefresh);
 router.post("/request-otp", validate(requestOtpSchema), handleRequestOtp);
 router.post("/forgot-password", validate(forgotPasswordSchema), handleForgotPassword);
-router.post("/reset-password", validate(resetPasswordSchema), handleResetPassword);
+router.post("/verify-reset-otp", validate(verifyOtpSchema), handleVerifyResetOtp);
+router.post("/set-new-password", validate(setPasswordSchema), handleSetNewPassword);
 router.post("/logout", handleLogout);
 router.post("/check-email", validate(checkEmailSchema), handleCheckEmail);
+router.post("/verify-otp", validate(verifyOtpSchema), handleVerifyOtp);
+router.post("/set-password", validate(setPasswordSchema), handleSetPassword);
 
 module.exports = router;
