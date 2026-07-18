@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, Pressable, ScrollView, Switch } from "react-native"; 
-import globalStyles from './styles';
+import globalStyles from '../styles';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useState, useEffect } from "react";
 import { useRouter } from "expo-router";
