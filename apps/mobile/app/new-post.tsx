@@ -26,6 +26,7 @@ type Group = {
   name: string;
   type: string;
   memberCount: number;
+  isLeader?: boolean;
 };
 
 export default function NewPostScreen() {
@@ -64,11 +65,11 @@ export default function NewPostScreen() {
   useEffect(() => {
     // Fetch groups for targeting (only groups where user is leader)
     if (session?.accessToken) {
-      apiRequest<{ groups: (Group & { isLeader?: boolean })[] }>("/groups/my", {
+      apiRequest<{ data: (Group & { isLeader?: boolean })[] }>("/groups/my", {
         headers: { Authorization: `Bearer ${session.accessToken}` }
       })
         .then(res => {
-          const myLedGroups = res.groups?.filter(g => g.isLeader) || [];
+          const myLedGroups = res.data?.filter(g => g.isLeader) || [];
           setGroups(myLedGroups);
           // Auto-select group if preselectGroup is provided
           if (preselectGroup) {
