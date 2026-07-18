@@ -47,6 +47,20 @@ const checkEmailSchema = z.object({
   }),
 });
 
+const verifyOtpSchema = z.object({
+  body: z.object({
+    email: z.string().email('Invalid email format').min(1, 'Email is required'),
+    otp: z.string().min(4, 'OTP is required'),
+  }),
+});
+
+const setPasswordSchema = z.object({
+  body: z.object({
+    email: z.string().email('Invalid email format').min(1, 'Email is required'),
+    password: z.string().min(6, 'Password must be at least 6 characters'),
+  }),
+});
+
 module.exports = {
   loginSchema,
   activateSchema,
@@ -55,4 +69,6 @@ module.exports = {
   forgotPasswordSchema,
   resetPasswordSchema,
   checkEmailSchema,
+  verifyOtpSchema,
+  setPasswordSchema,
 };
