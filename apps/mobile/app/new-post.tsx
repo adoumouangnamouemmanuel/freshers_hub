@@ -209,7 +209,7 @@ export default function NewPostScreen() {
                     ))}
                     {groups.length === 0 && (
                       <Text style={{ color: "#6b7280", fontStyle: "italic", marginTop: 8 }}>
-                        You don't lead any clubs yet.
+                        You don&apos;t lead any clubs yet.
                       </Text>
                     )}
                   </View>
