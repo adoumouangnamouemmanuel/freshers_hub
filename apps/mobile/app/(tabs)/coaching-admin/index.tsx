@@ -59,8 +59,8 @@ export default function CoachingAdminDashboard() {
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
       <View style={styles.headerContainer}>
-        <Text style={styles.greeting}>Command Center</Text>
-        <Text style={styles.header}>Coaching Admin</Text>
+        <Text style={styles.greeting}>Senior Mental Wellness Coach</Text>
+        <Text style={styles.header}>Quick Overview</Text>
       </View>
 
       <ScrollView 
