@@ -49,6 +49,7 @@ function AppNavigator() {
       <Stack.Screen name="support" options={{ headerShown: false }} />
       <Stack.Screen name="edit-profile" options={{ headerShown: false, presentation: "modal" }} />
       <Stack.Screen name="settings" options={{ headerShown: false, presentation: "modal" }} />
+      <Stack.Screen name="change-password" options={{ headerShown: false, presentation: "modal" }} />
     </Stack>
   );
 }
