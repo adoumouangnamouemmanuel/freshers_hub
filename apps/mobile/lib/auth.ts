@@ -93,15 +93,21 @@ export async function loginWithPassword(
     });
     return { ok: true, session };
   } catch (error) {
-    const status = (error as Error & { status?: number }).status;
-    const body = (
-      error as Error & { body?: { needsActivation?: boolean; email?: string } }
-    ).body;
-
-    if (status === 409 && body?.needsActivation) {
-      return { ok: false, needsActivation: true, email: body.email || email };
+    const err = error as Error & { status?: number; body?: Record<string, unknown>; retryAfter?: number };
+    
+    if (err.status === 409 && (err.body as any)?.needsActivation) {
+      return { ok: false, needsActivation: true, email: (err.body as any)?.email || email };
     }
-    return { ok: false, error: (error as Error).message };
+    
+    // Re-throw lockout (423) and rate limit (429) errors for the frontend to handle
+    if (err.status === 423 || err.status === 429) {
+      const errorObj = new Error(err.message);
+      (errorObj as any).status = err.status;
+      (errorObj as any).retryAfter = err.retryAfter;
+      throw errorObj;
+    }
+    
+    return { ok: false, error: err.message };
   }
 }
 
