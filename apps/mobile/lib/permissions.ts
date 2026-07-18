@@ -56,3 +56,26 @@ export function isStudentLeader(roles: AuthRole[]): boolean {
 export function isPlatformAdmin(roles: AuthRole[]): boolean {
   return hasRole(roles, "platform_admin");
 }
+
+/**
+ * Formats role names for display in the UI.
+ * Maps internal role names to user-friendly display names.
+ */
+export function formatRoleName(role: string | { name: string }): string {
+  const roleName = typeof role === "string" ? role : role.name;
+  
+  const roleDisplayMap: Record<string, string> = {
+    "coach_admin": "Senior Mental Wellness Coach",
+    "peer_coach": "Peer Coach",
+    "peer_counsellor": "Peer Counsellor",
+    "student": "Student",
+    "club_lead": "Club Lead",
+    "student_leader": "Student Leader",
+    "staff": "Staff",
+    "faculty": "Faculty",
+    "advisor": "Advisor",
+    "platform_admin": "Admin",
+  };
+  
+  return roleDisplayMap[roleName] || roleName.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+}
