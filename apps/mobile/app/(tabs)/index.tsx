@@ -15,6 +15,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useAuth } from "@/context/auth-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { apiRequest } from "@/lib/api";
+import { hasRole } from "@/lib/permissions";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 // import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -60,7 +61,7 @@ function PostCard({ post, onUpdate }: { post: Post; onUpdate: () => void }) {
   const displayContent = !isLong || expanded ? post.content : post.content.slice(0, 120) + "...";
   const isAlert = post.category?.toLowerCase() === "alert";
   const isEvent = post.category?.toLowerCase() === "event" && post.eventId;
-  const isOwner = session?.user.id === post.authorId || session?.user.roles.some((r: any) => r.name === "admin");
+  const isOwner = session?.user.id === post.authorId || hasRole(session?.user.roles || [], "admin");
 
   const handleRsvp = async (status: string) => {
     if (!session || !post.eventId || isRsvping) return;
@@ -188,14 +189,13 @@ export default function FeedScreen() {
   const isFresher = session?.user.studentProfile?.graduationYear === currentYear + 4;
   
   const roles = session?.user.roles || [];
-  const hasRole = (roleName: string) => roles.some((r: any) => r.name === roleName);
   
-  const isPeerCoach = hasRole("peer_coach");
-  const isPeerCounsellor = hasRole("peer_counsellor");
-  const isClubLead = hasRole("club_lead");
-  const isAdmin = hasRole("admin");
-  const isCoachAdmin = hasRole("coach_admin") || isAdmin;
-  const isStaff = hasRole("staff") || hasRole("faculty");
+  const isPeerCoach = hasRole(roles, "peer_coach");
+  const isPeerCounsellor = hasRole(roles, "peer_counsellor");
+  const isClubLead = hasRole(roles, "club_lead");
+  const isAdmin = hasRole(roles, "admin");
+  const isCoachAdmin = hasRole(roles, "coach_admin") || isAdmin;
+  const isStaff = hasRole(roles, "staff") || hasRole(roles, "faculty");
   const isContinuingStudent = !isFresher && !isStaff && !isCoachAdmin && !isAdmin && !isPeerCoach && !isPeerCounsellor && !isClubLead;
 
   const fetchData = async () => {
@@ -271,7 +271,7 @@ export default function FeedScreen() {
   };
 
   const allowedRoles = ["staff", "faculty", "student_leader", "admin", "club_lead"];
-  const canPost = session?.user.roles.some((r) => allowedRoles.includes(r.name));
+  const canPost = allowedRoles.some((roleName) => hasRole(session?.user.roles || [], roleName));
 
   const categories = ["All", "Announcement", "Event", "Alert"];
   const [activeCategory, setActiveCategory] = useState("All");
