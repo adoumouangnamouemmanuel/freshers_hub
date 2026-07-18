@@ -1,6 +1,6 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useAuth } from "@/context/auth-context";
-import { hasRole } from "@/lib/permissions";
+import { hasRole, formatRoleName } from "@/lib/permissions";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useEffect, useState, useRef } from "react";
@@ -115,16 +115,7 @@ export default function ProfileScreen() {
   const studentProfile = session?.user.studentProfile;
   const schoolId = studentProfile?.schoolId ?? "N/A";
 
-  const uniqueRoles = [
-    ...new Set(
-      (session?.user.roles || []).map((r) =>
-        typeof r === "string" ? r : r.name,
-      ),
-    ),
-  ];
-  const formattedRoles = uniqueRoles.map((role) =>
-    role.replace(/_/g, " ").replace(/\b\w/g, (l) => l.toUpperCase()),
-  );
+  const formattedRoles = (session?.user.roles || []).map((role) => formatRoleName(role));
 
   return (
     <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
