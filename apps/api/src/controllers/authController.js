@@ -321,6 +321,30 @@ const handleResetPassword = asyncHandler(async (req, res) => {
   }
 });
 
+const handleCheckEmail = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  logger.info(`Check email request for: ${email}`);
+
+  const client = await pool.connect();
+  try {
+    const user = await authService.loadUserBundle(client, String(email).trim());
+
+    if (!user) {
+      logger.warn(`Check email failed: User not found (${email})`);
+      return res.json({ exists: false, activated: false });
+    }
+
+    const activated = !!(user.is_activated && user.password_hash);
+    logger.info(`Check email success: exists=true, activated=${activated} (${email})`);
+    res.json({ exists: true, activated });
+  } catch (error) {
+    logger.error(`Check email error for ${email}: ${error.message}`);
+    throw error;
+  } finally {
+    client.release();
+  }
+});
+
 const handleLogout = asyncHandler(async (req, res) => {
   const { refreshToken } = req.body;
   logger.info(`Logout request`);
@@ -359,5 +383,6 @@ module.exports = {
   handleRequestOtp,
   handleForgotPassword,
   handleResetPassword,
+  handleCheckEmail,
   handleLogout,
 };
