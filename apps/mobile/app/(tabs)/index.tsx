@@ -18,7 +18,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { apiRequest } from "@/lib/api";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+// import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Post = {
   id: string;
@@ -538,7 +538,7 @@ export default function FeedScreen() {
               <View style={styles.emptyFeedIcon}>
                 <IconSymbol name="newspaper.fill" size={28} color="#9BA3AE" />
               </View>
-              <Text style={styles.emptyFeedTitle}>You're all caught up!</Text>
+              <Text style={styles.emptyFeedTitle}>You&apos;re all caught up!</Text>
               <Text style={styles.emptyFeedDesc}>
                 Announcements and events will appear here.
               </Text>
