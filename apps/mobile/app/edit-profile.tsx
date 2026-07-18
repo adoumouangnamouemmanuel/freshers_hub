@@ -5,6 +5,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { useAuth } from "@/context/auth-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { hasRole } from "@/lib/permissions";
+import { apiRequest } from "@/lib/api";
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -44,16 +45,22 @@ export default function EditProfileScreen() {
   const handleSave = async () => {
     setIsLoading(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 800));
-      updateUser({
-        ...session!.user,
-        phone: phone.trim(),
+      const response = await apiRequest<{ user: any }>("/auth/profile", {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${session?.accessToken}` },
+        body: JSON.stringify({ phone: phone.trim() }),
       });
-      Alert.alert("Success", "Profile updated successfully", [
-        { text: "OK", onPress: () => router.back() }
-      ]);
-    } catch (error) {
-      Alert.alert("Error", "Failed to update profile. Please try again.");
+      
+      if (response.user) {
+        updateUser(response.user);
+        Alert.alert("Success", "Profile updated successfully", [
+          { text: "OK", onPress: () => router.back() }
+        ]);
+      } else {
+        throw new Error("Failed to update profile");
+      }
+    } catch (error: any) {
+      Alert.alert("Error", error.message || "Failed to update profile. Please try again.");
     } finally {
       setIsLoading(false);
     }
