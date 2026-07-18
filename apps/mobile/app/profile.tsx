@@ -3,14 +3,14 @@ import { useAuth } from "@/context/auth-context";
 import { hasRole } from "@/lib/permissions";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
   Alert,
+  Animated,
   Image,
   Pressable,
   ScrollView,
   StyleSheet,
-  // Switch,
   Text,
   View,
 } from "react-native";
@@ -24,7 +24,6 @@ export default function ProfileScreen() {
   const { session, signOut } = useAuth();
   // const insets = useSafeAreaInsets();
 
-  // Settings state
   const [darkMode, setDarkMode] = useState(false);
   const [eventNotifs, setEventNotifs] = useState(true);
   const [clubNotifs, setClubNotifs] = useState(true);
@@ -44,23 +43,6 @@ export default function ProfileScreen() {
       if (val !== null) setPushNotifs(val === "true");
     });
   }, []);
-
-  // const toggleDarkMode = async (val: boolean) => {
-  //   setDarkMode(val);
-  //   await AsyncStorage.setItem("@dark_mode", String(val));
-  // };
-  // const toggleEventNotifs = async (val: boolean) => {
-  //   setEventNotifs(val);
-  //   await AsyncStorage.setItem("@notifs_events", String(val));
-  // };
-  // const toggleClubNotifs = async (val: boolean) => {
-  //   setClubNotifs(val);
-  //   await AsyncStorage.setItem("@notifs_clubs", String(val));
-  // };
-  // const togglePushNotifs = async (val: boolean) => {
-  //   setPushNotifs(val);
-  //   await AsyncStorage.setItem("@notifs_push", String(val));
-  // };
 
   const handleSignOut = async () => {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
@@ -98,6 +80,25 @@ export default function ProfileScreen() {
     Alert.alert("Help & Support", "Contact us at support@freshershub.com");
   };
 
+  // Animation for fade-in effect
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(30)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
   const userInitial = session?.user.fullName?.charAt(0).toUpperCase() ?? "?";
   const fullName = session?.user.fullName ?? "User";
   const email = session?.user.email ?? "";
@@ -108,15 +109,12 @@ export default function ProfileScreen() {
   const classYear = session?.user.classYear ?? "N/A";
   const createdAt = session?.user.createdAt ?? "September 2024";
 
-  // Format joined date
   const joinedDate = createdAt ? new Date(createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : "September 2024";
 
-  // Only show student info for actual students
   const isStudent = hasRole(session?.user.roles || [], "student");
   const studentProfile = session?.user.studentProfile;
   const schoolId = studentProfile?.schoolId ?? "N/A";
 
-  // Deduplicate and format roles
   const uniqueRoles = [
     ...new Set(
       (session?.user.roles || []).map((r) =>
@@ -130,231 +128,229 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={["top", "left", "right"]}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Cover Image Header */}
-        <View style={styles.header}>
-          <View style={styles.coverImagePlaceholder}>
-            <IconSymbol name="building.2.fill" size={48} color="#FFFFFF" />
-          </View>
-          <View style={styles.coverOverlay} />
-        </View>
+      <View style={styles.header}>
+        <Pressable onPress={() => router.back()} style={styles.closeBtn}>
+          <IconSymbol name="chevron.left" size={28} color="#1A2B4A" />
+        </Pressable>
+        <Text style={styles.headerTitle}>Profile</Text>
+        <View style={{ width: 40 }} />
+      </View>
 
-        {/* Profile Section */}
-        <View style={styles.profileSection}>
-          {/* Avatar */}
-          <View style={styles.avatarContainer}>
-            {avatarUrl ? (
-              <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
-            ) : (
-              <View style={styles.avatarCircle}>
-                <Text style={styles.avatarInitial}>{userInitial}</Text>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
+          <View style={styles.coverHeader}>
+            <View style={styles.coverImagePlaceholder}>
+              <IconSymbol name="building.2.fill" size={48} color="#FFFFFF" />
+            </View>
+            <View style={styles.coverOverlay} />
+          </View>
+
+          <View style={styles.profileSection}>
+            <View style={styles.avatarContainer}>
+              {avatarUrl ? (
+                <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+              ) : (
+                <View style={styles.avatarCircle}>
+                  <Text style={styles.avatarInitial}>{userInitial}</Text>
+                </View>
+              )}
+            </View>
+
+            <Text style={styles.userName}>{fullName}</Text>
+            <Text style={styles.userEmail}>{email}</Text>
+
+            {formattedRoles.length > 0 && (
+              <View style={styles.roleContainer}>
+                {formattedRoles.map((role, index) => (
+                  <View key={`${role}-${index}`} style={styles.roleBadge}>
+                    <Text style={styles.roleText}>{role}</Text>
+                  </View>
+                ))}
               </View>
             )}
           </View>
 
-          {/* User Info */}
-          <Text style={styles.userName}>{fullName}</Text>
-          <Text style={styles.userEmail}>{email}</Text>
-
-          {/* Role Badges */}
-          {formattedRoles.length > 0 && (
-            <View style={styles.roleContainer}>
-              {formattedRoles.map((role, index) => (
-                <View key={`${role}-${index}`} style={styles.roleBadge}>
-                  <Text style={styles.roleText}>{role}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-        </View>
-
-        {/* Personal Information */}
-        <View style={styles.infoSection}>
-          <Text style={styles.sectionTitle}>Personal Information</Text>
-
-          {!!phone && phone !== "N/A" && (
-            <View style={styles.infoItem}>
-              <View style={styles.infoIconContainer}>
-                <IconSymbol name="phone.fill" size={20} color="#A93C40" />
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Phone</Text>
-                <Text style={styles.infoValue}>{phone}</Text>
-              </View>
-            </View>
-          )}
-
-          <View style={styles.infoItem}>
-            <View style={styles.infoIconContainer}>
-              <IconSymbol name="envelope.fill" size={20} color="#A93C40" />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Email</Text>
-              <Text style={styles.infoValue}>{email}</Text>
-            </View>
-          </View>
-
-          {!!country && country !== "N/A" && (
-            <View style={styles.infoItem}>
-              <View style={styles.infoIconContainer}>
-                <IconSymbol name="mappin.and.ellipse" size={20} color="#A93C40" />
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Country</Text>
-                <Text style={styles.infoValue}>{country}</Text>
-              </View>
-            </View>
-          )}
-
-          {!!major && major !== "N/A" && (
-            <View style={styles.infoItem}>
-              <View style={styles.infoIconContainer}>
-                <IconSymbol name="book.fill" size={20} color="#A93C40" />
-              </View>
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Major</Text>
-                <Text style={styles.infoValue}>{major}</Text>
-              </View>
-            </View>
-          )}
-
-          <View style={styles.infoItem}>
-            <View style={styles.infoIconContainer}>
-              <IconSymbol name="calendar" size={20} color="#A93C40" />
-            </View>
-            <View style={styles.infoContent}>
-              <Text style={styles.infoLabel}>Joined</Text>
-              <Text style={styles.infoValue}>{joinedDate}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Student Info Card - Only for students */}
-        {isStudent && (
           <View style={styles.infoSection}>
-            <Text style={styles.sectionTitle}>Academic Information</Text>
+            <Text style={styles.sectionTitle}>Personal Information</Text>
+
+            {!!phone && phone !== "N/A" && (
+              <View style={styles.infoItem}>
+                <View style={styles.infoIconContainer}>
+                  <IconSymbol name="phone.fill" size={20} color="#A93C40" />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Phone</Text>
+                  <Text style={styles.infoValue}>{phone}</Text>
+                </View>
+              </View>
+            )}
 
             <View style={styles.infoItem}>
               <View style={styles.infoIconContainer}>
-                <IconSymbol name="person.fill" size={20} color="#A93C40" />
+                <IconSymbol name="envelope.fill" size={20} color="#A93C40" />
               </View>
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Student ID</Text>
-                <Text style={styles.infoValue}>{schoolId}</Text>
+                <Text style={styles.infoLabel}>Email</Text>
+                <Text style={styles.infoValue}>{email}</Text>
               </View>
             </View>
+
+            {!!country && country !== "N/A" && (
+              <View style={styles.infoItem}>
+                <View style={styles.infoIconContainer}>
+                  <IconSymbol name="mappin.and.ellipse" size={20} color="#A93C40" />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Country</Text>
+                  <Text style={styles.infoValue}>{country}</Text>
+                </View>
+              </View>
+            )}
+
+            {!!major && major !== "N/A" && (
+              <View style={styles.infoItem}>
+                <View style={styles.infoIconContainer}>
+                  <IconSymbol name="book.fill" size={20} color="#A93C40" />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Major</Text>
+                  <Text style={styles.infoValue}>{major}</Text>
+                </View>
+              </View>
+            )}
 
             <View style={styles.infoItem}>
               <View style={styles.infoIconContainer}>
                 <IconSymbol name="calendar" size={20} color="#A93C40" />
               </View>
               <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Class Of</Text>
-                <Text style={styles.infoValue}>{classYear}</Text>
+                <Text style={styles.infoLabel}>Joined</Text>
+                <Text style={styles.infoValue}>{joinedDate}</Text>
               </View>
             </View>
           </View>
-        )}
 
-        {/* Settings Section */}
-        <View style={styles.settingsSection}>
-          <View style={styles.settingsSectionHeader}>
-            <Text style={styles.sectionTitle}>Settings</Text>
+          {isStudent && (
+            <View style={styles.infoSection}>
+              <Text style={styles.sectionTitle}>Academic Information</Text>
+
+              <View style={styles.infoItem}>
+                <View style={styles.infoIconContainer}>
+                  <IconSymbol name="person.fill" size={20} color="#A93C40" />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Student ID</Text>
+                  <Text style={styles.infoValue}>{schoolId}</Text>
+                </View>
+              </View>
+
+              <View style={styles.infoItem}>
+                <View style={styles.infoIconContainer}>
+                  <IconSymbol name="calendar" size={20} color="#A93C40" />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Class Of</Text>
+                  <Text style={styles.infoValue}>{classYear}</Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+          <View style={styles.settingsSection}>
+            <View style={styles.settingsSectionHeader}>
+              <Text style={styles.sectionTitle}>Settings</Text>
+            </View>
+
+            <Pressable style={styles.settingsItem} onPress={() => router.push("/edit-profile")}>
+              <View style={styles.settingsIconContainer}>
+                <IconSymbol name="pencil" size={20} color="#A93C40" />
+              </View>
+              <Text style={styles.settingsText}>Edit Profile</Text>
+              <View style={styles.settingsSpacer} />
+              <IconSymbol name="chevron.right" size={18} color="#9CA3AF" />
+            </Pressable>
+
+            <View style={styles.settingsDivider} />
+
+            <Pressable style={styles.settingsItem} onPress={() => router.push("/settings")}>
+              <View style={styles.settingsIconContainer}>
+                <IconSymbol name="gearshape.fill" size={20} color="#A93C40" />
+              </View>
+              <Text style={styles.settingsText}>Settings</Text>
+              <View style={styles.settingsSpacer} />
+              <IconSymbol name="chevron.right" size={18} color="#9CA3AF" />
+            </Pressable>
           </View>
 
-          <Pressable style={styles.settingsItem} onPress={() => router.push("/edit-profile")}>
-            <View style={styles.settingsIconContainer}>
-              <IconSymbol name="pencil" size={20} color="#A93C40" />
+          <View style={styles.settingsSection}>
+            <View style={styles.settingsSectionHeader}>
+              <Text style={styles.sectionTitle}>Support</Text>
             </View>
-            <Text style={styles.settingsText}>Edit Profile</Text>
-            <View style={styles.settingsSpacer} />
-            <IconSymbol name="chevron.right" size={18} color="#9CA3AF" />
-          </Pressable>
 
-          <View style={styles.settingsDivider} />
+            <Pressable style={styles.settingsItem} onPress={handleHelp}>
+              <View style={styles.settingsIconContainer}>
+                <IconSymbol
+                  name="questionmark.circle.fill"
+                  size={20}
+                  color="#A93C40"
+                />
+              </View>
+              <Text style={styles.settingsText}>Help & Support</Text>
+              <View style={styles.settingsSpacer} />
+              <IconSymbol name="chevron.right" size={18} color="#9CA3AF" />
+            </Pressable>
 
-          <Pressable style={styles.settingsItem} onPress={() => router.push("/settings")}>
-            <View style={styles.settingsIconContainer}>
-              <IconSymbol name="gearshape.fill" size={20} color="#A93C40" />
-            </View>
-            <Text style={styles.settingsText}>Settings</Text>
-            <View style={styles.settingsSpacer} />
-            <IconSymbol name="chevron.right" size={18} color="#9CA3AF" />
-          </Pressable>
-        </View>
+            <View style={styles.settingsDivider} />
 
-        {/* Support Section */}
-        <View style={styles.settingsSection}>
-          <View style={styles.settingsSectionHeader}>
-            <Text style={styles.sectionTitle}>Support</Text>
+            <Pressable style={styles.settingsItem} onPress={handleReport}>
+              <View style={styles.settingsIconContainer}>
+                <IconSymbol
+                  name="exclamationmark.triangle.fill"
+                  size={20}
+                  color="#A93C40"
+                />
+              </View>
+              <Text style={styles.settingsText}>Report a Problem</Text>
+              <View style={styles.settingsSpacer} />
+              <IconSymbol name="chevron.right" size={18} color="#9CA3AF" />
+            </Pressable>
+
+            <View style={styles.settingsDivider} />
+
+            <Pressable style={styles.settingsItem} onPress={handleRate}>
+              <View style={styles.settingsIconContainer}>
+                <IconSymbol name="star.fill" size={20} color="#A93C40" />
+              </View>
+              <Text style={styles.settingsText}>Rate App</Text>
+              <View style={styles.settingsSpacer} />
+              <IconSymbol name="chevron.right" size={18} color="#9CA3AF" />
+            </Pressable>
+
+            <View style={styles.settingsDivider} />
+
+            <Pressable style={styles.settingsItem} onPress={handleShare}>
+              <View style={styles.settingsIconContainer}>
+                <IconSymbol
+                  name="square.and.arrow.up"
+                  size={20}
+                  color="#A93C40"
+                />
+              </View>
+              <Text style={styles.settingsText}>Share App</Text>
+              <View style={styles.settingsSpacer} />
+              <IconSymbol name="chevron.right" size={18} color="#9CA3AF" />
+            </Pressable>
           </View>
 
-          <Pressable style={styles.settingsItem} onPress={handleHelp}>
-            <View style={styles.settingsIconContainer}>
-              <IconSymbol
-                name="questionmark.circle.fill"
-                size={20}
-                color="#A93C40"
-              />
-            </View>
-            <Text style={styles.settingsText}>Help & Support</Text>
-            <View style={styles.settingsSpacer} />
-            <IconSymbol name="chevron.right" size={18} color="#9CA3AF" />
+          <Pressable style={styles.logoutButton} onPress={handleSignOut}>
+            <IconSymbol name="log-out" size={20} color="#FFFFFF" />
+            <Text style={styles.logoutText}>Sign Out</Text>
           </Pressable>
 
-          <View style={styles.settingsDivider} />
+          <Text style={styles.version}>Version 1.0.0</Text>
 
-          <Pressable style={styles.settingsItem} onPress={handleReport}>
-            <View style={styles.settingsIconContainer}>
-              <IconSymbol
-                name="exclamationmark.triangle.fill"
-                size={20}
-                color="#A93C40"
-              />
-            </View>
-            <Text style={styles.settingsText}>Report a Problem</Text>
-            <View style={styles.settingsSpacer} />
-            <IconSymbol name="chevron.right" size={18} color="#9CA3AF" />
-          </Pressable>
-
-          <View style={styles.settingsDivider} />
-
-          <Pressable style={styles.settingsItem} onPress={handleRate}>
-            <View style={styles.settingsIconContainer}>
-              <IconSymbol name="star.fill" size={20} color="#A93C40" />
-            </View>
-            <Text style={styles.settingsText}>Rate App</Text>
-            <View style={styles.settingsSpacer} />
-            <IconSymbol name="chevron.right" size={18} color="#9CA3AF" />
-          </Pressable>
-
-          <View style={styles.settingsDivider} />
-
-          <Pressable style={styles.settingsItem} onPress={handleShare}>
-            <View style={styles.settingsIconContainer}>
-              <IconSymbol
-                name="square.and.arrow.up"
-                size={20}
-                color="#A93C40"
-              />
-            </View>
-            <Text style={styles.settingsText}>Share App</Text>
-            <View style={styles.settingsSpacer} />
-            <IconSymbol name="chevron.right" size={18} color="#9CA3AF" />
-          </Pressable>
-        </View>
-
-        {/* Sign Out Button */}
-        <Pressable style={styles.logoutButton} onPress={handleSignOut}>
-          <IconSymbol name="log-out" size={20} color="#FFFFFF" />
-          <Text style={styles.logoutText}>Sign Out</Text>
-        </Pressable>
-
-        {/* Version */}
-        <Text style={styles.version}>Version 1.0.0</Text>
-
-        {/* Bottom padding */}
-        <View style={{ height: 40 }} />
+          <View style={{ height: 40 }} />
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -366,6 +362,18 @@ const styles = StyleSheet.create({
     backgroundColor: "#F8F9FA",
   },
   header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: "#FFFFFF",
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F2F5",
+  },
+  headerTitle: { fontSize: 18, fontWeight: "700", color: "#1A2B4A" },
+  closeBtn: { padding: 8, marginLeft: -8 },
+  coverHeader: {
     position: "relative",
     height: 200,
   },
@@ -406,11 +414,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     borderWidth: 4,
     borderColor: "#FFFFFF",
-    shadowColor: "#A93C40",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 8,
   },
   avatarInitial: {
     fontSize: 40,
@@ -533,18 +536,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginRight: 12,
   },
-  settingsTextContainer: {
-    flex: 1,
-  },
   settingsText: {
     fontSize: 15,
     fontWeight: "600",
     color: "#1A2B4A",
-  },
-  settingsDesc: {
-    fontSize: 13,
-    color: "#6B7280",
-    marginTop: 2,
   },
   settingsSpacer: {
     flex: 1,
@@ -565,11 +560,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     padding: 16,
     borderRadius: 14,
-    shadowColor: "#A93C40",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 6,
   },
   logoutText: {
     color: "#FFFFFF",
