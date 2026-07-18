@@ -13,7 +13,7 @@ type Member = {
   id: string;
   full_name: string;
   avatar_url?: string;
-  is_leader: boolean;
+  isLeader: boolean;
 };
 
 type ClubDetails = {
@@ -50,10 +50,10 @@ export default function ClubAdminScreen() {
   const fetchMyLedClubs = async () => {
     if (!session?.accessToken) return;
     try {
-      const data = await apiRequest<{ groups: any[] }>('/groups/my', {
+      const data = await apiRequest<{ data: any[] }>('/groups/my', {
         headers: { Authorization: `Bearer ${session?.accessToken}` }
       });
-      const ledClubs = data.groups.filter(g => g.isLeader);
+      const ledClubs = data.data.filter(g => g.isLeader);
       setClubs(ledClubs);
       
       if (ledClubs.length === 1 && !selectedClubId) {
@@ -72,14 +72,14 @@ export default function ClubAdminScreen() {
     try {
       const headers = { Authorization: `Bearer ${session?.accessToken}` };
       const [data, postsData] = await Promise.all([
-        apiRequest<{ group: ClubDetails }>(`/groups/${id}`, { headers }),
-        apiRequest<{ posts: any[] }>(`/groups/${id}/posts`, { headers })
+        apiRequest<{ data: ClubDetails }>(`/groups/${id}`, { headers }),
+        apiRequest<{ data: any[] }>(`/groups/${id}/posts`, { headers })
       ]);
-      setClub(data.group);
-      setRecentPosts(postsData.posts?.slice(0, 3) || []); // Get top 3 recent posts
-      setEditName(data.group.name);
-      setEditDesc(data.group.description || "");
-      setEditCategory(data.group.category || "");
+      setClub(data.data);
+      setRecentPosts(postsData.data?.slice(0, 3) || []); // Get top 3 recent posts
+      setEditName(data.data.name);
+      setEditDesc(data.data.description || "");
+      setEditCategory(data.data.category || "");
     } catch (err) {
       console.error("Error fetching club details:", err);
     } finally {
@@ -110,7 +110,7 @@ export default function ClubAdminScreen() {
   const handleSaveInfo = async () => {
     if (!selectedClubId || !session?.accessToken) return;
     try {
-      const data = await apiRequest<{ group: ClubDetails }>(`/groups/${selectedClubId}`, {
+      const data = await apiRequest<{ data: ClubDetails }>(`/groups/${selectedClubId}`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${session.accessToken}` },
         body: JSON.stringify({
@@ -119,7 +119,7 @@ export default function ClubAdminScreen() {
           category: editCategory
         })
       });
-      setClub(prev => prev ? { ...prev, ...data.group } : null);
+      setClub(prev => prev ? { ...prev, ...data.data } : null);
       setIsEditing(false);
       Alert.alert("Success", "Club information updated.");
     } catch (err) {
@@ -265,12 +265,12 @@ export default function ClubAdminScreen() {
               const initial = m.full_name?.charAt(0) || '?';
               return (
                 <View key={m.id} style={styles.memberRow}>
-                  <View style={[styles.memberAvatar, m.is_leader && styles.leaderAvatar]}>
-                    <Text style={[styles.memberInitial, m.is_leader && styles.leaderInitial]}>{initial}</Text>
+                  <View style={[styles.memberAvatar, m.isLeader && styles.leaderAvatar]}>
+                    <Text style={[styles.memberInitial, m.isLeader && styles.leaderInitial]}>{initial}</Text>
                   </View>
                   <View style={styles.memberInfo}>
                     <Text style={styles.memberName}>{m.full_name}</Text>
-                    {m.is_leader && (
+                    {m.isLeader && (
                       <View style={styles.leaderBadge}>
                         <Text style={styles.leaderBadgeText}>Leader</Text>
                       </View>
