@@ -92,12 +92,28 @@ function checkAccountLockout() {
 
 /**
  * Record failed login attempt
+ * Once locked, additional attempts do NOT extend the lockout duration
  */
 function recordFailedLogin(email) {
   const identifier = email.toLowerCase();
   const now = Date.now();
 
   const record = lockoutStore.get(identifier) || { failedCount: 0 };
+
+  // If already locked, do NOT extend the lockout
+  if (record.lockedUntil && now < record.lockedUntil) {
+    logger.warn(`Additional failed login for locked account ${identifier}. Lockout not extended.`);
+    return;
+  }
+
+  // If lockout expired, clear and start fresh
+  if (record.lockedUntil && now >= record.lockedUntil) {
+    lockoutStore.delete(identifier);
+    const newRecord = { failedCount: 1, lastFailedAt: now };
+    lockoutStore.set(identifier, newRecord);
+    return;
+  }
+
   record.failedCount++;
   record.lastFailedAt = now;
 
