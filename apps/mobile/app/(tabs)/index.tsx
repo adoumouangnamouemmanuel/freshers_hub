@@ -297,7 +297,11 @@ export default function FeedScreen() {
         <View style={styles.personalHeader}>
           <View style={styles.greetingRow}>
             <Pressable style={styles.headerAvatarLarge} onPress={() => router.push("/profile")}>
-              <Text style={styles.headerAvatarLargeText}>{userInitial}</Text>
+              {session?.user.avatarUrl ? (
+                <Image source={{ uri: session.user.avatarUrl }} style={styles.headerAvatarImage} />
+              ) : (
+                <Text style={styles.headerAvatarLargeText}>{userInitial}</Text>
+              )}
             </Pressable>
             <View>
               <Text style={styles.greetingTime}>{getGreeting()},</Text>
@@ -601,6 +605,11 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "800",
     color: "#FFFFFF",
+  },
+  headerAvatarImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
   },
   greetingTime: {
     fontSize: 15,
