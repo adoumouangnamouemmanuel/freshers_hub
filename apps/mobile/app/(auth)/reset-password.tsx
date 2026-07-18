@@ -58,7 +58,23 @@ export default function ResetPasswordScreen() {
       await verifyResetOtp(email.trim(), otp.trim());
       setStep("password");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Invalid OTP");
+      const err = e as Error & { status?: number; retryAfter?: number };
+      
+      // Handle rate limit (429) or lockout (423) - navigate to rate-limit screen
+      if (err.status === 429 || err.status === 423) {
+        const retryAfter = err.retryAfter || 30;
+        router.replace({
+          pathname: "/(auth)/rate-limit",
+          params: {
+            reason: "password_reset_limit",
+            retryAfter: retryAfter.toString(),
+            message: err.message,
+          },
+        });
+        return;
+      }
+      
+      setError("Invalid or expired code");
     } finally { setLoading(false); }
   };
 
@@ -71,7 +87,23 @@ export default function ResetPasswordScreen() {
       await setNewPassword(email.trim(), otp.trim(), newPw);
       setDone(true);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Reset failed");
+      const err = e as Error & { status?: number; retryAfter?: number };
+      
+      // Handle rate limit (429) or lockout (423) - navigate to rate-limit screen
+      if (err.status === 429 || err.status === 423) {
+        const retryAfter = err.retryAfter || 30;
+        router.replace({
+          pathname: "/(auth)/rate-limit",
+          params: {
+            reason: "password_reset_limit",
+            retryAfter: retryAfter.toString(),
+            message: err.message,
+          },
+        });
+        return;
+      }
+      
+      setError("Password reset failed. Please try again.");
     } finally { setLoading(false); }
   };
 
