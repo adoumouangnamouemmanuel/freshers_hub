@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Pressable, View, Text, StyleSheet } from 'react-native'; 
+import { Pressable, View, Text } from 'react-native'; 
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/context/auth-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { apiRequest } from '@/lib/api';
+import { hasRole } from '@/lib/permissions';
 import { Post } from '../../hooks/useDashboardData';
 import { styles } from './DashboardStyles';
 
@@ -17,7 +18,7 @@ export function PostCard({ post, onUpdate }: { post: Post; onUpdate: () => void 
   const displayContent = !isLong || expanded ? post.content : post.content.slice(0, 120) + "...";
   const isAlert = post.category?.toLowerCase() === "alert";
   const isEvent = post.category?.toLowerCase() === "event" && post.eventId;
-  const isOwner = session?.user.id === post.authorId || session?.user.roles.some((r: any) => r.name === "admin");
+  const isOwner = session?.user.id === post.authorId || hasRole(session?.user.roles || [], "admin");
 
   const handleRsvp = async (status: string) => {
     if (!session || !post.eventId || isRsvping) return;
