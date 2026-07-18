@@ -124,7 +124,7 @@ export default function NotificationsScreen() {
         <View style={styles.centerContainer}>
           <IconSymbol name="bell.slash.fill" size={48} color="#D1D5DB" />
           <Text style={styles.emptyTitle}>No notifications yet</Text>
-          <Text style={styles.emptyDesc}>We'll notify you when there's an update for your groups or events.</Text>
+          <Text style={styles.emptyDesc}>We&apos;ll notify you when there&apos;s an update for your groups or events.</Text>
         </View>
       ) : (
         <ScrollView 
