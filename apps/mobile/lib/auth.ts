@@ -62,13 +62,19 @@ async function getItem(key: string) {
 
 async function setItem(key: string, value: string) {
   const storage = getWebStorage();
-  if (storage) { storage.setItem(key, value); return; }
+  if (storage) {
+    storage.setItem(key, value);
+    return;
+  }
   await AsyncStorage.setItem(key, value);
 }
 
 async function removeItem(key: string) {
   const storage = getWebStorage();
-  if (storage) { storage.removeItem(key); return; }
+  if (storage) {
+    storage.removeItem(key);
+    return;
+  }
   await AsyncStorage.removeItem(key);
 }
 
@@ -80,6 +86,15 @@ export async function loadSession() {
 
 export async function saveSession(session: AuthSession) {
   await setItem(SESSION_KEY, JSON.stringify(session));
+}
+
+// Store session for biometric login (called after successful password login)
+export async function saveBiometricSession(session: AuthSession) {
+  const { storeBiometricSession } = await import("./biometric");
+  await storeBiometricSession({
+    accessToken: session.accessToken,
+    refreshToken: session.refreshToken,
+  });
 }
 
 export async function clearSession() {
@@ -99,12 +114,16 @@ export async function loginWithPassword(
     });
     return { ok: true, session };
   } catch (error) {
-    const err = error as Error & { status?: number; body?: Record<string, unknown>; retryAfter?: number };
-    
+    const err = error as Error & {
+      status?: number;
+      body?: Record<string, unknown>;
+      retryAfter?: number;
+    };
+
     if (err.status === 409 && (err.body as any)?.needsActivation) {
       return { ok: false, needsActivation: true, email: (err.body as any)?.email || email };
     }
-    
+
     // Re-throw lockout (423) and rate limit (429) errors for the frontend to handle
     if (err.status === 423 || err.status === 429) {
       const errorObj = new Error(err.message);
@@ -112,7 +131,7 @@ export async function loginWithPassword(
       (errorObj as any).retryAfter = err.retryAfter;
       throw errorObj;
     }
-    
+
     return { ok: false, error: err.message };
   }
 }
