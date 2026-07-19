@@ -52,11 +52,12 @@ export async function authenticateWithBiometrics(): Promise<{
   success: boolean;
   error?: string;
   cancelled?: boolean;
+  usePassword?: boolean;
 }> {
   try {
     const result = await LocalAuthentication.authenticateAsync({
       promptMessage: "Sign in to Freshers Hub",
-      cancelLabel: "Use password",
+      cancelLabel: "Enter Password",
       disableDeviceFallback: false,
     });
 
@@ -65,9 +66,18 @@ export async function authenticateWithBiometrics(): Promise<{
     }
 
     // User cancelled or authentication failed
+    // If user_cancel, treat it as "use password" instead of an error
+    if (result.error === "user_cancel") {
+      return {
+        success: false,
+        cancelled: true,
+        usePassword: true,
+      };
+    }
+    
     return {
       success: false,
-      cancelled: result.error === "user_cancel",
+      cancelled: false,
       error: result.error || "Authentication failed",
     };
   } catch (error) {
