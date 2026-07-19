@@ -5,14 +5,26 @@ import { useRouter } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import { Ionicons } from "@expo/vector-icons";
+import { useAuth } from "@/context/auth-context";
+import {
+  getBiometricType,
+  getBiometricTypeName,
+  isBiometricAvailable,
+  isBiometricLoginEnabled,
+} from "@/lib/biometric";
 
 export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { session, enableBiometric, disableBiometric } = useAuth();
 
   const [darkMode, setDarkMode] = useState(false);
   const [eventNotifs, setEventNotifs] = useState(true);
   const [clubNotifs, setClubNotifs] = useState(true);
+  const [biometricEnabled, setBiometricEnabled] = useState(false);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricType, setBiometricType] = useState<"face" | "fingerprint" | "iris" | "undefined">("undefined");
 
   useEffect(() => {
     AsyncStorage.getItem("@dark_mode").then((val) => {
@@ -24,6 +36,19 @@ export default function SettingsScreen() {
     AsyncStorage.getItem("@notifs_clubs").then((val) => {
       if (val !== null) setClubNotifs(val === "true");
     });
+    
+    // Check biometric availability
+    const checkBiometric = async () => {
+      const available = await isBiometricAvailable();
+      const enabled = await isBiometricLoginEnabled();
+      setBiometricAvailable(available);
+      setBiometricEnabled(enabled);
+      if (available) {
+        const type = await getBiometricType();
+        setBiometricType(type);
+      }
+    };
+    checkBiometric();
   }, []);
 
   const toggleDarkMode = async (val: boolean) => {
@@ -37,6 +62,48 @@ export default function SettingsScreen() {
   const toggleClubNotifs = async (val: boolean) => {
     setClubNotifs(val);
     await AsyncStorage.setItem("@notifs_clubs", String(val));
+  };
+
+  const toggleBiometric = async (val: boolean) => {
+    if (val && session?.user?.email && session) {
+      try {
+        await enableBiometric(session.user.email, {
+          accessToken: session.accessToken,
+          refreshToken: session.refreshToken,
+        });
+        console.log("Biometric session stored successfully for:", session.user.email);
+      } catch (e) {
+        // Handle user cancellation gracefully
+        if (e instanceof Error && e.message.includes("user_cancel")) {
+          console.log("Biometric verification cancelled by user");
+          // Don't enable the toggle if user cancelled
+          setBiometricEnabled(false);
+          return;
+        }
+        console.error("Error enabling biometric login:", e);
+        setBiometricEnabled(false);
+        return;
+      }
+    } else {
+      // Show confirmation dialog before disabling
+      Alert.alert(
+        "Disable Biometric Login",
+        "Are you sure you want to disable biometric login? You will need to use your password to sign in.",
+        [
+          { text: "Cancel", style: "cancel", onPress: () => setBiometricEnabled(true) },
+          {
+            text: "Disable",
+            style: "destructive",
+            onPress: async () => {
+              await disableBiometric();
+            },
+          },
+        ],
+        { cancelable: false },
+      );
+      return;
+    }
+    setBiometricEnabled(val);
   };
 
   const handleChangePassword = () => {
@@ -183,6 +250,38 @@ export default function SettingsScreen() {
                 trackColor={{ true: "#A93C40", false: "#E5E7EB" }}
               />
             </View>
+
+            {/* Biometric toggle - only show if available */}
+            {biometricAvailable && (
+              <>
+                <View style={styles.divider} />
+
+                <View style={styles.settingRow}>
+                  <View style={styles.settingInfo}>
+                    <View style={styles.menuIconContainer}>
+                      <Ionicons 
+                        name={biometricType === "face" ? "scan" : "finger-print"} 
+                        size={20} 
+                        color="#A93C40" 
+                      />
+                    </View>
+                    <View style={styles.menuTextContainer}>
+                      <Text style={styles.menuText}>
+                        {getBiometricTypeName(biometricType)} Login
+                      </Text>
+                      <Text style={styles.menuDesc}>
+                        Use {getBiometricTypeName(biometricType)} to sign in
+                      </Text>
+                    </View>
+                  </View>
+                  <Switch 
+                    value={biometricEnabled} 
+                    onValueChange={toggleBiometric} 
+                    trackColor={{ true: "#A93C40", false: "#E5E7EB" }}
+                  />
+                </View>
+              </>
+            )}
           </View>
         </Animated.View>
 
