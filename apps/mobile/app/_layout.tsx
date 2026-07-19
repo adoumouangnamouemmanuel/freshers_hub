@@ -6,6 +6,7 @@ import {
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
+import { ActivityIndicator, View } from "react-native";
 import "react-native-reanimated";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -24,15 +25,26 @@ function AppNavigator() {
 
     const inAuthGroup = segments[0] === "(auth)";
 
-    if (!session && !inAuthGroup) {
-      router.replace("/(auth)/login");
+    // If we have a session and we're in the auth group (login screen), redirect to home
+    if (session && inAuthGroup) {
+      router.replace("/(tabs)");
       return;
     }
 
-    if (session && inAuthGroup) {
-      router.replace("/(tabs)");
+    // If we don't have a session and we're not in the auth group, redirect to login
+    if (!session && !inAuthGroup) {
+      router.replace("/(auth)/login");
     }
   }, [isReady, router, segments, session]);
+
+  // Show loading screen while checking session
+  if (!isReady) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#FFFFFF" }}>
+        <ActivityIndicator size="large" color="#6B1D2A" />
+      </View>
+    );
+  }
 
   return (
     <Stack>
@@ -68,4 +80,3 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
-
