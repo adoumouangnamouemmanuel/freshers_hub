@@ -252,14 +252,9 @@ const handleRefresh = asyncHandler(async (req, res) => {
       throw new AppError("Invalid refresh token", 401);
     }
 
-    await client.query(
-      `
-        UPDATE refresh_tokens
-        SET revoked_at = now()
-        WHERE id = $1
-      `,
-      [record.id],
-    );
+    // NOTE: We do NOT revoke the refresh token on use to support biometric login
+    // The refresh token will remain valid until it expires (90 days) or user logs out
+    // This allows the same refresh token to be used multiple times for biometric authentication
 
     const user = await authService.loadUserBundle(client, record.email);
     const tokens = await authService.issueTokens(client, user);
