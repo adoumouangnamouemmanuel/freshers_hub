@@ -121,7 +121,7 @@ export async function enableBiometricLoginWithVerification(
       accessToken: session.accessToken,
       refreshToken: session.refreshToken,
     };
-    console.log("Storing biometric session with tokens:", {
+    console.log("enableBiometricLoginWithVerification - session to store:", {
       accessToken: session.accessToken ? "exists" : "null",
       refreshToken: session.refreshToken ? "exists" : "null",
     });
