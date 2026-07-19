@@ -6,49 +6,77 @@ import { motion } from "framer-motion";
 import {
   LayoutDashboard,
   Users,
-  CalendarCheck,
-  HeartHandshake,
+  Calendar,
   GraduationCap,
+  HeartHandshake,
   Handshake,
   Building2,
+  LifeBuoy,
+  Megaphone,
+  CalendarDays,
   BarChart3,
+  Bell,
+  FileText,
+  Settings,
   ChevronLeft,
   GraduationCapIcon,
-  Settings,
+  ChevronDown,
   Shield,
-  Database,
-  Send,
-  Activity,
-  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 
-const mainNavItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/dashboard/coaching", label: "Coaching", icon: CalendarCheck },
-  { href: "/dashboard/counselling", label: "Counselling", icon: HeartHandshake },
-  { href: "/dashboard/advising", label: "Advising", icon: GraduationCap },
-  { href: "/dashboard/buddy-up", label: "Buddy Up", icon: Handshake },
-  { href: "/dashboard/clubs", label: "Clubs", icon: Building2 },
-  { href: "/dashboard/users", label: "Users", icon: Users },
-  { href: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
-];
-
-const adminNavItems = [
-  { href: "/dashboard/admin/roles", label: "Role Management", icon: Shield },
-  { href: "/dashboard/admin/import", label: "Import / Export", icon: Database },
-  { href: "/dashboard/admin/broadcast", label: "Broadcast", icon: Send },
-  { href: "/dashboard/admin/audit", label: "Audit Log", icon: FileText },
-  { href: "/dashboard/admin/health", label: "System Health", icon: Activity },
-  { href: "/dashboard/admin/settings", label: "Settings", icon: Settings },
+const navGroups = [
+  {
+    label: "Overview",
+    items: [
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+    ],
+  },
+  {
+    label: "Administration",
+    items: [
+      { href: "/dashboard/users", label: "Users & Roles", icon: Users },
+      { href: "/dashboard/academic-years", label: "Academic Years", icon: Calendar },
+    ],
+  },
+  {
+    label: "Support Units",
+    items: [
+      { href: "/dashboard/coaching", label: "Coaching", icon: GraduationCap },
+      { href: "/dashboard/counselling", label: "Counselling", icon: HeartHandshake },
+      { href: "/dashboard/advising", label: "Advising", icon: GraduationCap },
+      { href: "/dashboard/buddy-up", label: "Buddy Up", icon: Handshake },
+    ],
+  },
+  {
+    label: "Content",
+    items: [
+      { href: "/dashboard/clubs", label: "Clubs", icon: Building2 },
+      { href: "/dashboard/help-center", label: "Help Center", icon: LifeBuoy },
+      { href: "/dashboard/feed", label: "Feed & Announcements", icon: Megaphone },
+      { href: "/dashboard/events", label: "Events", icon: CalendarDays },
+    ],
+  },
+  {
+    label: "Insights",
+    items: [
+      { href: "/dashboard/analytics", label: "Analytics & Reports", icon: BarChart3 },
+    ],
+  },
+  {
+    label: "System",
+    items: [
+      { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
+      { href: "/dashboard/audit-log", label: "Audit Log", icon: FileText },
+      { href: "/dashboard/settings", label: "Settings", icon: Settings },
+    ],
+  },
 ];
 
 export default function Sidebar() {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
-
-  const isAdminRoute = pathname.startsWith("/dashboard/admin");
 
   return (
     <motion.aside
@@ -74,88 +102,48 @@ export default function Sidebar() {
         </motion.span>
       </div>
 
-      {/* Main Navigation */}
-      <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-        <p className="px-3 text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider mb-2">
-          {!collapsed && "Main"}
-        </p>
-        {mainNavItems.map((item, index) => {
-          const isActive = pathname === item.href;
-          return (
-            <motion.div
-              key={item.href}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.03, duration: 0.3 }}
-            >
-              <Link
-                href={item.href}
-                className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative group",
-                  isActive
-                    ? "text-white"
-                    : "text-[#6B7280] hover:text-[#1A2B4A] hover:bg-[#f8f4ef]"
-                )}
-              >
-                {isActive && (
-                  <motion.div
-                    layoutId="activeNav"
-                    className="absolute inset-0 bg-[#A93C40] rounded-xl shadow-md shadow-[#A93C40]/20"
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                  />
-                )}
-                <item.icon className="w-5 h-5 shrink-0 relative z-10" />
-                {!collapsed && (
-                  <span className="relative z-10 font-semibold tracking-tight">
-                    {item.label}
-                  </span>
-                )}
-              </Link>
-            </motion.div>
-          );
-        })}
-
-        {/* Admin Section */}
-        <div className="pt-4 mt-4 border-t border-[#f3f4f6]">
-          <p className="px-3 text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider mb-2">
-            {!collapsed && "Super Admin"}
-          </p>
-          {adminNavItems.map((item, index) => {
-            const isActive = pathname === item.href;
-            return (
-              <motion.div
-                key={item.href}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.03, duration: 0.3 }}
-              >
-                <Link
-                  href={item.href}
-                  className={cn(
-                    "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative group",
-                    isActive
-                      ? "text-white"
-                      : "text-[#6B7280] hover:text-[#1A2B4A] hover:bg-[#f8f4ef]"
-                  )}
-                >
-                  {isActive && (
-                    <motion.div
-                      layoutId="activeAdmin"
-                      className="absolute inset-0 bg-[#A93C40] rounded-xl shadow-md shadow-[#A93C40]/20"
-                      transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    />
-                  )}
-                  <item.icon className="w-5 h-5 shrink-0 relative z-10" />
-                  {!collapsed && (
-                    <span className="relative z-10 font-semibold tracking-tight">
-                      {item.label}
-                    </span>
-                  )}
-                </Link>
-              </motion.div>
-            );
-          })}
-        </div>
+      {/* Navigation */}
+      <nav className="flex-1 overflow-y-auto p-3 space-y-5">
+        {navGroups.map((group) => (
+          <div key={group.label}>
+            {!collapsed && (
+              <p className="px-3 text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider mb-1.5">
+                {group.label}
+              </p>
+            )}
+            <div className="space-y-0.5">
+              {group.items.map((item) => {
+                const isActive = pathname === item.href;
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative group",
+                      isActive
+                        ? "text-white"
+                        : "text-[#6B7280] hover:text-[#1A2B4A] hover:bg-[#f8f4ef]"
+                    )}
+                  >
+                    {isActive && (
+                      <motion.div
+                        layoutId="activeNav"
+                        className="absolute inset-0 bg-[#A93C40] rounded-xl shadow-md shadow-[#A93C40]/20"
+                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                      />
+                    )}
+                    <item.icon className="w-5 h-5 shrink-0 relative z-10" />
+                    {!collapsed && (
+                      <span className="relative z-10 font-semibold tracking-tight">
+                        {item.label}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        ))}
       </nav>
 
       {/* Collapse toggle */}
@@ -166,10 +154,7 @@ export default function Sidebar() {
           onClick={() => setCollapsed(!collapsed)}
           className="flex items-center justify-center w-full py-2.5 rounded-xl text-[#6B7280] hover:text-[#1A2B4A] hover:bg-[#f8f4ef] transition-colors cursor-pointer"
         >
-          <motion.div
-            animate={{ rotate: collapsed ? 180 : 0 }}
-            transition={{ duration: 0.3 }}
-          >
+          <motion.div animate={{ rotate: collapsed ? 180 : 0 }} transition={{ duration: 0.3 }}>
             <ChevronLeft className="w-5 h-5" />
           </motion.div>
         </motion.button>
