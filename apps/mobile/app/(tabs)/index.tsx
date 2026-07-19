@@ -49,8 +49,15 @@ type CoachAssignment = { id: string; peer_coach_id: string; coach_name: string; 
 type BuddyPairing = { id: string; buddy_id: string; buddy_name: string; avatar_url: string | null; };
 type AssignedFresher = { id: string; fresher_id: string; fresher_name: string; avatar_url: string | null; };
 type Group = { id: string; name: string; image_url: string | null; isLeader: boolean; member_count?: number; category?: string; };
-type Session = { id: string; session_date: string; start_time: string; status: string; };
-type AdminStats = { unassigned_freshers?: number; total_freshers?: number; };
+type Session = { id: string; session_date: string; start_time: string; status: string; provider_id?: string; };
+type AdminStats = { 
+  unassigned_freshers?: number; 
+  total_freshers?: number;
+  upcoming_sessions_count?: number;
+  completed_mandatory_sessions?: number;
+  active_coaches?: number;
+  overdue_sessions_count?: number;
+};
 
 function PostCard({ post, onUpdate }: { post: Post; onUpdate: () => void }) {
   const router = useRouter();
@@ -225,6 +232,16 @@ export default function FeedScreen() {
       if (isContinuingStudent || isClubLead || isFresher) {
         promises.push(
           apiRequest<{data: Group[]}>("/groups/my", { headers }).then(d => setMyGroups(d.data || [])).catch(() => {})
+        );
+      }
+
+      // For coach admin, fetch their own sessions (where they are the provider)
+      if (isCoachAdmin) {
+        promises.push(
+          apiRequest<Session[]>("/support/my-sessions", { headers }).then(d => {
+            const upcoming = (d || []).filter(s => s.status === 'scheduled' || s.status === 'pending');
+            setUpcomingSessions(upcoming);
+          }).catch(() => {})
         );
       }
 
@@ -490,19 +507,35 @@ export default function FeedScreen() {
             </Pressable>
           ))}
 
-          {/* COACH ADMIN */}
-          {isCoachAdmin && !isPeerCoach && !isClubLead && adminStats && (
-             <View style={styles.cardsStack}>
-                <Pressable style={styles.staffSummaryCard} onPress={() => router.push("/(tabs)/coaching-admin")}>
-                  <Text style={styles.staffSummaryText}>
-                    {adminStats.unassigned_freshers && adminStats.unassigned_freshers > 0 
-                      ? `${adminStats.unassigned_freshers} freshers are waiting to be assigned.` 
-                      : `All ${adminStats.total_freshers || 0} freshers are assigned!`}
-                  </Text>
-                  <IconSymbol name="arrow.right" size={16} color="#A93C40" />
-                </Pressable>
+           {/* COACH ADMIN - Senior Mental Wellness Coach Dashboard */}
+           {isCoachAdmin && !isPeerCoach && !isClubLead && (
+             <View style={styles.coachDashboardContainer}>
+               <Text style={styles.cardSectionTitle}>Coach Admin Overview</Text>
+               
+               <View style={styles.coachStatsRow}>
+                 <Pressable style={styles.coachStatCard} onPress={() => router.push("/(tabs)/schedule")}>
+                   <View style={styles.statIconBg}>
+                     <IconSymbol name="calendar" size={20} color="#3B82F6" />
+                   </View>
+                   <Text style={styles.statValue}>{adminStats?.upcoming_sessions_count ?? 0}</Text>
+                   <Text style={styles.statLabel}>Upcoming</Text>
+                 </Pressable>
+
+                 <Pressable style={styles.coachStatCard} onPress={() => router.push("/(tabs)/schedule")}>
+                   <View style={[styles.statIconBg, { backgroundColor: '#FEF2F2' }]}>
+                     <IconSymbol name="exclamationmark.triangle.fill" size={20} color="#DC2626" />
+                   </View>
+                   <Text style={styles.statValue}>{adminStats?.overdue_sessions_count ?? 0}</Text>
+                   <Text style={styles.statLabel}>Overdue</Text>
+                 </Pressable>
+               </View>
+
+               <Pressable style={styles.fresherListPreview} onPress={() => router.push("/(tabs)/coaching-admin/peer-coaches")}>
+                 <Text style={styles.previewTitle}>Active Coaches: {adminStats?.active_coaches ?? 0}</Text>
+                 <IconSymbol name="chevron.right" size={18} color="#6B7280" />
+               </Pressable>
              </View>
-          )}
+           )}
 
           {/* STAFF / FACULTY / ADMIN (Quick Post) */}
           {(isCoachAdmin || isStaff) && canPost && !isPeerCoach && !isClubLead && (
