@@ -1,256 +1,151 @@
 "use client";
 
+import { motion } from "framer-motion";
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-  LineChart,
-  Line,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line,
 } from "recharts";
 import { mockAnalytics } from "@/lib/mock-data";
+import { Sparkles, TrendingUp } from "lucide-react";
 
-const COLORS = ["#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.06 } },
+};
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.4, 0, 0.2, 1] as const } },
+};
+
+const tooltipStyle = {
+  borderRadius: "12px",
+  border: "1px solid #e5e7eb",
+  background: "white",
+  boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+};
 
 export default function AnalyticsPage() {
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Analytics</h1>
-        <p className="text-muted-foreground mt-1">
-          Aggregate and anonymized platform analytics
-        </p>
+    <motion.div variants={containerVariants} initial="hidden" animate="visible" className="space-y-8">
+      <motion.div variants={itemVariants}>
+        <div className="flex items-center gap-3 mb-1">
+          <div className="h-8 w-1 rounded-full bg-[#A93C40]" />
+          <p className="text-sm font-semibold text-[#A93C40] tracking-widest uppercase">Insights</p>
+        </div>
+        <h1 className="text-4xl font-bold text-[#1A2B4A] tracking-tight">Analytics</h1>
+        <p className="text-[#6B7280] mt-2 text-lg">Aggregate and anonymized platform analytics</p>
+      </motion.div>
+
+      <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        {[
+          { label: "Total Students", value: mockAnalytics.total_students, sub: "Active this year" },
+          { label: "Total Sessions", value: mockAnalytics.total_sessions, sub: "Across all units" },
+          { label: "Completion Rate", value: `${mockAnalytics.completion_rate}%`, sub: "Mandatory sessions", color: "text-emerald-600" },
+          { label: "Engagement Rate", value: `${mockAnalytics.engagement_rate}%`, sub: "Overall platform", color: "text-blue-600" },
+        ].map((item, i) => (
+          <motion.div key={item.label} variants={itemVariants} className="rounded-2xl border bg-white p-6 shadow-sm">
+            <p className="text-sm text-[#6B7280]">{item.label}</p>
+            <p className={`text-3xl font-bold mt-1 ${item.color || "text-[#1A2B4A]"}`}>{item.value}</p>
+            <p className="text-xs text-[#9CA3AF] mt-1">{item.sub}</p>
+          </motion.div>
+        ))}
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-xl border bg-card p-6 shadow-sm">
-          <p className="text-sm text-muted-foreground">Total Students</p>
-          <p className="text-3xl font-bold mt-1">
-            {mockAnalytics.total_students}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">Active this year</p>
-        </div>
-        <div className="rounded-xl border bg-card p-6 shadow-sm">
-          <p className="text-sm text-muted-foreground">Total Sessions</p>
-          <p className="text-3xl font-bold mt-1">
-            {mockAnalytics.total_sessions}
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">Across all units</p>
-        </div>
-        <div className="rounded-xl border bg-card p-6 shadow-sm">
-          <p className="text-sm text-muted-foreground">Completion Rate</p>
-          <p className="text-3xl font-bold mt-1 text-emerald-600">
-            {mockAnalytics.completion_rate}%
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Mandatory sessions
-          </p>
-        </div>
-        <div className="rounded-xl border bg-card p-6 shadow-sm">
-          <p className="text-sm text-muted-foreground">Engagement Rate</p>
-          <p className="text-3xl font-bold mt-1 text-blue-600">
-            {mockAnalytics.engagement_rate}%
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Overall platform
-          </p>
-        </div>
-      </div>
-
-      {/* Charts Grid */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Sessions by Unit - Bar Chart */}
-        <div className="rounded-xl border bg-card p-6 shadow-sm">
-          <h2 className="text-lg font-semibold mb-4">Sessions by Unit</h2>
+        <motion.div variants={itemVariants} className="rounded-2xl border bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-[#1A2B4A]">Sessions by Unit</h2>
+            <Sparkles className="w-4 h-4 text-[#A93C40]" />
+          </div>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={mockAnalytics.sessions_by_unit}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis
-                  dataKey="unit"
-                  className="text-xs text-muted-foreground"
-                />
-                <YAxis className="text-xs text-muted-foreground" />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: "8px",
-                    border: "1px solid hsl(var(--border))",
-                    background: "hsl(var(--card))",
-                  }}
-                />
-                <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <XAxis dataKey="unit" tick={{ fill: '#6B7280', fontSize: 12 }} />
+                <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Bar dataKey="count" fill="#A93C40" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Completion by Class Year - Line Chart */}
-        <div className="rounded-xl border bg-card p-6 shadow-sm">
-          <h2 className="text-lg font-semibold mb-4">
-            Completion Rate by Class Year
-          </h2>
+        <motion.div variants={itemVariants} className="rounded-2xl border bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-[#1A2B4A]">Completion Rate by Year</h2>
+            <TrendingUp className="w-4 h-5 text-emerald-500" />
+          </div>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={mockAnalytics.completion_by_class_year}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis
-                  dataKey="year"
-                  tickFormatter={(v) => `'${v.toString().slice(2)}`}
-                  className="text-xs text-muted-foreground"
-                />
-                <YAxis
-                  domain={[0, 100]}
-                  tickFormatter={(v) => `${v}%`}
-                  className="text-xs text-muted-foreground"
-                />
-                <Tooltip
-                  formatter={(value) => [`${value}%`, "Completion Rate"]}
-                  contentStyle={{
-                    borderRadius: "8px",
-                    border: "1px solid hsl(var(--border))",
-                    background: "hsl(var(--card))",
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="rate"
-                  stroke="#10b981"
-                  strokeWidth={2}
-                  dot={{ fill: "#10b981", r: 4 }}
-                />
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <XAxis dataKey="year" tickFormatter={(v) => `'${v.toString().slice(2)}`} tick={{ fill: '#6B7280', fontSize: 12 }} />
+                <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} tick={{ fill: '#6B7280', fontSize: 12 }} />
+                <Tooltip formatter={(value: any) => [`${value}%`, "Completion Rate"]} contentStyle={tooltipStyle} />
+                <Line type="monotone" dataKey="rate" stroke="#10b981" strokeWidth={3} dot={{ fill: "#10b981", r: 5, strokeWidth: 2, stroke: "white" }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Monthly Sessions - Bar Chart */}
-        <div className="rounded-xl border bg-card p-6 shadow-sm">
-          <h2 className="text-lg font-semibold mb-4">Monthly Sessions</h2>
+        <motion.div variants={itemVariants} className="rounded-2xl border bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-[#1A2B4A]">Monthly Sessions</h2>
+            <Sparkles className="w-4 h-4 text-[#A93C40]" />
+          </div>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={mockAnalytics.monthly_sessions}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis
-                  dataKey="month"
-                  className="text-xs text-muted-foreground"
-                />
-                <YAxis className="text-xs text-muted-foreground" />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: "8px",
-                    border: "1px solid hsl(var(--border))",
-                    background: "hsl(var(--card))",
-                  }}
-                />
-                <Bar
-                  dataKey="count"
-                  fill="#8b5cf6"
-                  radius={[4, 4, 0, 0]}
-                />
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <XAxis dataKey="month" tick={{ fill: '#6B7280', fontSize: 12 }} />
+                <YAxis tick={{ fill: '#6B7280', fontSize: 12 }} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Bar dataKey="count" fill="#8b5cf6" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Top Clubs - Horizontal Bar */}
-        <div className="rounded-xl border bg-card p-6 shadow-sm">
-          <h2 className="text-lg font-semibold mb-4">Top Clubs by Members</h2>
+        <motion.div variants={itemVariants} className="rounded-2xl border bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-[#1A2B4A]">Top Clubs by Members</h2>
+            <Sparkles className="w-4 h-4 text-[#A93C40]" />
+          </div>
           <div className="h-72">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={mockAnalytics.top_clubs}
-                layout="vertical"
-              >
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis type="number" className="text-xs text-muted-foreground" />
-                <YAxis
-                  type="category"
-                  dataKey="name"
-                  width={140}
-                  className="text-xs text-muted-foreground"
-                />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: "8px",
-                    border: "1px solid hsl(var(--border))",
-                    background: "hsl(var(--card))",
-                  }}
-                />
-                <Bar
-                  dataKey="members"
-                  fill="#f59e0b"
-                  radius={[0, 4, 4, 0]}
-                />
+              <BarChart data={mockAnalytics.top_clubs} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <XAxis type="number" tick={{ fill: '#6B7280', fontSize: 12 }} />
+                <YAxis type="category" dataKey="name" width={140} tick={{ fill: '#6B7280', fontSize: 12 }} />
+                <Tooltip contentStyle={tooltipStyle} />
+                <Bar dataKey="members" fill="#f59e0b" radius={[0, 6, 6, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </motion.div>
       </div>
 
-      {/* Summary Table */}
-      <div className="rounded-xl border bg-card shadow-sm">
-        <div className="p-6 border-b">
-          <h2 className="text-lg font-semibold">Platform Summary</h2>
+      <motion.div variants={itemVariants} className="rounded-2xl border bg-white shadow-sm">
+        <div className="p-6 border-b border-[#f3f4f6]">
+          <h2 className="text-lg font-semibold text-[#1A2B4A]">Platform Summary</h2>
         </div>
         <div className="p-6">
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">
-                Active Coaches
-              </p>
-              <p className="text-2xl font-bold">
-                {mockAnalytics.active_coaches}
-              </p>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">
-                Active Clubs
-              </p>
-              <p className="text-2xl font-bold">
-                {mockAnalytics.active_clubs}
-              </p>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">
-                Support Units
-              </p>
-              <p className="text-2xl font-bold">3</p>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">
-                Coaching Sessions
-              </p>
-              <p className="text-2xl font-bold">
-                {mockAnalytics.sessions_by_unit.find((s) => s.unit === "Coaching")?.count || 0}
-              </p>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">
-                Counselling Sessions
-              </p>
-              <p className="text-2xl font-bold">
-                {mockAnalytics.sessions_by_unit.find((s) => s.unit === "Counselling")?.count || 0}
-              </p>
-            </div>
-            <div className="space-y-2">
-              <p className="text-sm font-medium text-muted-foreground">
-                Advising Sessions
-              </p>
-              <p className="text-2xl font-bold">
-                {mockAnalytics.sessions_by_unit.find((s) => s.unit === "Advising")?.count || 0}
-              </p>
-            </div>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { label: "Active Coaches", value: mockAnalytics.active_coaches },
+              { label: "Active Clubs", value: mockAnalytics.active_clubs },
+              { label: "Support Units", value: 3 },
+              { label: "Coaching Sessions", value: mockAnalytics.sessions_by_unit.find((s) => s.unit === "Coaching")?.count || 0 },
+              { label: "Counselling Sessions", value: mockAnalytics.sessions_by_unit.find((s) => s.unit === "Counselling")?.count || 0 },
+              { label: "Advising Sessions", value: mockAnalytics.sessions_by_unit.find((s) => s.unit === "Advising")?.count || 0 },
+            ].map((item) => (
+              <div key={item.label} className="space-y-1">
+                <p className="text-sm text-[#6B7280]">{item.label}</p>
+                <p className="text-2xl font-bold text-[#1A2B4A]">{item.value}</p>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }
