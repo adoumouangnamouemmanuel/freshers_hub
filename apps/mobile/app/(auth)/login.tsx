@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import {
   ActivityIndicator,
   Image,
@@ -17,6 +17,13 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/auth-context";
 import { apiRequest } from "@/lib/api";
+import {
+  // getBiometricType,
+  getBiometricTypeName,
+  getBiometricSession,
+  isBiometricAvailable,
+  isBiometricLoginEnabled,
+} from "@/lib/biometric";
 
 const C = {
   bg: "#FFFFFF",
@@ -37,15 +44,46 @@ type CheckEmailResponse = {
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { signIn, requestOtp } = useAuth();
+  const { signIn, signInWithBiometrics, requestOtp } = useAuth();
 
   const [step, setStep] = useState<"email" | "password">("email");
   const [email, setEmail] = useState("fresher.one@ashesi.edu.gh");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [biometricLoading, setBiometricLoading] = useState(false);
   const [error, setError] = useState("");
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricType, setBiometricType] = useState<"face" | "fingerprint" | "iris" | "undefined">("undefined");
   const pwRef = useRef<TextInput>(null);
+
+  // Check biometric availability and auto-trigger on mount
+  // Only show biometric if: available AND enabled AND has valid session stored
+  useEffect(() => {
+    const checkBiometric = async () => {
+      const available = await isBiometricAvailable();
+      const enabled = await isBiometricLoginEnabled();
+      const hasSession = await getBiometricSession();
+      
+      if (available && enabled && hasSession) {
+        setBiometricAvailable(true);
+        // Auto-trigger biometric login
+        setBiometricLoading(true);
+        try {
+          const result = await signInWithBiometrics();
+          if (result.success) {
+            router.replace("/(tabs)");
+          }
+          // If cancelled or failed, user will see the password form
+        } catch (e) {
+          // Silently fail - user will see the password form
+        } finally {
+          setBiometricLoading(false);
+        }
+      }
+    };
+    checkBiometric();
+  }, []);
 
   const checkEmail = async () => {
     Keyboard.dismiss();
@@ -145,6 +183,23 @@ export default function LoginScreen() {
       setError("Invalid email or password");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleBiometricLogin = async () => {
+    setBiometricLoading(true);
+    setError("");
+    try {
+      const result = await signInWithBiometrics();
+      if (result.success) {
+        router.replace("/(tabs)");
+      } else if (!result.cancelled) {
+        setError(result.error || "Biometric authentication failed");
+      }
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Biometric authentication failed");
+    } finally {
+      setBiometricLoading(false);
     }
   };
 
@@ -248,21 +303,51 @@ export default function LoginScreen() {
             {error ? <Text style={s.error}>{error}</Text> : null}
 
             {step === "email" ? (
-              <Pressable
-                style={({ pressed }) => [
-                  s.btn,
-                  pressed && s.btnPressed,
-                  loading && s.btnDisabled,
-                ]}
-                onPress={checkEmail}
-                disabled={loading}
-              >
-                {loading ? (
-                  <ActivityIndicator color="#FFF" />
-                ) : (
-                  <Text style={s.btnText}>Continue</Text>
+              <>
+                <Pressable
+                  style={({ pressed }) => [
+                    s.btn,
+                    pressed && s.btnPressed,
+                    loading && s.btnDisabled,
+                  ]}
+                  onPress={checkEmail}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="#FFF" />
+                  ) : (
+                    <Text style={s.btnText}>Continue</Text>
+                  )}
+                </Pressable>
+
+                {/* Biometric login button - only show if available, enabled, AND has valid session */}
+                {biometricAvailable && (
+                  <Pressable
+                    style={({ pressed }) => [
+                      s.biometricBtn,
+                      pressed && s.btnPressed,
+                    ]}
+                    onPress={handleBiometricLogin}
+                    disabled={biometricLoading}
+                  >
+                    {biometricLoading ? (
+                      <ActivityIndicator color={C.maroon} />
+                    ) : (
+                      <>
+                        <Ionicons
+                          name={biometricType === "face" ? "scan" : "finger-print"}
+                          size={24}
+                          color={C.maroon}
+                          style={{ marginRight: 8 }}
+                        />
+                        <Text style={s.biometricBtnText}>
+                          Sign in with {getBiometricTypeName(biometricType)}
+                        </Text>
+                      </>
+                    )}
+                  </Pressable>
                 )}
-              </Pressable>
+              </>
             ) : (
               <Pressable
                 style={({ pressed }) => [
@@ -291,7 +376,7 @@ export default function LoginScreen() {
                 setPassword("");
               }}
             >
-              <Text style={s.backLinkText}>← Use a different email</Text>
+              <Text style={s.backLinkText}>Use a different email</Text>
             </Pressable>
           )}
         </View>
@@ -430,6 +515,23 @@ const s = StyleSheet.create({
     fontWeight: "700",
     color: "#FFF",
     letterSpacing: 0.3,
+  },
+  biometricBtn: {
+    backgroundColor: C.grayBg,
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: "center",
+    marginTop: 12,
+    flexDirection: "row",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: C.border,
+  },
+  biometricBtnText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: C.maroon,
+    letterSpacing: 0.2,
   },
   backLink: { marginTop: 24, paddingVertical: 10 },
   backLinkText: {
