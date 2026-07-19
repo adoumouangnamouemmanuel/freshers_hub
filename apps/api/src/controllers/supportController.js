@@ -22,7 +22,17 @@ const getSessions = asyncHandler(async (req, res) => {
     `;
     const params = [];
 
-    if (!req.user.roles || !req.user.roles.includes('coach_admin')) {
+    // For coach_admin, show all sessions in the coaching unit
+    if (req.user.roles && req.user.roles.includes('coach_admin')) {
+      // Get the coaching unit id
+      const { rows: unitRows } = await client.query(
+        "SELECT id FROM units WHERE name = 'coaching' LIMIT 1"
+      );
+      if (unitRows.length > 0) {
+        queryStr += ` WHERE s.unit_id = $1`;
+        params.push(unitRows[0].id);
+      }
+    } else {
       queryStr += ` WHERE s.student_id = $1 OR s.provider_id = $1`;
       params.push(req.user.id);
     }
@@ -32,6 +42,30 @@ const getSessions = asyncHandler(async (req, res) => {
     const { rows } = await client.query(queryStr, params);
 
     await client.query("COMMIT");
+    res.json(rows);
+  } finally {
+    client.release();
+  }
+});
+
+// Get sessions for the current coach (their own sessions)
+const getMySessions = asyncHandler(async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query(`
+      SELECT 
+        s.id, s.unit_id, s.academic_year_id, s.student_id, s.provider_id, 
+        s.with_type as type, s.scheduled_at as date, s.location, s.description, s.status, s.is_mandatory,
+        EXISTS (SELECT 1 FROM session_reports sr WHERE sr.session_id = s.id) AS has_report,
+        u1.full_name AS student_name, u1.avatar_url AS student_avatar,
+        u2.full_name AS provider_name, u2.avatar_url AS provider_avatar
+      FROM sessions s
+      JOIN users u1 ON s.student_id = u1.id
+      JOIN users u2 ON s.provider_id = u2.id
+      WHERE s.provider_id = $1
+      ORDER BY s.scheduled_at DESC
+    `, [req.user.id]);
+
     res.json(rows);
   } finally {
     client.release();
@@ -276,6 +310,7 @@ const submitSessionReport = asyncHandler(async (req, res) => {
 
 module.exports = {
   getSessions,
+  getMySessions,
   bookSession,
   updateSessionStatus,
   updateSession,
