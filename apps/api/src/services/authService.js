@@ -136,12 +136,23 @@ async function issueTokens(client, user) {
   const refreshToken = createRefreshToken();
   const refreshTokenHash = hashToken(refreshToken);
 
+  // Revoke all existing refresh tokens for this user before creating a new one
+  // This ensures only one valid refresh token exists at a time
+  await client.query(
+    `
+      UPDATE refresh_tokens
+      SET revoked_at = now()
+      WHERE user_id = $1 AND revoked_at IS NULL
+    `,
+    [user.id],
+  );
+
   await client.query(
     `
       INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
       VALUES ($1, $2, now() + interval '90 days')
     `,
-    [user.id, refreshTokenHash]
+    [user.id, refreshTokenHash],
   );
 
   return { accessToken, refreshToken };
