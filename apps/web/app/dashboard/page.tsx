@@ -1,21 +1,35 @@
 "use client";
 
+import { motion } from "framer-motion";
 import {
   Users,
-  CalendarCheck,
+  CheckCircle2,
+  Clock,
+  XCircle,
   TrendingUp,
   Building2,
   ArrowUpRight,
-  Clock,
-  CheckCircle2,
-  XCircle,
+  Sparkles,
 } from "lucide-react";
 import {
   mockAnalytics,
   mockCoachAssignments,
   mockSessions,
-  mockClubs,
 } from "@/lib/mock-data";
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.08 },
+  },
+};
+
+const easeOut = [0.4, 0, 0.2, 1] as const;
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: easeOut } },
+};
 
 function StatCard({
   title,
@@ -23,62 +37,57 @@ function StatCard({
   icon: Icon,
   description,
   trend,
+  delay = 0,
 }: {
   title: string;
   value: string | number;
   icon: any;
   description?: string;
   trend?: { value: string; positive: boolean };
+  delay?: number;
 }) {
   return (
-    <div className="rounded-xl border bg-card p-6 shadow-sm">
+    <motion.div
+      variants={itemVariants}
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      className="rounded-2xl border bg-white p-6 shadow-sm hover:shadow-lg hover:shadow-[#A93C40]/5 transition-all duration-300 group"
+    >
       <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <p className="text-sm text-muted-foreground">{title}</p>
-          <p className="text-3xl font-bold">{value}</p>
+        <div className="space-y-1.5">
+          <p className="text-sm font-medium text-[#6B7280] tracking-wide uppercase">{title}</p>
+          <p className="text-3xl font-bold text-[#1A2B4A]">{value}</p>
           {description && (
-            <p className="text-xs text-muted-foreground">{description}</p>
+            <p className="text-xs text-[#9CA3AF]">{description}</p>
           )}
         </div>
-        <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center">
-          <Icon className="w-6 h-6 text-primary" />
+        <div className="w-12 h-12 rounded-xl bg-[#A93C40]/10 flex items-center justify-center group-hover:bg-[#A93C40]/15 transition-colors">
+          <Icon className="w-6 h-6 text-[#A93C40]" />
         </div>
       </div>
       {trend && (
-        <div className="mt-4 flex items-center gap-1 text-sm">
-          <ArrowUpRight
-            className={`w-4 h-4 ${
-              trend.positive ? "text-emerald-500" : "text-red-500"
-            }`}
-          />
-          <span
-            className={
-              trend.positive ? "text-emerald-500" : "text-red-500"
-            }
-          >
+        <div className="mt-4 flex items-center gap-1.5 text-sm">
+          <div className={`flex items-center gap-0.5 font-medium ${trend.positive ? 'text-emerald-600' : 'text-red-500'}`}>
+            <ArrowUpRight className={`w-4 h-4 ${!trend.positive && 'rotate-90'}`} />
             {trend.value}
-          </span>
-          <span className="text-muted-foreground">vs last month</span>
+          </div>
+          <span className="text-[#9CA3AF]">vs last month</span>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }
 
 function StatusBadge({ status }: { status: string }) {
-  const colors: Record<string, string> = {
-    completed: "bg-emerald-100 text-emerald-700 border-emerald-200",
-    booked: "bg-blue-100 text-blue-700 border-blue-200",
-    cancelled: "bg-red-100 text-red-700 border-red-200",
-    rescheduled: "bg-amber-100 text-amber-700 border-amber-200",
-    no_show: "bg-gray-100 text-gray-700 border-gray-200",
+  const config: Record<string, { bg: string; text: string; border: string }> = {
+    completed: { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
+    booked: { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
+    cancelled: { bg: "bg-red-50", text: "text-red-700", border: "border-red-200" },
+    rescheduled: { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" },
+    no_show: { bg: "bg-gray-50", text: "text-gray-700", border: "border-gray-200" },
   };
+  const c = config[status] || config.completed;
   return (
-    <span
-      className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${
-        colors[status] || "bg-gray-100 text-gray-700"
-      }`}
-    >
+    <span className={`inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold border ${c.bg} ${c.text} ${c.border}`}>
       {status.replace("_", " ")}
     </span>
   );
@@ -86,203 +95,181 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function DashboardPage() {
   const totalFreshers = mockCoachAssignments.length;
-  const completedSessions = mockSessions.filter(
-    (s) => s.status === "completed"
-  ).length;
-  const overdueFreshers = mockCoachAssignments.filter(
-    (a) => a.sessions_completed < a.sessions_required
-  ).length;
-  const upcomingSessions = mockSessions.filter(
-    (s) => s.status === "booked"
-  ).length;
+  const completedSessions = mockSessions.filter((s) => s.status === "completed").length;
+  const overdueFreshers = mockCoachAssignments.filter((a) => a.sessions_completed < a.sessions_required).length;
+  const upcomingSessions = mockSessions.filter((s) => s.status === "booked").length;
 
   const recentSessions = [...mockSessions]
-    .sort(
-      (a, b) =>
-        new Date(b.scheduled_at).getTime() -
-        new Date(a.scheduled_at).getTime()
-    )
+    .sort((a, b) => new Date(b.scheduled_at).getTime() - new Date(a.scheduled_at).getTime())
     .slice(0, 5);
 
+  const maxUnitCount = Math.max(...mockAnalytics.sessions_by_unit.map((s) => s.count));
+
   return (
-    <div className="space-y-8">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      className="space-y-8"
+    >
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground mt-1">
-          Overview of Fresher Hub activity and compliance
+      <motion.div variants={itemVariants}>
+        <div className="flex items-center gap-3 mb-1">
+          <div className="h-8 w-1 rounded-full bg-[#A93C40]" />
+          <p className="text-sm font-semibold text-[#A93C40] tracking-widest uppercase">Overview</p>
+        </div>
+        <h1 className="text-4xl font-bold text-[#1A2B4A] tracking-tight">
+          Welcome back, <span className="gradient-text">Admin</span>
+        </h1>
+        <p className="text-[#6B7280] mt-2 text-lg">
+          Here's what's happening across Fresher Hub today.
         </p>
-      </div>
+      </motion.div>
 
       {/* Stats Grid */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard
-          title="Total Freshers"
-          value={totalFreshers}
-          icon={Users}
-          description="Assigned to peer coaches"
-          trend={{ value: "12%", positive: true }}
-        />
-        <StatCard
-          title="Completed Sessions"
-          value={completedSessions}
-          icon={CheckCircle2}
-          description="Across all units"
-          trend={{ value: "8%", positive: true }}
-        />
-        <StatCard
-          title="Upcoming Sessions"
-          value={upcomingSessions}
-          icon={Clock}
-          description="Scheduled but not completed"
-        />
-        <StatCard
-          title="Overdue Freshers"
-          value={overdueFreshers}
-          icon={XCircle}
-          description="Below required sessions"
-          trend={{ value: "3%", positive: false }}
-        />
+      <div className="grid gap-5 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard title="Total Freshers" value={totalFreshers} icon={Users} description="Assigned to peer coaches" trend={{ value: "12%", positive: true }} />
+        <StatCard title="Completed Sessions" value={completedSessions} icon={CheckCircle2} description="Across all units" trend={{ value: "8%", positive: true }} />
+        <StatCard title="Upcoming" value={upcomingSessions} icon={Clock} description="Scheduled sessions" />
+        <StatCard title="Need Attention" value={overdueFreshers} icon={XCircle} description="Below required sessions" trend={{ value: "3%", positive: false }} />
       </div>
 
       {/* Charts Row */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Sessions by Unit */}
-        <div className="rounded-xl border bg-card p-6 shadow-sm">
-          <h2 className="text-lg font-semibold mb-4">Sessions by Unit</h2>
-          <div className="space-y-4">
-            {mockAnalytics.sessions_by_unit.map((item) => {
-              const max = Math.max(
-                ...mockAnalytics.sessions_by_unit.map((s) => s.count)
-              );
-              const pct = (item.count / max) * 100;
-              return (
-                <div key={item.unit} className="space-y-1.5">
-                  <div className="flex justify-between text-sm">
-                    <span className="font-medium">{item.unit}</span>
-                    <span className="text-muted-foreground">
-                      {item.count} sessions
-                    </span>
-                  </div>
-                  <div className="w-full bg-muted rounded-full h-2.5">
-                    <div
-                      className="bg-primary h-2.5 rounded-full transition-all"
-                      style={{ width: `${pct}%` }}
-                    />
-                  </div>
-                </div>
-              );
-            })}
+        <motion.div variants={itemVariants} className="rounded-2xl border bg-white p-6 shadow-sm hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-[#1A2B4A]">Sessions by Unit</h2>
+            <Sparkles className="w-4 h-4 text-[#A93C40]" />
           </div>
-        </div>
-
-        {/* Completion by Class Year */}
-        <div className="rounded-xl border bg-card p-6 shadow-sm">
-          <h2 className="text-lg font-semibold mb-4">
-            Completion Rate by Class Year
-          </h2>
-          <div className="space-y-4">
-            {mockAnalytics.completion_by_class_year.map((item) => (
-              <div key={item.year} className="space-y-1.5">
-                <div className="flex justify-between text-sm">
-                  <span className="font-medium">Class of {item.year}</span>
-                  <span className="text-muted-foreground">
-                    {item.rate}%
-                  </span>
+          <div className="space-y-5">
+            {mockAnalytics.sessions_by_unit.map((item, i) => (
+              <motion.div
+                key={item.unit}
+                initial={{ width: 0 }}
+                animate={{ width: "100%" }}
+                transition={{ delay: 0.3 + i * 0.1, duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+              >
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="font-medium text-[#1A2B4A]">{item.unit}</span>
+                  <span className="text-[#6B7280] font-semibold">{item.count} sessions</span>
                 </div>
-                <div className="w-full bg-muted rounded-full h-2.5">
-                  <div
-                    className="bg-emerald-500 h-2.5 rounded-full transition-all"
-                    style={{ width: `${item.rate}%` }}
+                <div className="w-full bg-[#f3f4f6] rounded-full h-3 overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(item.count / maxUnitCount) * 100}%` }}
+                    transition={{ delay: 0.5 + i * 0.1, duration: 1, ease: [0.4, 0, 0.2, 1] }}
+                    className="h-3 rounded-full bg-gradient-to-r from-[#A93C40] to-[#d46a6e]"
                   />
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
-        </div>
+        </motion.div>
+
+        {/* Completion by Class Year */}
+        <motion.div variants={itemVariants} className="rounded-2xl border bg-white p-6 shadow-sm hover:shadow-lg transition-shadow">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold text-[#1A2B4A]">Completion Rate by Year</h2>
+            <TrendingUp className="w-4 h-5 text-emerald-500" />
+          </div>
+          <div className="space-y-5">
+            {mockAnalytics.completion_by_class_year.map((item, i) => (
+              <motion.div
+                key={item.year}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 + i * 0.15, duration: 0.5 }}
+              >
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="font-medium text-[#1A2B4A]">Class of {item.year}</span>
+                  <span className="text-emerald-600 font-bold">{item.rate}%</span>
+                </div>
+                <div className="w-full bg-[#f3f4f6] rounded-full h-3 overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${item.rate}%` }}
+                    transition={{ delay: 0.5 + i * 0.15, duration: 1.2, ease: [0.4, 0, 0.2, 1] }}
+                    className="h-3 rounded-full bg-gradient-to-r from-emerald-400 to-emerald-600 shadow-sm"
+                  />
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
       </div>
 
       {/* Recent Sessions */}
-      <div className="rounded-xl border bg-card shadow-sm">
-        <div className="p-6 border-b">
-          <h2 className="text-lg font-semibold">Recent Sessions</h2>
+      <motion.div variants={itemVariants} className="rounded-2xl border bg-white shadow-sm hover:shadow-lg transition-shadow overflow-hidden">
+        <div className="p-6 border-b border-[#f3f4f6] flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-[#1A2B4A]">Recent Sessions</h2>
+            <p className="text-sm text-[#6B7280] mt-0.5">Latest activity across all units</p>
+          </div>
+          <span className="text-xs text-[#A93C40] font-semibold bg-[#A93C40]/5 px-3 py-1.5 rounded-full">
+            Live
+          </span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b bg-muted/50">
-                <th className="text-left p-3 font-medium">Student</th>
-                <th className="text-left p-3 font-medium">Provider</th>
-                <th className="text-left p-3 font-medium">Unit</th>
-                <th className="text-left p-3 font-medium">Date</th>
-                <th className="text-left p-3 font-medium">Status</th>
+              <tr className="border-b border-[#f3f4f6] bg-[#f8f4ef]/50">
+                {["Student", "Provider", "Unit", "Date", "Status"].map((h) => (
+                  <th key={h} className="text-left p-4 font-semibold text-[#6B7280] text-xs uppercase tracking-wider">{h}</th>
+                ))}
               </tr>
             </thead>
             <tbody>
-              {recentSessions.map((session) => (
-                <tr key={session.id} className="border-b last:border-0">
-                  <td className="p-3 font-medium">{session.student_name}</td>
-                  <td className="p-3 text-muted-foreground">
-                    {session.provider_name}
-                  </td>
-                  <td className="p-3">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary">
+              {recentSessions.map((session, i) => (
+                <motion.tr
+                  key={session.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.08, duration: 0.3 }}
+                  className="border-b border-[#f3f4f6] last:border-0 hover:bg-[#f8f4ef]/50 transition-colors"
+                >
+                  <td className="p-4 font-medium text-[#1A2B4A]">{session.student_name}</td>
+                  <td className="p-4 text-[#6B7280]">{session.provider_name}</td>
+                  <td className="p-4">
+                    <span className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-semibold bg-[#A93C40]/5 text-[#A93C40]">
                       {session.unit_name}
                     </span>
                   </td>
-                  <td className="p-3 text-muted-foreground">
-                    {new Date(session.scheduled_at).toLocaleDateString()}
+                  <td className="p-4 text-[#6B7280]">
+                    {new Date(session.scheduled_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
                   </td>
-                  <td className="p-3">
-                    <StatusBadge status={session.status} />
-                  </td>
-                </tr>
+                  <td className="p-4"><StatusBadge status={session.status} /></td>
+                </motion.tr>
               ))}
             </tbody>
           </table>
         </div>
-      </div>
+      </motion.div>
 
       {/* Quick Stats Row */}
-      <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
-        <div className="rounded-xl border bg-card p-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <TrendingUp className="w-5 h-5 text-primary" />
-            <div>
-              <p className="text-2xl font-bold">
-                {mockAnalytics.completion_rate}%
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Overall completion rate
-              </p>
+      <motion.div variants={itemVariants} className="grid gap-5 grid-cols-1 sm:grid-cols-3">
+        {[
+          { icon: TrendingUp, value: `${mockAnalytics.completion_rate}%`, label: "Overall completion rate", color: "text-emerald-600" },
+          { icon: Users, value: String(mockAnalytics.active_coaches), label: "Active peer coaches", color: "text-blue-600" },
+          { icon: Building2, value: String(mockAnalytics.active_clubs), label: "Active clubs", color: "text-amber-600" },
+        ].map((item, i) => (
+          <motion.div
+            key={item.label}
+            whileHover={{ y: -3, transition: { duration: 0.2 } }}
+            className="rounded-2xl border bg-white p-6 shadow-sm hover:shadow-lg transition-all"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#A93C40]/10 to-[#d46a6e]/10 flex items-center justify-center">
+                <item.icon className="w-5 h-5 text-[#A93C40]" />
+              </div>
+              <div>
+                <p className={`text-2xl font-bold text-[#1A2B4A] ${item.color}`}>{item.value}</p>
+                <p className="text-sm text-[#6B7280]">{item.label}</p>
+              </div>
             </div>
-          </div>
-        </div>
-        <div className="rounded-xl border bg-card p-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <Users className="w-5 h-5 text-primary" />
-            <div>
-              <p className="text-2xl font-bold">
-                {mockAnalytics.active_coaches}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Active peer coaches
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="rounded-xl border bg-card p-6 shadow-sm">
-          <div className="flex items-center gap-3">
-            <Building2 className="w-5 h-5 text-primary" />
-            <div>
-              <p className="text-2xl font-bold">
-                {mockAnalytics.active_clubs}
-              </p>
-              <p className="text-sm text-muted-foreground">Active clubs</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+          </motion.div>
+        ))}
+      </motion.div>
+    </motion.div>
   );
 }
