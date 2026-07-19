@@ -113,10 +113,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     loadSession()
-      .then((storedSession) => {
+      .then(async (storedSession) => {
         console.log("Loaded session from storage:", storedSession);
-        setSession(storedSession);
-        if (storedSession) scheduleRefresh(storedSession);
+        
+        if (storedSession) {
+          // Check if access token is still valid
+          const exp = getTokenExpiry(storedSession.accessToken);
+          if (exp && exp * 1000 > Date.now()) {
+            // Access token is still valid
+            setSession(storedSession);
+            scheduleRefresh(storedSession);
+          } else {
+            // Access token has expired, try to refresh
+            console.log("Access token expired, attempting to refresh...");
+            try {
+              const refreshedSession = await refreshSession(storedSession.refreshToken);
+              console.log("Session refreshed successfully on load");
+              await saveSession(refreshedSession);
+              setSession(refreshedSession);
+              scheduleRefresh(refreshedSession);
+            } catch (error) {
+              console.log("Failed to refresh session on load:", error);
+              // Clear invalid session
+              await clearSession();
+              setSession(null);
+            }
+          }
+        }
       })
       .finally(() => {
         setIsReady(true);
