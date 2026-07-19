@@ -9,11 +9,11 @@ export function hasRole(roles: AuthRole[] | string[], roleName: string): boolean
   return roles.some((role) => {
     // Handle string roles (from JWT token)
     if (typeof role === "string") {
-      console.log("Checking role:", role, "against", roleName);
+      // console.log("Checking role:", role, "against", roleName);
       return role === roleName;
     }
     // Handle object roles (from login/refresh response)
-    console.log("Checking role object:", role, "against", roleName);
+    // console.log("Checking role object:", role, "against", roleName);
     return role.name === roleName;
   });
 }
