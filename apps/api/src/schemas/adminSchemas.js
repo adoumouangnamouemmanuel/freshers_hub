@@ -181,6 +181,19 @@ const grantAdminSchema = z.object({
   }),
 });
 
+// ── Audit Logs ────────────────────────────────────────────────────────────────
+const listAuditLogsSchema = z.object({
+  query: z.object({
+    search: z.string().optional(),
+    action: z.string().optional(),
+    entity_type: z.string().optional(),
+    startDate: z.string().optional(),
+    endDate: z.string().optional(),
+    page: z.string().regex(/^\d+$/).optional(),
+    pageSize: z.string().regex(/^\d+$/).optional(),
+  }),
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -204,4 +217,5 @@ module.exports = {
   updateNotifCategorySchema,
   updateSettingSchema,
   grantAdminSchema,
+  listAuditLogsSchema,
 };
