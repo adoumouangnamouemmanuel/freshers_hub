@@ -10,36 +10,40 @@ interface EditUserModalProps {
   onClose: () => void;
   onSuccess: () => void;
   user: any;
+  allRoles?: { id: string; name: string }[];
 }
 
-export function EditUserModal({ isOpen, onClose, onSuccess, user }: EditUserModalProps) {
+export function EditUserModal({ isOpen, onClose, onSuccess, user, allRoles = [] }: EditUserModalProps) {
+  const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState("");
 
   if (!isOpen || !user) return null;
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  const currentRoleId = user.roles?.length ? allRoles.find(r => r.name === user.roles[0])?.id : "";
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setError("");
+    setError(null);
 
     const formData = new FormData(e.currentTarget);
     const data = {
-      full_name: formData.get("full_name") as string,
-      email: formData.get("email") as string,
-      phone: formData.get("phone") as string,
-      major: formData.get("major") as string,
-      class_year: formData.get("class_year") ? parseInt(formData.get("class_year") as string) : null,
-      country: formData.get("country") as string,
+      full_name: (formData.get("full_name") as string) || undefined,
+      email: (formData.get("email") as string) || undefined,
+      school_id: (formData.get("school_id") as string) || undefined,
+      role_id: (formData.get("role_id") as string) || undefined,
+      phone: (formData.get("phone") as string) || undefined,
+      major: (formData.get("major") as string) || undefined,
+      class_year: formData.get("class_year") ? parseInt(formData.get("class_year") as string) : undefined,
+      country: (formData.get("country") as string) || undefined,
       is_active: formData.get("is_active") === "on",
     };
 
+    // Remove undefined fields
+    Object.keys(data).forEach(key => (data as any)[key] === undefined && delete (data as any)[key]);
+
     startTransition(async () => {
       try {
-        const res = await updateUserAction(user.id, data);
-        if (!res.ok) {
-          const errData = await res.json().catch(() => ({}));
-          throw new Error(errData.message || "Failed to update user");
-        }
+        await updateUserAction(user.id, data);
         onSuccess();
         onClose();
       } catch (err: any) {
@@ -72,8 +76,23 @@ export function EditUserModal({ isOpen, onClose, onSuccess, user }: EditUserModa
               </div>
 
               <div className="col-span-2 sm:col-span-1">
-                <label className="mb-1 block text-sm font-medium text-[#1A2B4A]">Email</label>
-                <input defaultValue={user.email} name="email" type="email" className="w-full rounded-xl border border-[#e5e1d8] px-4 py-2 focus:border-[#A93C40] focus:outline-none focus:ring-1 focus:ring-[#A93C40]" />
+                <label className="mb-1 block text-sm font-medium text-[#1A2B4A]">Email *</label>
+                <input defaultValue={user.email} required name="email" type="email" className="w-full rounded-xl border border-[#e5e1d8] px-4 py-2 focus:border-[#A93C40] focus:outline-none focus:ring-1 focus:ring-[#A93C40]" />
+              </div>
+
+              <div className="col-span-2 sm:col-span-1">
+                <label className="mb-1 block text-sm font-medium text-[#1A2B4A]">Role</label>
+                <select name="role_id" defaultValue={currentRoleId} className="w-full rounded-xl border border-[#e5e1d8] px-4 py-2 focus:border-[#A93C40] focus:outline-none focus:ring-1 focus:ring-[#A93C40]">
+                  <option value="">None / Student</option>
+                  {allRoles.map((r) => (
+                    <option key={r.id} value={r.id}>{r.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="col-span-2 sm:col-span-1">
+                <label className="mb-1 block text-sm font-medium text-[#1A2B4A]">School ID</label>
+                <input defaultValue={user.school_id} name="school_id" type="text" className="w-full rounded-xl border border-[#e5e1d8] px-4 py-2 focus:border-[#A93C40] focus:outline-none focus:ring-1 focus:ring-[#A93C40]" />
               </div>
 
               <div className="col-span-2 sm:col-span-1">
@@ -110,14 +129,14 @@ export function EditUserModal({ isOpen, onClose, onSuccess, user }: EditUserModa
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-xl px-4 py-2 font-semibold text-[#6B7280] hover:bg-gray-100"
+                className="cursor-pointer rounded-xl px-4 py-2 font-semibold text-[#6B7280] hover:bg-gray-100"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={isPending}
-                className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#A93C40] px-4 py-2 font-semibold text-white transition-colors hover:bg-[#8f3236] disabled:opacity-50"
+                className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#A93C40] px-4 py-2 font-semibold text-white transition-colors hover:bg-[#8f3236] disabled:opacity-50"
               >
                 {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Save Changes"}
               </button>

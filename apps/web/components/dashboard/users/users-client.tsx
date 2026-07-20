@@ -161,6 +161,7 @@ export default function UsersClient({ initialData, allRoles }: UsersClientProps)
         isOpen={isAddOpen} 
         onClose={() => setIsAddOpen(false)} 
         onSuccess={refetch} 
+        allRoles={allRoles}
       />
       
       <EditUserModal 
@@ -168,6 +169,7 @@ export default function UsersClient({ initialData, allRoles }: UsersClientProps)
         onClose={() => setEditingUser(null)} 
         onSuccess={refetch} 
         user={editingUser} 
+        allRoles={allRoles}
       />
       
       <ImportCohortModal 
