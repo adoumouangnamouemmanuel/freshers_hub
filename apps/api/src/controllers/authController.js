@@ -7,6 +7,12 @@ const {
   recordFailedLogin,
   clearFailedLogins,
 } = require("../middleware/rateLimiter");
+const Redis = require("ioredis");
+
+const redis = new Redis(process.env.REDIS_URL || {
+  host: process.env.REDIS_HOST || 'localhost',
+  port: process.env.REDIS_PORT || 6379,
+});
 
 // NOTE: checkAccountLockout and rateLimit are applied as route-level middleware
 // in authRoutes.js — do NOT call them manually inside the controller.
@@ -100,60 +106,44 @@ const handleVerifyOtp = asyncHandler(async (req, res) => {
 
   const client = await pool.connect();
   try {
-    const { rows } = await client.query(
-      `
-        SELECT
-          u.id, u.email, ac.otp_hash, ac.expires_at, ac.consumed_at
-        FROM users u
-        JOIN activation_codes ac ON ac.user_id = u.id
-        WHERE lower(u.email) = lower($1)
-      `,
-      [String(email).trim()],
+    const userResult = await client.query(
+      `SELECT id, email FROM users WHERE lower(email) = lower($1)`,
+      [String(email).trim()]
     );
 
-    const record = rows[0];
-    if (!record) {
-      logger.warn(`OTP verification failed: Record not found (${email})`);
+    const user = userResult.rows[0];
+    if (!user) {
+      logger.warn(`OTP verification failed: User not found (${email})`);
       throw new AppError("Invalid or expired OTP", 400);
     }
-    if (record.consumed_at) {
+
+    const redisKey = `otp:activation:${user.id}`;
+    const storedHash = await redis.get(redisKey);
+
+    if (!storedHash) {
+      logger.warn(`OTP verification failed: Expired or not found (${email})`);
+      throw new AppError("Invalid or expired OTP", 400);
+    }
+
+    if (storedHash === "consumed") {
       logger.warn(`OTP verification failed: OTP already used (${email})`);
       throw new AppError("Invalid or expired OTP", 400);
     }
-    if (new Date(record.expires_at).getTime() < Date.now()) {
-      logger.warn(`OTP verification failed: OTP expired (${email})`);
-      throw new AppError("Invalid or expired OTP", 400);
-    }
 
-    const otpCheck = await client.query(
-      `
-        SELECT crypt($2, otp_hash) = otp_hash AS matches
-        FROM activation_codes
-        WHERE user_id = $1
-      `,
-      [record.id, String(otp).trim()],
-    );
-
-    if (!otpCheck.rows[0]?.matches) {
+    const providedHash = authService.hashToken(String(otp).trim());
+    if (storedHash !== providedHash) {
       logger.warn(`OTP verification failed: Invalid OTP (${email})`);
       throw new AppError("Invalid or expired OTP", 400);
     }
 
-    // Mark OTP as consumed
-    await client.query(
-      `
-        UPDATE activation_codes
-        SET consumed_at = now()
-        WHERE user_id = $1
-      `,
-      [record.id],
-    );
+    // Mark OTP as consumed but keep its expiration window active
+    await redis.set(redisKey, "consumed", "KEEPTTL");
 
     logger.info(`OTP verified successfully for email: ${email}`);
     res.json({
       success: true,
       message: "OTP verified. Please set your password.",
-      email: record.email,
+      email: user.email,
     });
   } catch (error) {
     logger.error(`OTP verification error for ${email}: ${error.message}`);
@@ -179,17 +169,16 @@ const handleSetPassword = asyncHandler(async (req, res) => {
 
     // FIX #2: Verify OTP was already consumed before allowing password set.
     // Without this check, an attacker knowing a valid email could skip the OTP step.
-    const { rows: codeRows } = await client.query(
-      `
-        SELECT consumed_at FROM activation_codes WHERE user_id = $1
-      `,
-      [user.id],
-    );
+    const redisKey = `otp:activation:${user.id}`;
+    const status = await redis.get(redisKey);
 
-    if (!codeRows[0]?.consumed_at) {
+    if (status !== "consumed") {
       logger.warn(`Set password failed: OTP not yet consumed for (${email})`);
       throw new AppError("OTP verification required before setting password", 403);
     }
+
+    // Clean up Redis
+    await redis.del(redisKey);
 
     // Set password and activate
     await client.query(
@@ -402,44 +391,27 @@ const handleVerifyResetOtp = asyncHandler(async (req, res) => {
       throw new AppError("Invalid or expired code", 400);
     }
 
-    const { rows } = await client.query(
-      `
-        SELECT pr.token_hash, pr.expires_at, pr.consumed_at
-        FROM password_resets pr
-        WHERE pr.user_id = $1
-        ORDER BY pr.created_at DESC
-        LIMIT 1
-      `,
-      [user.id],
-    );
+    const redisKey = `otp:reset:${user.id}`;
+    const storedHash = await redis.get(redisKey);
 
-    const record = rows[0];
-    if (!record) {
-      logger.warn(`Verify reset OTP failed: No OTP found (${email})`);
+    if (!storedHash) {
+      logger.warn(`Verify reset OTP failed: Expired or not found (${email})`);
       throw new AppError("Invalid or expired code", 400);
     }
-    if (record.consumed_at) {
+
+    if (storedHash === "consumed") {
       logger.warn(`Verify reset OTP failed: OTP already used (${email})`);
       throw new AppError("Invalid or expired code", 400);
     }
-    if (new Date(record.expires_at).getTime() < Date.now()) {
-      logger.warn(`Verify reset OTP failed: OTP expired (${email})`);
-      throw new AppError("Invalid or expired code", 400);
-    }
 
-    const otpCheck = await client.query(
-      `
-        SELECT crypt($2, token_hash) = token_hash AS matches
-        FROM password_resets
-        WHERE user_id = $1
-      `,
-      [user.id, String(otp).trim()],
-    );
-
-    if (!otpCheck.rows[0]?.matches) {
+    const providedHash = authService.hashToken(String(otp).trim());
+    if (storedHash !== providedHash) {
       logger.warn(`Verify reset OTP failed: Invalid OTP (${email})`);
       throw new AppError("Invalid or expired code", 400);
     }
+
+    // Mark OTP as consumed but keep its expiration window active
+    await redis.set(redisKey, "consumed", "KEEPTTL");
 
     logger.info(`Reset OTP verified successfully for email: ${email}`);
     res.json({
@@ -468,38 +440,15 @@ const handleSetNewPassword = asyncHandler(async (req, res) => {
     }
 
     // Verify OTP again
-    const { rows } = await client.query(
-      `
-        SELECT pr.token_hash, pr.expires_at, pr.consumed_at
-        FROM password_resets pr
-        WHERE pr.user_id = $1
-        ORDER BY pr.created_at DESC
-        LIMIT 1
-      `,
-      [user.id],
-    );
+    const redisKey = `otp:reset:${user.id}`;
+    const status = await redis.get(redisKey);
 
-    const record = rows[0];
-    if (
-      !record ||
-      record.consumed_at ||
-      new Date(record.expires_at).getTime() < Date.now()
-    ) {
+    if (status !== "consumed") {
       throw new AppError("Invalid or expired code", 400);
     }
 
-    const otpCheck = await client.query(
-      `
-        SELECT crypt($2, token_hash) = token_hash AS matches
-        FROM password_resets
-        WHERE user_id = $1
-      `,
-      [user.id, String(otp).trim()],
-    );
-
-    if (!otpCheck.rows[0]?.matches) {
-      throw new AppError("Invalid or expired code", 400);
-    }
+    // Clean up Redis
+    await redis.del(redisKey);
 
     // FIX #3: Wrap the password update + OTP consumption + refresh token revocation
     // in a single transaction so no partial state can be left on server crash.
@@ -517,14 +466,6 @@ const handleSetNewPassword = asyncHandler(async (req, res) => {
       [user.id, String(newPassword)],
     );
 
-    await client.query(
-      `
-        UPDATE password_resets
-        SET consumed_at = now()
-        WHERE user_id = $1
-      `,
-      [user.id],
-    );
 
     // Revoke all active refresh tokens — forces re-login on all devices
     await client.query(
