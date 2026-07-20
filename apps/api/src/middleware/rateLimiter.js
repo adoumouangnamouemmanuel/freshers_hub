@@ -1,5 +1,6 @@
 const Redis = require("ioredis");
 const logger = require("../utils/logger");
+const { sendAccountLockedEmail } = require("../services/emailService");
 
 // Connect to Redis (defaults to localhost:6379, configurable via env vars)
 const redis = new Redis(process.env.REDIS_URL || {
@@ -134,6 +135,11 @@ async function recordFailedLogin(email) {
       // Clear the counter so when they unlock, they start fresh
       await redis.del(failedCountKey);
       logger.warn(`Account locked for ${identifier} after ${failedCount} failed attempts`);
+
+      // Fire-and-forget: notify user their account has been locked
+      sendAccountLockedEmail(identifier, LOCKOUT_CONFIG.lockoutDurationMs / 60000).catch((err) =>
+        logger.error(`[EMAIL] Failed to send account lockout notification: ${err.message}`)
+      );
     }
   } catch (err) {
     logger.error(`Record failed login Redis error: ${err.message}`);
