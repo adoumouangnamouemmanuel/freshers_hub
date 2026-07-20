@@ -50,6 +50,17 @@ export async function loginAction(prevState: any, formData: FormData) {
       path: "/",
     });
 
+    // Store user metadata (non-httpOnly so client components could potentially read it, or server components can read it easily)
+    cookieStore.set({
+      name: "user",
+      value: JSON.stringify(data.user),
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 90 * 24 * 60 * 60, // 90 days
+      path: "/",
+    });
+
     // We can't redirect directly inside a try/catch if it catches it, but Next.js redirect throws an error that we must not catch
   } catch (error: any) {
     // Next.js redirect throws a specific error, we need to let it bubble up
@@ -67,5 +78,6 @@ export async function logoutAction() {
   const cookieStore = await cookies();
   cookieStore.delete("accessToken");
   cookieStore.delete("refreshToken");
+  cookieStore.delete("user");
   redirect("/login");
 }
