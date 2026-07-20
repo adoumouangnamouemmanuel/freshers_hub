@@ -7,6 +7,11 @@ const {
   recordFailedLogin,
   clearFailedLogins,
 } = require("../middleware/rateLimiter");
+const {
+  sendWelcomeEmail,
+  sendPasswordChangedEmail,
+  sendNewLoginEmail,
+} = require("../services/emailService");
 const Redis = require("ioredis");
 
 const redis = new Redis(process.env.REDIS_URL || {
@@ -69,8 +74,12 @@ const handleLogin = asyncHandler(async (req, res) => {
     await clearFailedLogins(email);
 
     logger.info(`Successful login for ${email} from IP: ${clientIp}`);
-    // TODO: Log successful login to monitoring service
-    // TODO: Send email notification for new login from unrecognized device
+
+    // Fire-and-forget: notify user of new login (no await — must not block auth)
+    // TODO: EMAIL — In future, only send if IP is unrecognized
+    sendNewLoginEmail(email, clientIp).catch((err) =>
+      logger.error(`[EMAIL] Failed to send new login notification: ${err.message}`)
+    );
 
     const tokens = await authService.issueTokens(client, user);
     logger.info(`Login successful for email: ${email}`);
@@ -201,8 +210,11 @@ const handleSetPassword = asyncHandler(async (req, res) => {
     const tokens = await authService.issueTokens(client, updatedUser);
 
     logger.info(`Password set and activation successful for email: ${email}`);
-    // TODO: Send welcome email with account activation confirmation
-    // TODO: Log activation event to monitoring service
+
+    // Fire-and-forget: send welcome email on first activation
+    sendWelcomeEmail(user.email, user.full_name).catch((err) =>
+      logger.error(`[EMAIL] Failed to send welcome email: ${err.message}`)
+    );
 
     res.json({
       user: {
@@ -480,8 +492,11 @@ const handleSetNewPassword = asyncHandler(async (req, res) => {
     await client.query("COMMIT");
 
     logger.info(`Password successfully reset for email: ${email}`);
-    // TODO: Send email notification confirming password change
-    // TODO: Log password reset event to monitoring service for fraud detection
+
+    // Fire-and-forget: notify user their password was reset
+    sendPasswordChangedEmail(email, req.ip || 'unknown', 'reset').catch((err) =>
+      logger.error(`[EMAIL] Failed to send password reset notification: ${err.message}`)
+    );
 
     res.json({
       success: true,
@@ -576,6 +591,15 @@ const handleChangePassword = asyncHandler(async (req, res) => {
     await client.query("COMMIT");
 
     logger.info(`Password changed successfully for user: ${userId}`);
+
+    // Fire-and-forget: notify user their password was changed
+    const userEmail = (await authService.loadUserBundle(client, null, userId))?.email;
+    if (userEmail) {
+      sendPasswordChangedEmail(userEmail, req.ip || 'unknown', 'change').catch((err) =>
+        logger.error(`[EMAIL] Failed to send password changed notification: ${err.message}`)
+      );
+    }
+
     res.json({ success: true, message: "Password changed successfully" });
   } catch (error) {
     await client.query("ROLLBACK").catch(() => {});
