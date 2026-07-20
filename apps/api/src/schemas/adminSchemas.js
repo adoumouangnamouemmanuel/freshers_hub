@@ -12,6 +12,7 @@ const updateUserSchema = z.object({
     full_name:  z.string().min(1).optional(),
     school_id:  z.string().optional(),
     role_id:    z.union([z.string(), z.number()]).optional(),
+    role_ids:   z.array(z.union([z.string(), z.number()])).optional(),
     phone:      z.string().optional(),
     major:      z.string().optional(),
     class_year: z.number().int().optional(),
