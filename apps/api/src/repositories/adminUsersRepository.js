@@ -84,10 +84,27 @@ class AdminUsersRepository {
     return rows[0] || null;
   }
 
+  // ── Create User ────────────────────────────────────────────────────────────
+
+  async createUser(fields) {
+    const { email, full_name, phone, major, class_year, country, is_active } = fields;
+    
+    // Default is_active to true if not specified
+    const active = is_active !== undefined ? is_active : true;
+
+    const { rows } = await pool.query(
+      `INSERT INTO users (email, full_name, phone, major, class_year, country, is_active)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, full_name, email, is_active`,
+      [email, full_name, phone || null, major || null, class_year || null, country || null, active]
+    );
+    return rows[0];
+  }
+
   // ── Update User ────────────────────────────────────────────────────────────
 
   async updateUser(id, fields) {
-    const allowed = ['full_name', 'phone', 'major', 'class_year', 'country', 'is_active'];
+    const allowed = ['email', 'full_name', 'phone', 'major', 'class_year', 'country', 'is_active'];
     const sets = [];
     const params = [];
     let p = 1;
@@ -124,7 +141,7 @@ class AdminUsersRepository {
   // ── Roles ──────────────────────────────────────────────────────────────────
 
   async listRoles() {
-    const { rows } = await pool.query(`SELECT id, name, description FROM roles ORDER BY name`);
+    const { rows } = await pool.query(`SELECT id, name FROM roles ORDER BY name`);
     return rows;
   }
 
