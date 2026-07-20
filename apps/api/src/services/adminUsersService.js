@@ -70,4 +70,11 @@ const importUsers = async (fileBuffer) => {
   return adminUsersRepository.importUsers(rows);
 };
 
-module.exports = { listUsers, getUserById, updateUser, assignRole, removeRole, bulkAssignRole, bulkDeactivate, listRoles, importUsers };
+const createUser = async (fields) => {
+  if (!fields.email || !fields.full_name) {
+    throw new AppError('Email and full_name are required', 400);
+  }
+  return adminUsersRepository.createUser(fields);
+};
+
+module.exports = { listUsers, getUserById, createUser, updateUser, assignRole, removeRole, bulkAssignRole, bulkDeactivate, listRoles, importUsers };
