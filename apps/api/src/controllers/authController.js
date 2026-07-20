@@ -4,19 +4,17 @@ const AppError = require("../utils/AppError");
 const asyncHandler = require("../utils/asyncHandler");
 const logger = require("../utils/logger");
 const {
-  checkAccountLockout,
   recordFailedLogin,
   clearFailedLogins,
 } = require("../middleware/rateLimiter");
+
+// NOTE: checkAccountLockout and rateLimit are applied as route-level middleware
+// in authRoutes.js — do NOT call them manually inside the controller.
 
 const handleLogin = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
   const clientIp = req.ip || req.connection.remoteAddress;
   logger.info(`Login attempt for email: ${email} from IP: ${clientIp}`);
-
-  // Check if account is locked
-  const lockoutCheck = checkAccountLockout(req, res, () => {});
-  lockoutCheck(req, res, () => {});
 
   const client = await pool.connect();
   try {
@@ -177,6 +175,20 @@ const handleSetPassword = asyncHandler(async (req, res) => {
     if (!user) {
       logger.warn(`Set password failed: User not found (${email})`);
       throw new AppError("User not found", 404);
+    }
+
+    // FIX #2: Verify OTP was already consumed before allowing password set.
+    // Without this check, an attacker knowing a valid email could skip the OTP step.
+    const { rows: codeRows } = await client.query(
+      `
+        SELECT consumed_at FROM activation_codes WHERE user_id = $1
+      `,
+      [user.id],
+    );
+
+    if (!codeRows[0]?.consumed_at) {
+      logger.warn(`Set password failed: OTP not yet consumed for (${email})`);
+      throw new AppError("OTP verification required before setting password", 403);
     }
 
     // Set password and activate
@@ -382,8 +394,12 @@ const handleVerifyResetOtp = asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
     const user = await authService.loadUserBundle(client, String(email).trim());
+
+    // FIX #4: Return the same generic error whether the user exists or not,
+    // to prevent email enumeration via this endpoint.
     if (!user) {
-      throw new AppError("User not found", 404);
+      logger.warn(`Verify reset OTP failed: User not found (${email})`);
+      throw new AppError("Invalid or expired code", 400);
     }
 
     const { rows } = await client.query(
@@ -447,7 +463,8 @@ const handleSetNewPassword = asyncHandler(async (req, res) => {
   try {
     const user = await authService.loadUserBundle(client, String(email).trim());
     if (!user) {
-      throw new AppError("User not found", 404);
+      // FIX #4: return generic error so user existence is not revealed
+      throw new AppError("Invalid or expired code", 400);
     }
 
     // Verify OTP again
@@ -484,26 +501,42 @@ const handleSetNewPassword = asyncHandler(async (req, res) => {
       throw new AppError("Invalid or expired code", 400);
     }
 
-    // Update password
+    // FIX #3: Wrap the password update + OTP consumption + refresh token revocation
+    // in a single transaction so no partial state can be left on server crash.
+    // FIX #7: Revoke all existing refresh tokens so stolen tokens are invalidated
+    // immediately after a password reset.
+    await client.query("BEGIN");
+
     await client.query(
       `
-      UPDATE credentials
-      SET password_hash = crypt($2, gen_salt('bf')),
-          updated_at = now()
-      WHERE user_id = $1
-    `,
+        UPDATE credentials
+        SET password_hash = crypt($2, gen_salt('bf')),
+            updated_at = now()
+        WHERE user_id = $1
+      `,
       [user.id, String(newPassword)],
     );
 
-    // Mark OTP as consumed
     await client.query(
       `
-      UPDATE password_resets
-      SET consumed_at = now()
-      WHERE user_id = $1
-    `,
+        UPDATE password_resets
+        SET consumed_at = now()
+        WHERE user_id = $1
+      `,
       [user.id],
     );
+
+    // Revoke all active refresh tokens — forces re-login on all devices
+    await client.query(
+      `
+        UPDATE refresh_tokens
+        SET revoked_at = now()
+        WHERE user_id = $1 AND revoked_at IS NULL
+      `,
+      [user.id],
+    );
+
+    await client.query("COMMIT");
 
     logger.info(`Password successfully reset for email: ${email}`);
     // TODO: Send email notification confirming password change
@@ -514,6 +547,7 @@ const handleSetNewPassword = asyncHandler(async (req, res) => {
       message: "Password has been successfully reset",
     });
   } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
     logger.error(`Set new password error for ${email}: ${error.message}`);
     throw error;
   } finally {
@@ -574,7 +608,10 @@ const handleChangePassword = asyncHandler(async (req, res) => {
       throw new AppError("Current password is incorrect", 400);
     }
 
-    // Update password
+    // FIX #3 + #7: Wrap password update and refresh token revocation in a transaction.
+    // Revoking tokens forces re-login on all other devices after a password change.
+    await client.query("BEGIN");
+
     await client.query(
       `
         UPDATE credentials
@@ -585,9 +622,22 @@ const handleChangePassword = asyncHandler(async (req, res) => {
       [userId, String(newPassword)],
     );
 
+    // Revoke all active refresh tokens — stolen tokens are immediately invalidated
+    await client.query(
+      `
+        UPDATE refresh_tokens
+        SET revoked_at = now()
+        WHERE user_id = $1 AND revoked_at IS NULL
+      `,
+      [userId],
+    );
+
+    await client.query("COMMIT");
+
     logger.info(`Password changed successfully for user: ${userId}`);
     res.json({ success: true, message: "Password changed successfully" });
   } catch (error) {
+    await client.query("ROLLBACK").catch(() => {});
     logger.error(`Change password error for user ${userId}: ${error.message}`);
     throw error;
   } finally {
