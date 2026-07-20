@@ -28,7 +28,7 @@ class AdminAnalyticsRepository {
        LEFT JOIN roles r ON r.id = ur.role_id`
     );
 
-    const { rows: clubStats } = await pool.query(`SELECT COUNT(*) AS total_clubs FROM clubs WHERE is_active = true`);
+    const { rows: clubStats } = await pool.query(`SELECT COUNT(*) AS total_clubs FROM groups WHERE is_active = true AND type = 'club'`);
 
     return {
       users: userStats[0],
@@ -85,9 +85,9 @@ class AdminAnalyticsRepository {
     const { rows } = await pool.query(
       `SELECT c.id, c.name, c.category,
               COUNT(cm.user_id) AS member_count
-       FROM clubs c
-       LEFT JOIN club_members cm ON cm.club_id = c.id
-       WHERE c.is_active = true
+       FROM groups c
+       LEFT JOIN group_members cm ON cm.group_id = c.id
+       WHERE c.is_active = true AND c.type = 'club'
        GROUP BY c.id
        ORDER BY member_count DESC
        LIMIT 10`
