@@ -67,6 +67,7 @@ router.use(requireAuth, requirePlatformAdmin);
 
 router.get('/users',                       c.listUsers);
 router.get('/users/:id',                   c.getUserById);
+router.post('/users',                                                     auditAction('user.created', 'user'),       c.createUser);
 router.patch('/users/:id',                 validate(updateUserSchema),    auditAction('user.updated', 'user'),       c.updateUser);
 router.post('/users/:id/roles',            validate(assignRoleSchema),    auditAction('role.assigned', 'user'),      c.assignRole);
 router.delete('/users/:id/roles/:roleId',                                 auditAction('role.removed', 'user'),       c.removeRole);
