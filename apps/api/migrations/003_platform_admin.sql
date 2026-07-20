@@ -139,14 +139,14 @@ SELECT
     ca.academic_year_id,
     COUNT(DISTINCT ca.peer_coach_id)                                    AS total_peer_coaches,
     COUNT(DISTINCT ca.fresher_id)                                       AS total_freshers,
-    COUNT(DISTINCT s.student_id) FILTER (
+    COUNT(s.id) FILTER (
         WHERE s.status = 'completed'
           AND s.with_type = 'peer_coach'
-    )                                                                   AS freshers_with_completed_session,
+    )                                                                   AS completed_sessions,
     COALESCE(
         ROUND(
-            COUNT(DISTINCT s.student_id) FILTER (WHERE s.status = 'completed' AND s.with_type = 'peer_coach')::NUMERIC
-            / NULLIF(COUNT(DISTINCT ca.fresher_id), 0) * 100
+            COUNT(s.id) FILTER (WHERE s.status = 'completed' AND s.with_type = 'peer_coach')::NUMERIC
+            / NULLIF(COUNT(DISTINCT ca.fresher_id) * 3, 0) * 100
         ), 0
     )                                                                   AS completion_rate
 FROM coach_assignments ca
