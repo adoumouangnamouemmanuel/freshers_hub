@@ -36,13 +36,13 @@ class AdminUnitsRepository {
       `SELECT
          u.id, u.full_name, u.avatar_url,
          COUNT(DISTINCT ca.fresher_id)                                   AS assigned_freshers,
-         COUNT(DISTINCT s.student_id) FILTER (
+         COUNT(s.id) FILTER (
            WHERE s.status = 'completed' AND s.with_type = 'peer_coach'
-         )                                                               AS freshers_completed,
+         )                                                               AS completed_sessions,
          COALESCE(
            ROUND(
-             COUNT(DISTINCT s.student_id) FILTER (WHERE s.status = 'completed' AND s.with_type = 'peer_coach')::NUMERIC
-             / NULLIF(COUNT(DISTINCT ca.fresher_id), 0) * 100
+             COUNT(s.id) FILTER (WHERE s.status = 'completed' AND s.with_type = 'peer_coach')::NUMERIC
+             / NULLIF(COUNT(DISTINCT ca.fresher_id) * 3, 0) * 100
            ), 0
          )                                                               AS completion_rate_pct
        FROM user_roles ur
