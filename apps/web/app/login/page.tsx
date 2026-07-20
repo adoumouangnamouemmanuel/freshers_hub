@@ -106,7 +106,7 @@ export default function LoginPage() {
               disabled={isPending}
               type="submit"
               className={cn(
-                "w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold flex items-center justify-center transition-all glow-primary",
+                "w-full h-12 rounded-xl bg-primary text-primary-foreground font-semibold flex items-center justify-center transition-all glow-primary cursor-pointer",
                 isPending ? "opacity-80 cursor-not-allowed" : "hover:bg-primary/90"
               )}
             >
