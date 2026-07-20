@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
   Users,
@@ -20,8 +20,6 @@ import {
   Settings,
   ChevronLeft,
   GraduationCapIcon,
-  ChevronDown,
-  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -81,37 +79,55 @@ export default function Sidebar() {
   return (
     <motion.aside
       initial={false}
-      animate={collapsed ? { width: 64 } : { width: 256 }}
-      transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
-      className="h-screen sticky top-0 flex flex-col border-r bg-white shadow-sm z-40 overflow-hidden"
+      animate={{ width: collapsed ? 80 : 280 }}
+      transition={{ duration: 0.3, ease: [0.32, 0.72, 0, 1] }}
+      className="h-full flex flex-col glass-panel rounded-[var(--radius-xl)] overflow-hidden"
     >
-      {/* Logo */}
-      <div className="flex items-center gap-3 px-4 h-16 border-b shrink-0">
+      {/* Brand Header */}
+      <div className="flex items-center gap-3.5 px-5 h-[76px] border-b border-border shrink-0">
         <motion.div
-          whileHover={{ scale: 1.05, rotate: -5 }}
-          className="w-9 h-9 rounded-xl bg-[#A93C40] flex items-center justify-center shrink-0 shadow-md shadow-[#A93C40]/20"
+          whileHover={{ scale: 1.05, rotate: -10 }}
+          className="w-10 h-10 rounded-[14px] bg-primary flex items-center justify-center shrink-0 glow-primary"
         >
           <GraduationCapIcon className="w-5 h-5 text-white" />
         </motion.div>
-        <motion.span
-          animate={{ opacity: collapsed ? 0 : 1, x: collapsed ? -10 : 0 }}
-          transition={{ duration: 0.2 }}
-          className="font-bold text-lg text-[#1A2B4A] truncate"
-        >
-          Fresher Hub
-        </motion.span>
+        
+        <AnimatePresence initial={false}>
+          {!collapsed && (
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.2 }}
+              className="overflow-hidden whitespace-nowrap"
+            >
+              <h1 className="font-heading font-bold text-xl text-foreground">
+                Fresher <span className="text-primary">Hub</span>
+              </h1>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 overflow-y-auto p-3 space-y-5">
+      {/* Navigation Groups */}
+      <nav className="flex-1 overflow-y-auto p-4 space-y-6">
         {navGroups.map((group) => (
-          <div key={group.label}>
+          <div key={group.label} className="relative">
+            {/* Group Label */}
             {!collapsed && (
-              <p className="px-3 text-xs font-semibold text-[#9CA3AF] uppercase tracking-wider mb-1.5">
-                {group.label}
-              </p>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="px-3 mb-2"
+              >
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
+                  {group.label}
+                </p>
+              </motion.div>
             )}
-            <div className="space-y-0.5">
+
+            <div className="space-y-1">
               {group.items.map((item) => {
                 const isActive = pathname === item.href;
                 return (
@@ -119,25 +135,42 @@ export default function Sidebar() {
                     key={item.href}
                     href={item.href}
                     className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 relative group",
-                      isActive
-                        ? "text-white"
-                        : "text-[#6B7280] hover:text-[#1A2B4A] hover:bg-[#f8f4ef]"
+                      "flex items-center gap-3.5 px-3 py-3 rounded-[14px] font-medium transition-colors relative group outline-none focus-visible:ring-2",
+                      isActive 
+                        ? "text-primary-foreground" 
+                        : "text-muted-foreground hover:text-foreground",
+                      collapsed && "justify-center"
                     )}
+                    title={collapsed ? item.label : undefined}
                   >
+                    {/* Active State Pill Background using Framer layoutId for fluid animation between routes */}
                     {isActive && (
                       <motion.div
-                        layoutId="activeNav"
-                        className="absolute inset-0 bg-[#A93C40] rounded-xl shadow-md shadow-[#A93C40]/20"
-                        transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                        layoutId="activeNavIndicator"
+                        className="absolute inset-0 bg-primary rounded-[14px] glow-primary"
+                        transition={{ type: "spring", stiffness: 350, damping: 30 }}
                       />
                     )}
-                    <item.icon className="w-5 h-5 shrink-0 relative z-10" />
-                    {!collapsed && (
-                      <span className="relative z-10 font-semibold tracking-tight">
-                        {item.label}
-                      </span>
-                    )}
+
+                    <item.icon 
+                      className={cn(
+                        "w-5 h-5 shrink-0 relative z-10 transition-transform group-hover:scale-110",
+                        !isActive && "opacity-80"
+                      )} 
+                    />
+
+                    <AnimatePresence initial={false}>
+                      {!collapsed && (
+                        <motion.span
+                          initial={{ opacity: 0, width: 0 }}
+                          animate={{ opacity: 1, width: "auto" }}
+                          exit={{ opacity: 0, width: 0 }}
+                          className="relative z-10 text-[14px] tracking-wide whitespace-nowrap overflow-hidden"
+                        >
+                          {item.label}
+                        </motion.span>
+                      )}
+                    </AnimatePresence>
                   </Link>
                 );
               })}
@@ -146,17 +179,33 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      {/* Collapse toggle */}
-      <div className="p-3 border-t border-[#f3f4f6]">
+      {/* Footer / Toggle */}
+      <div className="p-4 border-t border-border shrink-0">
         <motion.button
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => setCollapsed(!collapsed)}
-          className="flex items-center justify-center w-full py-2.5 rounded-xl text-[#6B7280] hover:text-[#1A2B4A] hover:bg-[#f8f4ef] transition-colors cursor-pointer"
+          className={cn(
+            "flex items-center w-full py-3 rounded-[14px] text-muted-foreground hover:text-foreground hover:bg-secondary/50 transition-colors cursor-pointer",
+            collapsed ? "justify-center" : "px-4 gap-3"
+          )}
         >
           <motion.div animate={{ rotate: collapsed ? 180 : 0 }} transition={{ duration: 0.3 }}>
             <ChevronLeft className="w-5 h-5" />
           </motion.div>
+          
+          <AnimatePresence initial={false}>
+            {!collapsed && (
+              <motion.span
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: "auto" }}
+                exit={{ opacity: 0, width: 0 }}
+                className="text-[14px] font-medium whitespace-nowrap"
+              >
+                Collapse menu
+              </motion.span>
+            )}
+          </AnimatePresence>
         </motion.button>
       </div>
     </motion.aside>
