@@ -114,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     loadSession()
       .then(async (storedSession) => {
-        console.log("Loaded session from storage:", storedSession);
+        if (__DEV__) console.log("Loaded session from storage:", storedSession ? "exists" : "null");
         
         if (storedSession) {
           // Check if access token is still valid
@@ -125,15 +125,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             scheduleRefresh(storedSession);
           } else {
             // Access token has expired, try to refresh
-            console.log("Access token expired, attempting to refresh...");
+            if (__DEV__) console.log("Access token expired, attempting to refresh...");
             try {
               const refreshedSession = await refreshSession(storedSession.refreshToken);
-              console.log("Session refreshed successfully on load");
+              if (__DEV__) console.log("Session refreshed successfully on load");
               await saveSession(refreshedSession);
               setSession(refreshedSession);
               scheduleRefresh(refreshedSession);
             } catch (error) {
-              console.log("Failed to refresh session on load:", error);
+              if (__DEV__) console.log("Failed to refresh session on load:", error);
               // Clear invalid session
               await clearSession();
               setSession(null);
@@ -168,7 +168,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           throw new Error("Login failed");
         }
 
-        console.log("Login result session:", result.session);
+        if (__DEV__) console.log("Login result session: exists");
         await saveSession(result.session);
         setSession(result.session);
         scheduleRefresh(result.session);
@@ -181,9 +181,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               accessToken: result.session.accessToken,
               refreshToken: result.session.refreshToken,
             });
-            console.log("Biometric session auto-stored after password login");
+            if (__DEV__) console.log("Biometric session auto-stored after password login");
           } catch (e) {
-            console.error("Failed to auto-store biometric session:", e);
+            if (__DEV__) console.error("Failed to auto-store biometric session:", e);
           }
         }
         
@@ -191,24 +191,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
 
       signInWithBiometrics: async () => {
-        console.log("signInWithBiometrics - starting");
+        if (__DEV__) console.log("signInWithBiometrics - starting");
         // Check if biometrics is available
         const available = await isBiometricAvailable();
-        console.log("signInWithBiometrics - available:", available);
+        if (__DEV__) console.log("signInWithBiometrics - available:", available);
         if (!available) {
           return { success: false, error: "Biometric authentication not available" };
         }
 
         // Check if biometric login is enabled
         const enabled = await isBiometricLoginEnabled();
-        console.log("signInWithBiometrics - enabled:", enabled);
+        if (__DEV__) console.log("signInWithBiometrics - enabled:", enabled);
         if (!enabled) {
           return { success: false, error: "Biometric login not enabled" };
         }
 
         // Authenticate with biometrics
         const authResult = await authenticateWithBiometrics();
-        console.log("signInWithBiometrics - auth result:", authResult);
+        if (__DEV__) console.log("signInWithBiometrics - auth result:", authResult.success);
         if (!authResult.success) {
           return {
             success: false,
@@ -219,22 +219,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         // Get stored session
         const storedSession = await getBiometricSession();
-        console.log("signInWithBiometrics - stored session:", storedSession ? "exists" : "null");
+        if (__DEV__) console.log("signInWithBiometrics - stored session:", storedSession ? "exists" : "null");
         if (!storedSession) {
           return { success: false, error: "Authentication failed" };
         }
 
         // Verify the session is still valid by refreshing
         try {
-          console.log("signInWithBiometrics - attempting to refresh with token:", storedSession.refreshToken ? "exists" : "null");
+          if (__DEV__) console.log("signInWithBiometrics - attempting to refresh with token:", storedSession.refreshToken ? "exists" : "null");
           const refreshedSession = await refreshSession(storedSession.refreshToken);
-          console.log("signInWithBiometrics - refreshed session successfully");
+          if (__DEV__) console.log("signInWithBiometrics - refreshed session successfully");
           await saveSession(refreshedSession);
           setSession(refreshedSession);
           scheduleRefresh(refreshedSession);
           return { success: true };
         } catch (error) {
-          console.log("signInWithBiometrics - refresh failed:", error);
+          if (__DEV__) console.log("signInWithBiometrics - refresh failed:", error);
           // Clear biometric session on refresh failure - user needs to re-enable
           await clearBiometricSession();
           return { success: false, error: "Authentication failed" };
