@@ -12,6 +12,8 @@ import { useRouter } from "next/navigation";
 import { AddUserModal } from "./add-user-modal";
 import { EditUserModal } from "./edit-user-modal";
 import { ImportCohortModal } from "./import-cohort-modal";
+import { ConfirmModal } from "./confirm-modal";
+import { ViewUserModal } from "./view-user-modal";
 
 interface UsersClientProps {
   initialData: { data: any[]; total: number; page: number; pageSize: number };
@@ -36,6 +38,27 @@ export default function UsersClient({ initialData, allRoles }: UsersClientProps)
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
+  const [viewingUser, setViewingUser] = useState<any>(null);
+
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    description: string;
+    type: "warning" | "danger" | "info" | "success";
+    isAlert: boolean;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: "",
+    description: "",
+    type: "warning",
+    isAlert: false,
+    onConfirm: () => {},
+  });
+
+  function closeConfirm() {
+    setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+  }
 
   async function refetch() {
     const res = await getUsersAction({ search, role: roleFilter, status: statusFilter });
@@ -76,24 +99,47 @@ export default function UsersClient({ initialData, allRoles }: UsersClientProps)
     });
   }
 
-  async function handleDeactivate() {
-    await deactivateUsersAction(Array.from(selected));
-    await refetch();
-  }
 
-  async function handleAssignRole(roleId: string) {
-    await assignRolesAction(Array.from(selected), roleId);
-    await refetch();
-  }
-
-  async function handleDeactivateSingle(id: string) {
-    if (!confirm("Are you sure you want to deactivate this user?")) return;
-    await deactivateUsersAction([id]);
-    await refetch();
+  function handleDeactivateSingle(id: string) {
+    setConfirmModal({
+      isOpen: true,
+      title: "Deactivate User",
+      description: "Are you sure you want to deactivate this user? They will lose access to the platform.",
+      type: "danger",
+      isAlert: false,
+      onConfirm: () => {
+        startTransition(async () => {
+          try {
+            await deactivateUsersAction([id]);
+            await refetch();
+            closeConfirm();
+          } catch (error: any) {
+            setConfirmModal({
+              isOpen: true,
+              title: "Error",
+              description: error.message || "Failed to deactivate user",
+              type: "danger",
+              isAlert: true,
+              onConfirm: closeConfirm
+            });
+          }
+        });
+      },
+    });
   }
 
   return (
     <AnimatedPage>
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        description={confirmModal.description}
+        type={confirmModal.type}
+        isAlert={confirmModal.isAlert}
+        isLoading={isPending}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={closeConfirm}
+      />
       <PageHeader
         title="Users & Roles"
         description="Manage accounts, roles, and access across the platform"
@@ -147,13 +193,13 @@ export default function UsersClient({ initialData, allRoles }: UsersClientProps)
         allVisibleSelected={allVisibleSelected}
         onDeactivateUser={handleDeactivateSingle}
         onEditUser={(u) => setEditingUser(u)}
+        onViewUser={(u) => setViewingUser(u)}
       />
 
       <UsersBulkActions
-        selectedCount={selected.size}
-        onClear={() => setSelected(new Set())}
-        onDeactivate={handleDeactivate}
-        onAssignRole={handleAssignRole}
+        selectedUserIds={selected}
+        onClearSelection={() => setSelected(new Set())}
+        onSuccess={refetch}
         allRoles={allRoles}
       />
 
@@ -176,6 +222,12 @@ export default function UsersClient({ initialData, allRoles }: UsersClientProps)
         isOpen={isImportOpen} 
         onClose={() => setIsImportOpen(false)} 
         onSuccess={refetch} 
+      />
+
+      <ViewUserModal 
+        isOpen={!!viewingUser}
+        onClose={() => setViewingUser(null)}
+        user={viewingUser}
       />
     </AnimatedPage>
   );
