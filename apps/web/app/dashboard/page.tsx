@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 import DashboardClient from "@/components/dashboard/dashboard-client";
 import { redirect } from "next/navigation";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4000").replace("localhost", "127.0.0.1");
 
 async function fetchDashboardData() {
   const cookieStore = await cookies();
@@ -45,13 +45,21 @@ async function fetchDashboardData() {
       throw error;
     }
     console.error("Dashboard fetch error:", error);
-    // Return graceful empty data instead of crashing the whole page
-    return { overview: null, auditLog: [] };
+    // Return error message so it can be displayed
+    return { overview: null, auditLog: [], error: error.message };
   }
 }
 
 export default async function DashboardPage() {
-  const { overview, auditLog } = await fetchDashboardData();
+  const { overview, auditLog, error } = await fetchDashboardData();
+
+  if (error) {
+    return (
+      <div className="p-10 text-red-500 font-bold">
+        Failed to load dashboard data: {error}
+      </div>
+    );
+  }
 
   return (
     <DashboardClient overview={overview} auditLog={auditLog} />
