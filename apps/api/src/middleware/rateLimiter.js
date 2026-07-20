@@ -20,6 +20,7 @@ const RATE_LIMITS = {
   login: { maxAttempts: 5, windowMs: 15 * 60 * 1000 }, // 5 attempts per 15 minutes
   otpRequest: { maxAttempts: 3, windowMs: 60 * 60 * 1000 }, // 3 per hour
   passwordReset: { maxAttempts: 3, windowMs: 60 * 60 * 1000 }, // 3 per hour
+  adminBulk: { maxAttempts: 10, windowMs: 60 * 1000 }, // 10 bulk ops per minute (tight — blast radius protection)
 };
 
 // Account lockout configurations
