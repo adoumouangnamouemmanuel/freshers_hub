@@ -62,6 +62,6 @@ export default async function DashboardPage() {
   }
 
   return (
-    <DashboardClient overview={overview} auditLog={auditLog} />
+    <DashboardClient overview={overview} auditLog={auditLog.data || []} />
   );
 }
