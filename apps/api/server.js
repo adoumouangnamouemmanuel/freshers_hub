@@ -7,6 +7,7 @@ const groupRoutes = require("./src/routes/groupRoutes");
 const eventRoutes = require("./src/routes/eventRoutes");
 const notificationRoutes = require("./src/routes/notificationRoutes");
 const supportRoutes = require("./src/routes/supportRoutes");
+const adminRoutes = require("./src/routes/adminRoutes");
 const logger = require("./src/utils/logger");
 const errorHandler = require("./src/middleware/errorHandler");
 const config = require("./src/config");
@@ -67,6 +68,7 @@ app.use("/groups", groupRoutes);
 app.use("/events", eventRoutes);
 app.use("/notifications", notificationRoutes);
 app.use("/support", supportRoutes);
+app.use("/admin", adminRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
@@ -87,6 +89,9 @@ app.use((req, res) => {
       "GET /notifications",
       "PATCH /notifications/:id/read",
       "PATCH /notifications/read-all",
+      "GET /admin/users",
+      "GET /admin/analytics/overview",
+      "GET /admin/audit-log",
     ],
   });
 });
