@@ -14,7 +14,7 @@ const {
   handleUpdateProfile,
 } = require("../controllers/authController");
 const validate = require("../middleware/validate");
-const { rateLimit } = require("../middleware/rateLimiter");
+const { rateLimit, checkAccountLockout } = require("../middleware/rateLimiter");
 const { requireAuth } = require("../middleware/authMiddleware");
 const {
   loginSchema,
@@ -31,7 +31,10 @@ const {
 
 const router = express.Router();
 
-router.post("/login", validate(loginSchema), rateLimit("login"), handleLogin);
+// FIX #1: checkAccountLockout is now proper Express middleware on this route.
+// It correctly short-circuits before the controller runs, preventing the
+// double-response crash that occurred when it was called manually inside handleLogin.
+router.post("/login", validate(loginSchema), rateLimit("login"), checkAccountLockout(), handleLogin);
 router.post("/refresh", validate(refreshSchema), handleRefresh);
 router.post("/request-otp", validate(requestOtpSchema), rateLimit("otpRequest"), handleRequestOtp);
 router.post("/forgot-password", validate(forgotPasswordSchema), rateLimit("passwordReset"), handleForgotPassword);
