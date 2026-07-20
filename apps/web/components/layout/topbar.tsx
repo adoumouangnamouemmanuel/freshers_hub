@@ -35,7 +35,8 @@ export default function Topbar({ user }: { user?: any }) {
   const displayName = user?.fullName || "Platform Admin";
   const displayEmail = user?.email || "admin@ashesi.edu.gh";
   const initials = getInitials(user?.fullName, user?.email);
-  const roleDisplay = user?.roles?.[0]?.replace("_", " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Super User";
+  const roleName = typeof user?.roles?.[0] === 'string' ? user.roles[0] : user?.roles?.[0]?.name;
+  const roleDisplay = roleName?.replace("_", " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Super User";
 
   return (
     <header className="h-[76px] glass-panel rounded-[var(--radius-xl)] flex items-center justify-between px-6 shrink-0 w-full relative z-30">
