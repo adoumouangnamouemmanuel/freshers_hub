@@ -13,7 +13,6 @@ async function fetchDashboardData() {
   }
 
   try {
-    // We can fetch these in parallel for performance
     const [overviewRes, auditRes] = await Promise.all([
       fetch(`${API_URL}/admin/analytics/overview`, {
         headers: {
@@ -21,7 +20,7 @@ async function fetchDashboardData() {
         },
         cache: "no-store", // Don't cache analytics data
       }),
-      fetch(`${API_URL}/admin/audit-log`, {
+      fetch(`${API_URL}/admin/audit-logs?pageSize=5`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
