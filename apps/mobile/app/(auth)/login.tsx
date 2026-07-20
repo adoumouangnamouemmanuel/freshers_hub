@@ -47,7 +47,7 @@ export default function LoginScreen() {
   const { signIn, signInWithBiometrics, requestOtp } = useAuth();
 
   const [step, setStep] = useState<"email" | "password">("email");
-  const [email, setEmail] = useState("fresher.one@ashesi.edu.gh");
+  const [email, setEmail] = useState(""); // FIX #11: Removed hardcoded test email
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
