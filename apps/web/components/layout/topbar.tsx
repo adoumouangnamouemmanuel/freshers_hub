@@ -118,10 +118,12 @@ export default function Topbar() {
 
           {/* We apply the global glass-dropdown class here for the floating aesthetic */}
           <DropdownMenuContent className="w-[280px] rounded-[24px] glass-dropdown bg-white/85 dark:bg-slate-900/85 border-white/20 dark:border-white/10 p-2.5 shadow-xl" align="end" sideOffset={12}>
-            <DropdownMenuLabel className="p-3">
-              <p className="font-heading font-bold text-foreground text-base">Platform Admin</p>
-              <p className="text-[13px] font-medium text-muted-foreground mt-0.5">admin@ashesi.edu.gh</p>
-            </DropdownMenuLabel>
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="p-3">
+                <p className="font-heading font-bold text-foreground text-base">Platform Admin</p>
+                <p className="text-[13px] font-medium text-muted-foreground mt-0.5">admin@ashesi.edu.gh</p>
+              </DropdownMenuLabel>
+            </DropdownMenuGroup>
             
             <DropdownMenuSeparator className="bg-border" />
             
