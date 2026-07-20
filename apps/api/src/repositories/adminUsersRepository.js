@@ -113,7 +113,16 @@ class AdminUsersRepository {
         );
       }
       
-      if (fields.role_id) {
+      if (fields.role_ids && Array.isArray(fields.role_ids)) {
+        for (const rId of fields.role_ids) {
+          await client.query(
+            `INSERT INTO user_roles (user_id, role_id)
+             VALUES ($1, $2)
+             ON CONFLICT DO NOTHING`,
+            [user.id, rId]
+          );
+        }
+      } else if (fields.role_id) {
         await client.query(
           `INSERT INTO user_roles (user_id, role_id)
            VALUES ($1, $2)
@@ -177,7 +186,17 @@ class AdminUsersRepository {
         );
       }
 
-      if (fields.role_id && user) {
+      if (fields.role_ids && Array.isArray(fields.role_ids) && user) {
+        await client.query(`DELETE FROM user_roles WHERE user_id = $1`, [id]);
+        for (const rId of fields.role_ids) {
+          await client.query(
+            `INSERT INTO user_roles (user_id, role_id)
+             VALUES ($1, $2)
+             ON CONFLICT DO NOTHING`,
+            [id, rId]
+          );
+        }
+      } else if (fields.role_id && user) {
         await client.query(
           `INSERT INTO user_roles (user_id, role_id)
            VALUES ($1, $2)
