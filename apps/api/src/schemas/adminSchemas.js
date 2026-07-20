@@ -8,6 +8,7 @@ const { z } = require('zod');
 
 const updateUserSchema = z.object({
   body: z.object({
+    email:      z.string().email().optional(),
     full_name:  z.string().min(1).optional(),
     phone:      z.string().optional(),
     major:      z.string().optional(),
