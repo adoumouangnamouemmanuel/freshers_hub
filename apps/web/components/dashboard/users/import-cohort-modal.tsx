@@ -74,6 +74,15 @@ export function ImportCohortModal({ isOpen, onClose, onSuccess }: ImportCohortMo
                   Updated: <span className="font-semibold text-blue-600">{result.updated}</span><br/>
                   Errors: <span className="font-semibold text-red-600">{result.errors?.length || 0}</span>
                 </p>
+                {result.errors?.length > 0 && (
+                  <div className="mt-4 max-h-32 overflow-y-auto rounded-lg bg-red-50 p-3 text-left text-xs text-red-600 border border-red-100">
+                    {result.errors.map((e: any, i: number) => (
+                      <div key={i} className="mb-1 border-b border-red-100 pb-1 last:border-0 last:pb-0">
+                        <span className="font-semibold">Row {e.row}:</span> {e.reason}
+                      </div>
+                    ))}
+                  </div>
+                )}
                 <button
                   onClick={closeAndReset}
                   className="mt-6 w-full cursor-pointer rounded-xl bg-[#A93C40] px-4 py-3 font-semibold text-white transition-colors hover:bg-[#8f3236]"
