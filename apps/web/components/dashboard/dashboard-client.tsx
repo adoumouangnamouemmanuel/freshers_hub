@@ -38,12 +38,13 @@ export default function DashboardClient({
   auditLog: any[];
 }) {
   const users = overview?.users || {
+    total_users: 0,
     total_students: 0,
     total_coaches: 0,
     inactive_users: 0,
   };
-
-  const totalUsers = parseInt(users.total_students) + parseInt(users.total_coaches);
+  
+  const clubs = overview?.clubs || { total_clubs: 0 };
 
   // We can create a unified array of unit health for rendering
   const unitHealth = [
@@ -112,7 +113,12 @@ export default function DashboardClient({
       </AnimatedSection>
 
       {/* Primary Stats */}
-      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-8">
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-5 mb-8">
+        <StatCard 
+          title="Total Users" 
+          value={users.total_users || 0} 
+          description="Across all roles" 
+        />
         <StatCard
           title="Active Students"
           value={users.total_students || 0}
@@ -124,14 +130,14 @@ export default function DashboardClient({
           description="Assigned this cycle"
         />
         <StatCard
+          title="Active Clubs"
+          value={clubs.total_clubs || 0}
+          description="Approved organizations"
+        />
+        <StatCard
           title="Inactive Accounts"
           value={users.inactive_users || 0}
           description="Pending activation"
-        />
-        <StatCard 
-          title="Total Users" 
-          value={totalUsers} 
-          description="Across all roles" 
         />
       </div>
 
