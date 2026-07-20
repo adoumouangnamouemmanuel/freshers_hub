@@ -2,6 +2,7 @@
 
 import { motion, type Variants } from "framer-motion";
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -20,13 +21,13 @@ const itemVariants: Variants = {
   },
 };
 
-export function AnimatedPage({ children }: { children: ReactNode }) {
+export function AnimatedPage({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <motion.div
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="space-y-8"
+      className={cn("space-y-8", className)}
     >
       {children}
     </motion.div>
