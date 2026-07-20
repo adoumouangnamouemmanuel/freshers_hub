@@ -29,7 +29,7 @@ export function EditClubModal({ club, isOpen, onClose, allUsers, onSuccess }: Ed
       setName(club.name || "");
       setDescription(club.description || "");
       setCategory(club.category || "");
-      setLeadUserId(club.lead_user_id || "");
+      setLeadUserId(club.lead_id || club.lead_user_id || "");
       setIsActive(club.is_active ?? true);
       setError("");
     }
