@@ -178,4 +178,13 @@ router.get('/admins',                      c.listAdmins);
 router.post('/admins',                     validate(grantAdminSchema),   auditAction('admin.granted', 'user'),  c.grantPlatformAdmin);
 router.delete('/admins/:userId',                                          auditAction('admin.revoked', 'user'),  c.revokePlatformAdmin);
 
+// ═══════════════════════════════════════════════════════════════════════════
+// AUDIT LOGS
+// ═══════════════════════════════════════════════════════════════════════════
+
+const adminAuditController = require('../controllers/adminAuditController');
+const { listAuditLogsSchema } = require('../schemas/adminSchemas');
+
+router.get('/audit-logs', validate(listAuditLogsSchema), adminAuditController.listAuditLogs);
+
 module.exports = router;
