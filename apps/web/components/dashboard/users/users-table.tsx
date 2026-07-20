@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Users as UsersIcon, Mail, Phone, GraduationCap, Edit3, Trash2 } from "lucide-react";
+import { Users as UsersIcon, Mail, Phone, GraduationCap, Edit3, Trash2, Eye } from "lucide-react";
 import { RoleBadge } from "@/components/ui/status-badge";
 import { AnimatedSection } from "@/components/ui/animated-container";
 
@@ -25,6 +25,7 @@ interface UsersTableProps {
   allVisibleSelected: boolean;
   onDeactivateUser: (id: string) => void;
   onEditUser: (user: any) => void;
+  onViewUser: (user: any) => void;
 }
 
 export function UsersTable({
@@ -35,6 +36,7 @@ export function UsersTable({
   allVisibleSelected,
   onDeactivateUser,
   onEditUser,
+  onViewUser,
 }: UsersTableProps) {
   if (users.length === 0) {
     return (
@@ -148,6 +150,13 @@ export function UsersTable({
                 </td>
                 <td className="p-4 text-right">
                   <div className="flex items-center justify-end gap-1">
+                    <button
+                      onClick={() => onViewUser(u)}
+                      aria-label={`View ${u.full_name}`}
+                      className="cursor-pointer rounded-lg p-2 text-[#6B7280] transition-colors hover:bg-blue-50 hover:text-blue-600"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
                     <button
                       onClick={() => onEditUser(u)}
                       aria-label={`Edit ${u.full_name}`}
