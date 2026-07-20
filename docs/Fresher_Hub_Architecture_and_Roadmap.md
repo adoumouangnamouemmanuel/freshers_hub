@@ -55,10 +55,44 @@ flowchart TB
 - **Background job runner** handles the things that must happen without a user present: nightly ODIP pairing sync, session reminder pushes, mandatory-session compliance recalculation.
 - **WhatsApp bridge as a redirect, not a raw link** — the API logs the "contact" click, then 302-redirects to `wa.me`, which is how click-tracking becomes possible without building chat.
 
-### 2.3 Authentication
-- Accounts are **pre-provisioned**, not self-registered — imported from the admissions/IT dataset (`school_id`, `email`, `full_name`, `class_year`, `country`, `major`).
-- First login: user verifies their Ashesi email (magic link or OTP) and sets a password/PIN. No open signup form — the email must already exist in `users` from the import, closing off outside registration.
-- JWT-based sessions, short-lived access token + refresh token, standard for a mobile + web split.
+### 2.3 Authentication — **✅ IMPLEMENTED**
+
+> Last audited: 2026-07-20. See [`docs/AUTH_SECURITY_AUDIT.md`](./AUTH_SECURITY_AUDIT.md) for the full security review.
+
+**Implementation status:** The full auth system is live in `apps/api` + `apps/mobile`.
+
+#### Auth flow (as built)
+
+| Flow | Endpoints | Status |
+|---|---|---|
+| Account activation (first login) | `check-email` → `request-otp` → `verify-otp` → `set-password` | ✅ Live |
+| Login (returning user) | `check-email` → `login` | ✅ Live |
+| Forgot password | `forgot-password` → `verify-reset-otp` → `set-new-password` | ✅ Live |
+| Token refresh | `refresh` (auto-scheduled in app, 2 min before expiry) | ✅ Live |
+| Logout | `logout` (revokes refresh token in DB) | ✅ Live |
+| Change password (authenticated) | `change-password` (requires valid access token) | ✅ Live |
+| Biometric login | Device biometric → SecureStore refresh token → `refresh` | ✅ Live |
+| Profile update | `PUT /auth/profile` (requires valid access token) | ✅ Live |
+
+#### Security posture
+- **Accounts are pre-provisioned**, not self-registered — email must already exist in `users` from the admissions import. No open signup.
+- **Password storage:** bcrypt via PostgreSQL `pgcrypto` (`crypt()` + `gen_salt('bf')`) — never stored plaintext.
+- **JWT:** Custom HS256 implementation, 15-minute access token + 90-day refresh token stored as SHA-256 hash in DB.
+- **OTP:** 6-digit, bcrypt-hashed in `activation_codes`/`password_resets`, 15-minute TTL, single-use.
+- **Rate limiting:** In-memory per-action limits (login: 5/15 min; OTP: 3/hr; reset: 3/hr). **Switch to Redis before production.**
+- **Account lockout:** 5 failed logins → 30-minute lockout. Duration non-extendable.
+- **Biometric:** Tokens stored in `expo-secure-store` with `WHEN_UNLOCKED_THIS_DEVICE_ONLY` (device-bound keychain/keystore).
+- **Role-based access:** `requireAuth` + `requireRoles` middleware enforced on protected routes.
+- **Input validation:** Zod schemas on all auth routes, validated before controller logic.
+
+#### Known pre-production fixes required
+1. 🔴 Fix `checkAccountLockout` middleware call pattern in `authController.js` (currently called incorrectly — can cause double-response crash on locked accounts).
+2. 🔴 Add OTP-consumed check to `handleSetPassword` (currently possible to set password without completing OTP step).
+3. 🟡 Remove hardcoded test email in `login.tsx` (`"fresher.one@ashesi.edu.gh"`).
+4. 🟡 Use `crypto.randomInt()` instead of `Math.random()` for OTP generation.
+5. 🟡 Configure CORS to explicit origin list for production.
+6. 🟡 Fail fast on missing `JWT_SECRET` in production instead of falling back to hardcoded default.
+7. 🟡 Revoke all refresh tokens on password change/reset.
 
 ---
 
@@ -501,15 +535,15 @@ fresher-hub/
 
 ### Week 1 — Foundations: a real login and a real (if empty) home screen
 
-| Day | Step | What gets built (DB + API + UI, together) | What you can literally do at end of day |
-|---|---|---|---|
-| 1 | Repo + schema bootstrap | Turborepo scaffold; identity tables (`users`, `roles`, `units`, `user_roles`, `academic_years`) migrated onto real Postgres on the Ashesi server; seed script with 5 fake users, mixed roles | Connect to the DB with a client, see 5 real seeded rows with roles attached |
-| 2 | Admissions import + auth backend | CSV import script (assigns base `student` role); `credentials`/`refresh_tokens` tables; login endpoint (email + password → JWT); email OTP for first-time activation | Hit the login endpoint with curl/Postman using a seeded user, get back a real JWT |
-| 3 | Mobile: login screen (real UI) | Expo app: login screen, OTP/activation screen, secure token storage (`expo-secure-store`), calling the real API from Day 2 | Open the app on a phone/simulator, type a seeded user's email, log in for real, land on a blank "Home" screen |
-| 4 | Role-aware navigation shell | `permissions.ts` config; tab bar renders different tabs based on the roles returned at login; a placeholder screen per tab (title only, no data yet) | Log in as a plain `student` → see Feed/Map/Support/Clubs tabs. Log out, log in as a `club_lead` → see an extra "My Club" tab. Real difference, real login, on your phone. |
-| 5 | CI + RLS foundation | GitHub Actions (lint/typecheck/test on PR); enable RLS on `users`/`user_roles` with a first working policy (a user can read their own row and role list, nothing else) | A broken PR fails CI automatically; a manual SQL query as "user A" cannot read "user B"'s role row |
+| Day | Step | What gets built (DB + API + UI, together) | What you can literally do at end of day | Status |
+|---|---|---|---|---|
+| 1 | Repo + schema bootstrap | Turborepo scaffold; identity tables (`users`, `roles`, `units`, `user_roles`, `academic_years`) migrated onto real Postgres; seed script with fake users, mixed roles | Connect to the DB with a client, see real seeded rows with roles attached | ✅ Done |
+| 2 | Auth backend | `credentials`/`refresh_tokens`/`activation_codes`/`password_resets` tables; full auth API: login, OTP activation, forgot-password, refresh, logout, change-password, update-profile; bcrypt passwords via pgcrypto; custom HS256 JWT; in-memory rate limiter + account lockout; Zod validation on all routes | Hit `/auth/login` with curl using a seeded user, get back a real JWT and refresh token | ✅ Done |
+| 3 | Mobile: full auth screens | Expo app: login screen (email → password two-step), OTP activation screen (6-box input), forgot-password → reset-password flow, rate-limit/lockout screen; biometric login via `expo-local-authentication`; `expo-secure-store` for biometric session; `AsyncStorage` for regular session; auto-refresh timer (2 min before expiry); route guard in `_layout.tsx` | Open the app on a phone, type a seeded user's email, go through OTP activation, set a password, land on home; enable Face ID/fingerprint in settings, log out, log back in with biometrics | ✅ Done |
+| 4 | Role-aware navigation shell | `permissions.ts` config; tab bar renders different tabs based on the roles returned at login; a placeholder screen per tab (title only, no data yet) | Log in as a plain `student` → see Feed/Map/Support/Clubs tabs. Log out, log in as a `club_lead` → see an extra "My Club" tab. Real difference, real login, on your phone. | ✅ Done |
+| 5 | CI + RLS foundation | GitHub Actions (lint/typecheck/test on PR); enable RLS on `users`/`user_roles` with a first working policy | A broken PR fails CI automatically; a manual SQL query as "user A" cannot read "user B"'s role row | 🔲 Pending |
 
-**Week 1 exit demo (now actually true):** two people log into the real app on their own phones with their own seeded accounts, see two visibly different tab bars, backed by a live Postgres instance on the Ashesi server — not mocked, not "coming later."
+**Week 1 exit demo:** Days 1–4 are complete. Two people can log into the real app on their own phones with their own seeded accounts, go through OTP activation, log in with password or biometrics, see role-appropriate tab bars, backed by a live Postgres instance. Day 5 (CI + RLS) is the remaining piece.
 
 ### Week 2 — Core information layer (the tabs get real content)
 
