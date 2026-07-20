@@ -1,6 +1,12 @@
 const logger = require('../utils/logger');
 const crypto = require("crypto");
 
+// FIX #5: Crash on startup in production if JWT_SECRET is not explicitly configured.
+// Falling back to a hardcoded string would make JWTs trivially forgeable in production.
+if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
+  throw new Error('FATAL: JWT_SECRET environment variable is required in production. Server will not start without it.');
+}
+
 const jwtSecret = process.env.JWT_SECRET || "dev-secret-change-me";
 
 function base64Url(input) {
@@ -159,7 +165,9 @@ async function issueTokens(client, user) {
 }
 
 async function generateOTP(client, user) {
-  const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits
+  // FIX #9: Use crypto.randomInt() instead of Math.random() for a
+  // cryptographically secure, unguessable 6-digit OTP.
+  const otp = String(crypto.randomInt(100000, 1000000)); // 6 digits, cryptographically secure
   logger.info(`Generating OTP for user ${user.email}`);
   
   await client.query(
@@ -188,7 +196,9 @@ async function generateOTP(client, user) {
 }
 
 async function generatePasswordResetOtp(client, user) {
-  const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digits
+  // FIX #9: Use crypto.randomInt() instead of Math.random() for a
+  // cryptographically secure, unguessable 6-digit OTP.
+  const otp = String(crypto.randomInt(100000, 1000000)); // 6 digits, cryptographically secure
   logger.info(`Generating password reset OTP for user ${user.email}`);
 
   await client.query(
