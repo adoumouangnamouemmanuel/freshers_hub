@@ -17,10 +17,12 @@ export function StatCard({
   return (
     <div
       className={cn(
-        "rounded-xl border bg-white p-5 shadow-sm hover:shadow-md transition-all duration-200",
+        "rounded-2xl border border-white/20 dark:border-white/10 glass-panel p-5 shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden group",
         className
       )}
     >
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+      <div className="relative z-10">
       <p className="text-xs font-medium text-[#6B7280] mb-2">
         {title}
       </p>
@@ -55,6 +57,7 @@ export function StatCard({
           <span className="text-[#9CA3AF]">vs last month</span>
         </div>
       )}
+      </div>
     </div>
   );
 }
