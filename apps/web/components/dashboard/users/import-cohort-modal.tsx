@@ -76,7 +76,7 @@ export function ImportCohortModal({ isOpen, onClose, onSuccess }: ImportCohortMo
                 </p>
                 <button
                   onClick={closeAndReset}
-                  className="mt-6 w-full rounded-xl bg-[#A93C40] px-4 py-3 font-semibold text-white transition-colors hover:bg-[#8f3236]"
+                  className="mt-6 w-full cursor-pointer rounded-xl bg-[#A93C40] px-4 py-3 font-semibold text-white transition-colors hover:bg-[#8f3236]"
                 >
                   Done
                 </button>
@@ -123,14 +123,14 @@ export function ImportCohortModal({ isOpen, onClose, onSuccess }: ImportCohortMo
                   <button
                     type="button"
                     onClick={closeAndReset}
-                    className="rounded-xl px-4 py-2 font-semibold text-[#6B7280] hover:bg-gray-100"
+                    className="cursor-pointer rounded-xl px-4 py-2 font-semibold text-[#6B7280] hover:bg-gray-100"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isPending || !file}
-                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#A93C40] px-4 py-2 font-semibold text-white transition-colors hover:bg-[#8f3236] disabled:opacity-50"
+                    className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-[#A93C40] px-4 py-2 font-semibold text-white transition-colors hover:bg-[#8f3236] disabled:opacity-50"
                   >
                     {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Import"}
                   </button>
