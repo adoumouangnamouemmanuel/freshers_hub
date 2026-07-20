@@ -1,5 +1,13 @@
 const logger = require('../utils/logger');
 const crypto = require("crypto");
+const Redis = require("ioredis");
+
+// Connect to Redis for OTP storage
+const redis = new Redis(process.env.REDIS_URL || {
+  host: process.env.REDIS_HOST || 'localhost',
+  port: process.env.REDIS_PORT || 6379,
+});
+
 
 // FIX #5: Crash on startup in production if JWT_SECRET is not explicitly configured.
 // Falling back to a hardcoded string would make JWTs trivially forgeable in production.
@@ -170,18 +178,9 @@ async function generateOTP(client, user) {
   const otp = String(crypto.randomInt(100000, 1000000)); // 6 digits, cryptographically secure
   logger.info(`Generating OTP for user ${user.email}`);
   
-  await client.query(
-    `
-      INSERT INTO activation_codes (user_id, otp_hash, expires_at, created_at)
-      VALUES ($1, crypt($2, gen_salt('bf')), now() + interval '15 minutes', now())
-      ON CONFLICT (user_id) DO UPDATE
-      SET otp_hash = EXCLUDED.otp_hash,
-          expires_at = EXCLUDED.expires_at,
-          created_at = EXCLUDED.created_at,
-          consumed_at = NULL
-    `,
-    [user.id, otp]
-  );
+  const otpHash = hashToken(otp);
+  // Store in Redis with a 15-minute (900 seconds) expiration
+  await redis.set(`otp:activation:${user.id}`, otpHash, 'EX', 900);
 
   // MOCK DELIVERY: Print OTP to console instead of sending email/SMS
   console.log(`\n==============================================`);
@@ -201,18 +200,9 @@ async function generatePasswordResetOtp(client, user) {
   const otp = String(crypto.randomInt(100000, 1000000)); // 6 digits, cryptographically secure
   logger.info(`Generating password reset OTP for user ${user.email}`);
 
-  await client.query(
-    `
-      INSERT INTO password_resets (user_id, token_hash, expires_at, created_at)
-      VALUES ($1, crypt($2, gen_salt('bf')), now() + interval '15 minutes', now())
-      ON CONFLICT (user_id) DO UPDATE
-      SET token_hash = EXCLUDED.token_hash,
-          expires_at = EXCLUDED.expires_at,
-          created_at = EXCLUDED.created_at,
-          consumed_at = NULL
-    `,
-    [user.id, otp]
-  );
+  const otpHash = hashToken(otp);
+  // Store in Redis with a 15-minute (900 seconds) expiration
+  await redis.set(`otp:reset:${user.id}`, otpHash, 'EX', 900);
 
   // MOCK DELIVERY: Print OTP to console instead of sending email/SMS
   console.log(`\n==============================================`);
