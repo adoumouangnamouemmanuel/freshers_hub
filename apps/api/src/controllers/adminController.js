@@ -59,6 +59,12 @@ const getUserById = asyncHandler(async (req, res) => {
   res.json(user);
 });
 
+const createUser = asyncHandler(async (req, res) => {
+  const user = await adminUsersService.createUser(req.body);
+  res.locals.auditEntityId = user.id;
+  res.status(201).json(user);
+});
+
 const updateUser = asyncHandler(async (req, res) => {
   const user = await adminUsersService.updateUser(req.params.id, req.body);
   res.locals.auditEntityId = user?.id;
@@ -410,7 +416,7 @@ const revokePlatformAdmin = asyncHandler(async (req, res) => {
 
 module.exports = {
   // Users
-  listUsers, getUserById, updateUser, assignRole, removeRole,
+  listUsers, getUserById, createUser, updateUser, assignRole, removeRole,
   bulkAssignRoles, bulkDeactivate, importUsers, listRoles, csvUpload,
   // Academic Years
   listAcademicYears, createAcademicYear, activateAcademicYear,
