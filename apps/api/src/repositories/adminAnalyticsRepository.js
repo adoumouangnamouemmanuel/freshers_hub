@@ -19,6 +19,7 @@ class AdminAnalyticsRepository {
 
     const { rows: userStats } = await pool.query(
       `SELECT
+         COUNT(DISTINCT u.id) AS total_users,
          COUNT(DISTINCT u.id) FILTER (WHERE r.name = 'student')      AS total_students,
          COUNT(DISTINCT u.id) FILTER (WHERE r.name = 'peer_coach')   AS total_coaches,
          COUNT(DISTINCT u.id) FILTER (WHERE u.is_active = false)     AS inactive_users
@@ -27,8 +28,11 @@ class AdminAnalyticsRepository {
        LEFT JOIN roles r ON r.id = ur.role_id`
     );
 
+    const { rows: clubStats } = await pool.query(`SELECT COUNT(*) AS total_clubs FROM clubs WHERE is_active = true`);
+
     return {
       users: userStats[0],
+      clubs: clubStats[0],
       coaching: coaching[0] || null,
       counselling: counselling[0] || null,
       advising: advising[0] || null,
