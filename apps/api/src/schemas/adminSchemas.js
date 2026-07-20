@@ -10,6 +10,8 @@ const updateUserSchema = z.object({
   body: z.object({
     email:      z.string().email().optional(),
     full_name:  z.string().min(1).optional(),
+    school_id:  z.string().optional(),
+    role_id:    z.union([z.string(), z.number()]).optional(),
     phone:      z.string().optional(),
     major:      z.string().optional(),
     class_year: z.number().int().optional(),
@@ -20,16 +22,16 @@ const updateUserSchema = z.object({
 
 const assignRoleSchema = z.object({
   body: z.object({
-    roleId: z.string().uuid('Invalid role ID'),
-    unitId: z.string().uuid('Invalid unit ID').optional(),
+    roleId: z.union([z.string(), z.number()]),
+    unitId: z.union([z.string(), z.number()]).optional(),
   }),
 });
 
 const bulkRolesSchema = z.object({
   body: z.object({
     userIds: z.array(z.string().uuid()).min(1, 'At least one user required'),
-    roleId:  z.string().uuid('Invalid role ID'),
-    unitId:  z.string().uuid('Invalid unit ID').optional(),
+    roleId:  z.union([z.string(), z.number()]),
+    unitId:  z.union([z.string(), z.number()]).optional(),
   }),
 });
 
