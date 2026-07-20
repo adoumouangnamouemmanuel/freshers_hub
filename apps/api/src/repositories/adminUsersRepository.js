@@ -41,10 +41,12 @@ class AdminUsersRepository {
       `SELECT
          u.id, u.full_name, u.email, u.phone, u.avatar_url,
          u.country, u.major, u.class_year, u.is_active, u.created_at,
-         COALESCE(ARRAY_AGG(DISTINCT r.name) FILTER (WHERE r.name IS NOT NULL), '{}') AS roles
+         COALESCE(ARRAY_AGG(DISTINCT r.name) FILTER (WHERE r.name IS NOT NULL), '{}') AS roles,
+         COALESCE(ARRAY_AGG(DISTINCT un.name) FILTER (WHERE un.name IS NOT NULL), '{}') AS units
        FROM users u
        LEFT JOIN user_roles ur ON ur.user_id = u.id
        LEFT JOIN roles r ON r.id = ur.role_id
+       LEFT JOIN units un ON un.id = ur.unit_id
        ${where}
        GROUP BY u.id
        ORDER BY u.full_name ASC
@@ -105,9 +107,9 @@ class AdminUsersRepository {
 
       if (school_id) {
         await client.query(
-          `INSERT INTO student_profiles (user_id, school_id)
-           VALUES ($1, $2)`,
-          [user.id, school_id]
+          `INSERT INTO student_profiles (user_id, school_id, identifier, graduation_year)
+           VALUES ($1, $2, $3, $4)`,
+          [user.id, school_id, fields.email.split('@')[0], fields.class_year || 0]
         );
       }
       
@@ -165,10 +167,13 @@ class AdminUsersRepository {
 
       if (fields.school_id !== undefined && user) {
         await client.query(
-          `INSERT INTO student_profiles (user_id, school_id)
-           VALUES ($1, $2)
-           ON CONFLICT (user_id) DO UPDATE SET school_id = EXCLUDED.school_id`,
-          [id, fields.school_id || null]
+          `INSERT INTO student_profiles (user_id, school_id, identifier, graduation_year)
+           VALUES ($1, $2, $3, $4)
+           ON CONFLICT (user_id) DO UPDATE SET 
+             school_id = EXCLUDED.school_id,
+             identifier = EXCLUDED.identifier,
+             graduation_year = EXCLUDED.graduation_year`,
+          [id, fields.school_id || null, user.email.split('@')[0], user.class_year || 0]
         );
       }
 
@@ -271,16 +276,18 @@ class AdminUsersRepository {
     try {
       await client.query('BEGIN');
 
-      // Get the student role ID once
-      const { rows: roleRows } = await client.query(
-        `SELECT id FROM roles WHERE name = 'student' LIMIT 1`
-      );
-      const studentRoleId = roleRows[0]?.id;
+      // Fetch all roles for mapping
+      const { rows: roleRows } = await client.query(`SELECT id, name FROM roles`);
+      const roleMap = roleRows.reduce((acc, r) => {
+        acc[r.name.toLowerCase()] = r.id;
+        return acc;
+      }, {});
+      const studentRoleId = roleMap['student'];
 
       const results = { inserted: 0, updated: 0, errors: [] };
 
       for (let i = 0; i < rows.length; i++) {
-        const { school_id, email, full_name, class_year, country, major } = rows[i];
+        const { school_id, email, full_name, class_year, country, major, phone, role, is_active } = rows[i];
         const rowNum = i + 2; // +2 because row 1 is header
 
         // Validate required fields
@@ -293,36 +300,54 @@ class AdminUsersRepository {
           continue;
         }
 
+        // Parse is_active
+        let isActiveParsed = true;
+        if (is_active !== undefined && is_active !== '') {
+          const lower = is_active.toLowerCase();
+          isActiveParsed = !(lower === 'false' || lower === '0' || lower === 'no');
+        }
+
         try {
           const { rows: upserted } = await client.query(
-            `INSERT INTO users (email, full_name, class_year, country, major)
-             VALUES ($1, $2, $3, $4, $5)
+            `INSERT INTO users (email, full_name, class_year, country, major, phone, is_active)
+             VALUES ($1, $2, $3, $4, $5, $6, $7)
              ON CONFLICT (email) DO UPDATE
                SET full_name  = EXCLUDED.full_name,
                    class_year = COALESCE(EXCLUDED.class_year, users.class_year),
                    country    = COALESCE(EXCLUDED.country, users.country),
                    major      = COALESCE(EXCLUDED.major, users.major),
+                   phone      = COALESCE(EXCLUDED.phone, users.phone),
+                   is_active  = EXCLUDED.is_active,
                    updated_at = now()
              RETURNING id, (xmax = 0) AS is_insert`,
-            [email, full_name, class_year || null, country || null, major || null]
+            [email, full_name, class_year || null, country || null, major || null, phone || null, isActiveParsed]
           );
           const user = upserted[0];
 
           // Upsert student_profiles keyed by school_id
           await client.query(
-            `INSERT INTO student_profiles (user_id, school_id)
-             VALUES ($1, $2)
-             ON CONFLICT (user_id) DO UPDATE SET school_id = EXCLUDED.school_id`,
-            [user.id, school_id]
+            `INSERT INTO student_profiles (user_id, school_id, identifier, graduation_year)
+             VALUES ($1, $2, $3, $4)
+             ON CONFLICT (user_id) DO UPDATE SET 
+               school_id = EXCLUDED.school_id,
+               identifier = EXCLUDED.identifier,
+               graduation_year = EXCLUDED.graduation_year`,
+            [user.id, school_id, email.split('@')[0], class_year || 0]
           );
 
-          // Auto-assign student role if not already present
-          if (studentRoleId) {
+          // Determine role to assign
+          let roleIdToAssign = studentRoleId;
+          if (role && roleMap[role.toLowerCase()]) {
+            roleIdToAssign = roleMap[role.toLowerCase()];
+          }
+
+          // Auto-assign role if not already present
+          if (roleIdToAssign) {
             await client.query(
               `INSERT INTO user_roles (user_id, role_id)
                VALUES ($1, $2)
                ON CONFLICT DO NOTHING`,
-              [user.id, studentRoleId]
+              [user.id, roleIdToAssign]
             );
           }
 
