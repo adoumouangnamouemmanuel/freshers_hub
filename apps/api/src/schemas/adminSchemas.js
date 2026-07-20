@@ -59,7 +59,7 @@ const createClubSchema = z.object({
     name:        z.string().min(1, 'Name is required'),
     description: z.string().optional(),
     category:    z.string().optional(),
-    leadUserId:  z.string().uuid('Invalid user ID').optional(),
+    leadUserId:  z.string().optional(),
   }),
 });
 
@@ -68,7 +68,7 @@ const updateClubSchema = z.object({
     name:        z.string().min(1).optional(),
     description: z.string().optional(),
     category:    z.string().optional(),
-    leadUserId:  z.string().uuid().optional(),
+    leadUserId:  z.string().optional(),
     is_active:   z.boolean().optional(),
   }),
 });
