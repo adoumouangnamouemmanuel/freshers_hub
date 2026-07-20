@@ -15,9 +15,27 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-export default function Topbar() {
+import { logoutAction } from "@/app/actions/auth";
+
+export default function Topbar({ user }: { user?: any }) {
   const [academicYear, setAcademicYear] = useState("2026/2027");
   const [open, setOpen] = useState(false);
+
+  // Helper to get initials
+  const getInitials = (name?: string, email?: string) => {
+    if (name) {
+      const parts = name.split(" ");
+      if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+      return name.substring(0, 2).toUpperCase();
+    }
+    if (email) return email.substring(0, 2).toUpperCase();
+    return "PA";
+  };
+
+  const displayName = user?.fullName || "Platform Admin";
+  const displayEmail = user?.email || "admin@ashesi.edu.gh";
+  const initials = getInitials(user?.fullName, user?.email);
+  const roleDisplay = user?.roles?.[0]?.replace("_", " ").replace(/\b\w/g, (c: string) => c.toUpperCase()) || "Super User";
 
   return (
     <header className="h-[76px] glass-panel rounded-[var(--radius-xl)] flex items-center justify-between px-6 shrink-0 w-full relative z-30">
@@ -105,11 +123,11 @@ export default function Topbar() {
             />
           }>
             <div className="w-9 h-9 rounded-full bg-primary flex items-center justify-center text-white text-[13px] font-bold shadow-sm glow-primary">
-              PA
+              {initials}
             </div>
             <div className="flex flex-col items-start hidden sm:flex">
-              <span className="text-[13px] font-bold text-foreground leading-tight">Platform Admin</span>
-              <span className="text-[11px] font-medium text-muted-foreground leading-tight">Super User</span>
+              <span className="text-[13px] font-bold text-foreground leading-tight truncate max-w-[120px]">{displayName}</span>
+              <span className="text-[11px] font-medium text-muted-foreground leading-tight">{roleDisplay}</span>
             </div>
             <motion.div animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
               <ChevronDown className="w-4 h-4 text-muted-foreground ml-1" />
@@ -120,8 +138,8 @@ export default function Topbar() {
           <DropdownMenuContent className="w-[280px] rounded-[24px] glass-dropdown bg-white/85 dark:bg-slate-900/85 border-white/20 dark:border-white/10 p-2.5 shadow-xl" align="end" sideOffset={12}>
             <DropdownMenuGroup>
               <DropdownMenuLabel className="p-3">
-                <p className="font-heading font-bold text-foreground text-base">Platform Admin</p>
-                <p className="text-[13px] font-medium text-muted-foreground mt-0.5">admin@ashesi.edu.gh</p>
+                <p className="font-heading font-bold text-foreground text-base truncate">{displayName}</p>
+                <p className="text-[13px] font-medium text-muted-foreground mt-0.5 truncate">{displayEmail}</p>
               </DropdownMenuLabel>
             </DropdownMenuGroup>
             
@@ -140,10 +158,12 @@ export default function Topbar() {
             
             <DropdownMenuSeparator className="bg-border/60 my-2" />
             
-            <DropdownMenuItem className="flex items-center gap-3 px-3 py-3 rounded-[14px] text-[13.5px] font-bold text-destructive hover:bg-destructive/15 focus:bg-destructive/15 focus:text-destructive cursor-pointer transition-all duration-200 group">
-              <LogOut className="w-[18px] h-[18px] group-hover:-translate-x-1 transition-transform duration-200" />
-              Sign Out
-            </DropdownMenuItem>
+            <form action={logoutAction} className="w-full">
+              <button type="submit" className="w-full flex items-center gap-3 px-3 py-3 rounded-[14px] text-[13.5px] font-bold text-destructive hover:bg-destructive/15 focus:bg-destructive/15 focus:text-destructive cursor-pointer transition-all duration-200 group outline-none">
+                <LogOut className="w-[18px] h-[18px] group-hover:-translate-x-1 transition-transform duration-200" />
+                Sign Out
+              </button>
+            </form>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
