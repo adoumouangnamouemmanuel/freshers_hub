@@ -49,8 +49,8 @@ const handleLogin = asyncHandler(async (req, res) => {
       logger.warn(
         `Login failed: Invalid credentials (${email}) from IP: ${clientIp}`,
       );
-      // Record failed login attempt
-      recordFailedLogin(email);
+      // Record failed login attempt (now async)
+      await recordFailedLogin(email);
 
       // TODO: Send alert to Sentry/DataDog after 3 failed attempts
       // TODO: Implement CAPTCHA after 3 failed attempts
@@ -59,8 +59,8 @@ const handleLogin = asyncHandler(async (req, res) => {
       throw new AppError("Invalid credentials", 401);
     }
 
-    // Clear failed login attempts on successful login
-    clearFailedLogins(email);
+    // Clear failed login attempts on successful login (now async)
+    await clearFailedLogins(email);
 
     logger.info(`Successful login for ${email} from IP: ${clientIp}`);
     // TODO: Log successful login to monitoring service
