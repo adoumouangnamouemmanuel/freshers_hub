@@ -60,6 +60,7 @@ const importUsers = async (fileBuffer) => {
       columns: true,          // First row is header
       skip_empty_lines: true,
       trim: true,
+      bom: true,
     });
   } catch (err) {
     throw new AppError(`CSV parse error: ${err.message}`, 400);
