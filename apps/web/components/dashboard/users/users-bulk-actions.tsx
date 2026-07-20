@@ -21,23 +21,36 @@ export function UsersBulkActions({
 }: UsersBulkActionsProps) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showRoleSelect, setShowRoleSelect] = useState(false);
+  const [selectedRoleId, setSelectedRoleId] = useState("");
 
   if (selectedCount === 0) return null;
 
   async function handleDeactivate() {
     if (!confirm(`Are you sure you want to deactivate ${selectedCount} users?`)) return;
     setIsProcessing(true);
-    await onDeactivate();
-    setIsProcessing(false);
-    onClear();
+    try {
+      await onDeactivate();
+      onClear();
+    } catch (err: any) {
+      alert(err.message || "Failed to deactivate users");
+    } finally {
+      setIsProcessing(false);
+    }
   }
 
-  async function handleAssign(roleId: string) {
+  async function handleAssign() {
+    if (!selectedRoleId) return;
     setIsProcessing(true);
-    await onAssignRole(roleId);
-    setIsProcessing(false);
-    setShowRoleSelect(false);
-    onClear();
+    try {
+      await onAssignRole(selectedRoleId);
+      setShowRoleSelect(false);
+      setSelectedRoleId("");
+      onClear();
+    } catch (err: any) {
+      alert(err.message || "Failed to assign role");
+    } finally {
+      setIsProcessing(false);
+    }
   }
 
   return (
@@ -56,12 +69,11 @@ export function UsersBulkActions({
             <span className="text-xs text-white/60">Assign to:</span>
             <select
               className="rounded-lg bg-white/10 px-2 py-1 text-sm outline-none border border-white/10 focus:border-white/30"
-              onChange={(e) => {
-                if (e.target.value) handleAssign(e.target.value);
-              }}
+              value={selectedRoleId}
+              onChange={(e) => setSelectedRoleId(e.target.value)}
               disabled={isProcessing}
             >
-              <option value="">Select a role...</option>
+              <option value="" className="text-black">Select a role...</option>
               {allRoles.map((r) => (
                 <option key={r.id} value={r.id} className="text-black">
                   {r.name}
@@ -69,7 +81,17 @@ export function UsersBulkActions({
               ))}
             </select>
             <button
-              onClick={() => setShowRoleSelect(false)}
+              onClick={handleAssign}
+              disabled={!selectedRoleId || isProcessing}
+              className="ml-2 rounded bg-white px-3 py-1 text-xs font-medium text-[#1A2B4A] hover:bg-gray-100 disabled:opacity-50"
+            >
+              {isProcessing ? "Saving..." : "Apply"}
+            </button>
+            <button
+              onClick={() => {
+                setShowRoleSelect(false);
+                setSelectedRoleId("");
+              }}
               className="ml-2 text-white/60 hover:text-white"
             >
               Cancel
