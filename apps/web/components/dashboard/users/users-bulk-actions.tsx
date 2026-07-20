@@ -69,16 +69,7 @@ export function UsersBulkActions({
 
   function handleAssignRole() {
     if (!selectedRole) return;
-    const roleObj = allRoles.find((r) => r.id.toString() === selectedRole);
-
-    setConfirmModal({
-      isOpen: true,
-      type: "warning",
-      title: "Assign Role",
-      description: `Are you sure you want to assign the role "${roleObj?.name}" to ${selectedCount} selected users?`,
-      isAlert: false,
-      onConfirm: executeAssignRole,
-    });
+    executeAssignRole();
   }
 
   function executeAssignRole() {
