@@ -15,6 +15,12 @@ interface AddUserModalProps {
 export function AddUserModal({ isOpen, onClose, onSuccess, allRoles = [] }: AddUserModalProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [isRolesOpen, setIsRolesOpen] = useState(false);
+
+  function toggleRole(id: string) {
+    setSelectedRoles(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  }
 
   if (!isOpen) return null;
 
@@ -27,7 +33,7 @@ export function AddUserModal({ isOpen, onClose, onSuccess, allRoles = [] }: AddU
       full_name: (formData.get("full_name") as string) || undefined,
       email: (formData.get("email") as string) || undefined,
       school_id: (formData.get("school_id") as string) || undefined,
-      role_id: (formData.get("role_id") as string) || undefined,
+      role_ids: formData.getAll("role_ids") as string[],
       phone: (formData.get("phone") as string) || undefined,
       major: (formData.get("major") as string) || undefined,
       class_year: formData.get("class_year") ? parseInt(formData.get("class_year") as string) : undefined,
@@ -56,7 +62,7 @@ export function AddUserModal({ isOpen, onClose, onSuccess, allRoles = [] }: AddU
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl"
+          className="w-full max-w-lg overflow-hidden rounded-2xl bg-white shadow-2xl flex flex-col max-h-[90vh]"
         >
           <div className="flex items-center justify-between border-b border-[#f3f4f6] px-6 py-4">
             <h2 className="text-lg font-semibold text-[#1A2B4A]">Add New User</h2>
@@ -65,7 +71,7 @@ export function AddUserModal({ isOpen, onClose, onSuccess, allRoles = [] }: AddU
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6">
+          <form onSubmit={handleSubmit} className="p-6 overflow-y-auto">
             <div className="grid grid-cols-2 gap-4">
               <div className="col-span-2">
                 <label className="mb-1 block text-sm font-medium text-[#1A2B4A]">Full Name *</label>
@@ -77,14 +83,37 @@ export function AddUserModal({ isOpen, onClose, onSuccess, allRoles = [] }: AddU
                 <input required name="email" type="email" className="w-full rounded-xl border border-[#e5e1d8] px-4 py-2 focus:border-[#A93C40] focus:outline-none focus:ring-1 focus:ring-[#A93C40]" />
               </div>
 
-              <div className="col-span-2 sm:col-span-1">
-                <label className="mb-1 block text-sm font-medium text-[#1A2B4A]">Role</label>
-                <select name="role_id" className="w-full rounded-xl border border-[#e5e1d8] px-4 py-2 focus:border-[#A93C40] focus:outline-none focus:ring-1 focus:ring-[#A93C40]">
-                  <option value="">None / Student</option>
-                  {allRoles.map((r) => (
-                    <option key={r.id} value={r.id}>{r.name}</option>
-                  ))}
-                </select>
+              <div className="col-span-2 sm:col-span-1 relative">
+                <label className="mb-1 block text-sm font-medium text-[#1A2B4A]">Roles</label>
+                <div 
+                  className="w-full rounded-xl border border-[#e5e1d8] px-4 py-2 bg-white cursor-pointer flex justify-between items-center"
+                  onClick={() => setIsRolesOpen(!isRolesOpen)}
+                >
+                  <span className={selectedRoles.length ? "text-black" : "text-gray-400 text-sm"}>
+                    {selectedRoles.length ? `${selectedRoles.length} selected` : "Select roles..."}
+                  </span>
+                  <span className="text-gray-400 text-xs">▼</span>
+                </div>
+                
+                {isRolesOpen && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-[#e5e1d8] rounded-xl shadow-lg max-h-48 overflow-y-auto p-2">
+                    {allRoles.length === 0 && <div className="p-2 text-sm text-gray-400">No roles available</div>}
+                    {allRoles.map(r => (
+                      <label key={r.id} className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={selectedRoles.includes(r.id.toString())} 
+                          onChange={() => toggleRole(r.id.toString())}
+                          className="h-4 w-4 rounded border-[#d8d2c5] accent-[#A93C40]" 
+                        />
+                        <span className="text-sm font-medium text-[#1A2B4A]">{r.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                {selectedRoles.map(id => (
+                  <input key={id} type="hidden" name="role_ids" value={id} />
+                ))}
               </div>
 
               <div className="col-span-2 sm:col-span-1">
