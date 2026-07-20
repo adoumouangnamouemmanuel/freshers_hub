@@ -46,4 +46,19 @@ function requireRoles(...allowedRoles) {
   };
 }
 
-module.exports = { requireAuth, requireRoles };
+/**
+ * Middleware that restricts access to users with the 'platform_admin' role.
+ * Returns 403 (not 404) on failure — this is intentionally hidden, not missing.
+ * Must be used after requireAuth.
+ */
+function requirePlatformAdmin(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
+  if (!req.user.roles.includes('platform_admin')) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+  next();
+}
+
+module.exports = { requireAuth, requireRoles, requirePlatformAdmin };
