@@ -87,18 +87,47 @@ class AdminUsersRepository {
   // ── Create User ────────────────────────────────────────────────────────────
 
   async createUser(fields) {
-    const { email, full_name, phone, major, class_year, country, is_active } = fields;
+    const { email, full_name, phone, major, class_year, country, is_active, school_id } = fields;
     
     // Default is_active to true if not specified
     const active = is_active !== undefined ? is_active : true;
 
-    const { rows } = await pool.query(
-      `INSERT INTO users (email, full_name, phone, major, class_year, country, is_active)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING id, full_name, email, is_active`,
-      [email, full_name, phone || null, major || null, class_year || null, country || null, active]
-    );
-    return rows[0];
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      const { rows } = await client.query(
+        `INSERT INTO users (email, full_name, phone, major, class_year, country, is_active)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING id, full_name, email, is_active`,
+        [email, full_name, phone || null, major || null, class_year || null, country || null, active]
+      );
+      const user = rows[0];
+
+      if (school_id) {
+        await client.query(
+          `INSERT INTO student_profiles (user_id, school_id)
+           VALUES ($1, $2)`,
+          [user.id, school_id]
+        );
+      }
+      
+      if (fields.role_id) {
+        await client.query(
+          `INSERT INTO user_roles (user_id, role_id)
+           VALUES ($1, $2)
+           ON CONFLICT DO NOTHING`,
+          [user.id, fields.role_id]
+        );
+      }
+      
+      await client.query('COMMIT');
+      return user;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 
   // ── Update User ────────────────────────────────────────────────────────────
@@ -116,14 +145,50 @@ class AdminUsersRepository {
       }
     }
 
-    if (sets.length === 0) return null;
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+      let user = null;
+      
+      if (sets.length > 0) {
+        const queryParams = [...params, id];
+        const { rows } = await client.query(
+          `UPDATE users SET ${sets.join(', ')}, updated_at = now() WHERE id = $${p} RETURNING id, full_name, email, is_active`,
+          queryParams
+        );
+        user = rows[0];
+      } else {
+        // If no user fields were updated, just fetch the user to return
+        const { rows } = await client.query(`SELECT id, full_name, email, is_active FROM users WHERE id = $1`, [id]);
+        user = rows[0];
+      }
 
-    params.push(id);
-    const { rows } = await pool.query(
-      `UPDATE users SET ${sets.join(', ')}, updated_at = now() WHERE id = $${p} RETURNING id, full_name, email, is_active`,
-      params
-    );
-    return rows[0] || null;
+      if (fields.school_id !== undefined && user) {
+        await client.query(
+          `INSERT INTO student_profiles (user_id, school_id)
+           VALUES ($1, $2)
+           ON CONFLICT (user_id) DO UPDATE SET school_id = EXCLUDED.school_id`,
+          [id, fields.school_id || null]
+        );
+      }
+
+      if (fields.role_id && user) {
+        await client.query(
+          `INSERT INTO user_roles (user_id, role_id)
+           VALUES ($1, $2)
+           ON CONFLICT DO NOTHING`,
+          [id, fields.role_id]
+        );
+      }
+
+      await client.query('COMMIT');
+      return user || null;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 
   // ── Deactivate ─────────────────────────────────────────────────────────────
@@ -149,10 +214,18 @@ class AdminUsersRepository {
     const { rows } = await pool.query(
       `INSERT INTO user_roles (user_id, role_id, unit_id)
        VALUES ($1, $2, $3)
-       ON CONFLICT (user_id, role_id) DO UPDATE SET unit_id = EXCLUDED.unit_id
+       ON CONFLICT DO NOTHING
        RETURNING *`,
       [userId, roleId, unitId]
     );
+    if (rows.length === 0) {
+       // It conflicted, so just fetch the existing one to return
+       const existing = await pool.query(
+         `SELECT * FROM user_roles WHERE user_id = $1 AND role_id = $2 AND (unit_id = $3 OR (unit_id IS NULL AND $3 IS NULL))`,
+         [userId, roleId, unitId]
+       );
+       return existing.rows[0];
+    }
     return rows[0];
   }
 
@@ -173,11 +246,13 @@ class AdminUsersRepository {
         const { rows } = await client.query(
           `INSERT INTO user_roles (user_id, role_id, unit_id)
            VALUES ($1, $2, $3)
-           ON CONFLICT (user_id, role_id) DO UPDATE SET unit_id = EXCLUDED.unit_id
+           ON CONFLICT DO NOTHING
            RETURNING *`,
           [userId, roleId, unitId]
         );
-        results.push(rows[0]);
+        if (rows.length > 0) {
+          results.push(rows[0]);
+        }
       }
       await client.query('COMMIT');
       return results;
