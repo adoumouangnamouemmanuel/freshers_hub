@@ -241,7 +241,7 @@ export default function DashboardClient({
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground truncate">
-                      {log.action}
+                      {log.action} <span className="text-muted-foreground font-normal">by {log.actor_name || "System"}</span>
                     </p>
                     <p className="text-xs font-medium text-muted-foreground mt-1">
                       {new Date(log.created_at).toLocaleString()}
