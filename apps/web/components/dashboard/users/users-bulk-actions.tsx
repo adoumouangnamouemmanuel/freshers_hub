@@ -1,56 +1,105 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { ShieldCheck, Trash2, X, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { assignRolesAction, deactivateUsersAction } from "@/app/actions/users";
+import { ConfirmModal } from "./confirm-modal";
 
 interface UsersBulkActionsProps {
-  selectedCount: number;
-  onClear: () => void;
-  onDeactivate: () => Promise<void>;
-  onAssignRole: (roleId: string) => Promise<void>;
-  allRoles: { id: string; name: string }[];
+  selectedUserIds: Set<string>;
+  onClearSelection: () => void;
+  onSuccess: () => void;
+  allRoles: { id: string | number; name: string }[];
 }
 
 export function UsersBulkActions({
-  selectedCount,
-  onClear,
-  onDeactivate,
-  onAssignRole,
+  selectedUserIds,
+  onClearSelection,
+  onSuccess,
   allRoles,
 }: UsersBulkActionsProps) {
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const [showRoleSelect, setShowRoleSelect] = useState(false);
-  const [selectedRoleId, setSelectedRoleId] = useState("");
+  const [selectedRole, setSelectedRole] = useState("");
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    type: "danger" | "warning" | "info" | "success";
+    title: string;
+    description: string;
+    isAlert: boolean;
+    onConfirm?: () => void;
+  }>({ isOpen: false, type: "warning", title: "", description: "", isAlert: false });
+
+  const selectedCount = selectedUserIds.size;
 
   if (selectedCount === 0) return null;
 
-  async function handleDeactivate() {
-    if (!confirm(`Are you sure you want to deactivate ${selectedCount} users?`)) return;
-    setIsProcessing(true);
-    try {
-      await onDeactivate();
-      onClear();
-    } catch (err: any) {
-      alert(err.message || "Failed to deactivate users");
-    } finally {
-      setIsProcessing(false);
-    }
+  const closeConfirm = () => setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+
+  function handleDeactivate() {
+    setConfirmModal({
+      isOpen: true,
+      type: "danger",
+      title: "Deactivate Users",
+      description: `Are you sure you want to deactivate ${selectedCount} selected users? They will lose access to the platform.`,
+      isAlert: false,
+      onConfirm: executeDeactivate,
+    });
   }
 
-  async function handleAssign() {
-    if (!selectedRoleId) return;
-    setIsProcessing(true);
-    try {
-      await onAssignRole(selectedRoleId);
-      setShowRoleSelect(false);
-      setSelectedRoleId("");
-      onClear();
-    } catch (err: any) {
-      alert(err.message || "Failed to assign role");
-    } finally {
-      setIsProcessing(false);
-    }
+  function executeDeactivate() {
+    startTransition(async () => {
+      try {
+        await deactivateUsersAction(Array.from(selectedUserIds));
+        onSuccess();
+        onClearSelection();
+        closeConfirm();
+      } catch (err: any) {
+        setConfirmModal({
+          isOpen: true,
+          type: "danger",
+          title: "Error",
+          description: err.message || "Failed to deactivate users",
+          isAlert: true,
+        });
+      }
+    });
+  }
+
+  function handleAssignRole() {
+    if (!selectedRole) return;
+    const roleObj = allRoles.find((r) => r.id.toString() === selectedRole);
+
+    setConfirmModal({
+      isOpen: true,
+      type: "warning",
+      title: "Assign Role",
+      description: `Are you sure you want to assign the role "${roleObj?.name}" to ${selectedCount} selected users?`,
+      isAlert: false,
+      onConfirm: executeAssignRole,
+    });
+  }
+
+  function executeAssignRole() {
+    startTransition(async () => {
+      try {
+        await assignRolesAction(Array.from(selectedUserIds), selectedRole);
+        onSuccess();
+        onClearSelection();
+        setSelectedRole("");
+        setShowRoleSelect(false);
+        closeConfirm();
+      } catch (err: any) {
+        setConfirmModal({
+          isOpen: true,
+          type: "danger",
+          title: "Error",
+          description: err.message || "Failed to assign role",
+          isAlert: true,
+        });
+      }
+    });
   }
 
   return (
@@ -69,9 +118,9 @@ export function UsersBulkActions({
             <span className="text-xs text-white/60">Assign to:</span>
             <select
               className="rounded-lg bg-white/10 px-2 py-1 text-sm outline-none border border-white/10 focus:border-white/30"
-              value={selectedRoleId}
-              onChange={(e) => setSelectedRoleId(e.target.value)}
-              disabled={isProcessing}
+              value={selectedRole}
+              onChange={(e) => setSelectedRole(e.target.value)}
+              disabled={isPending}
             >
               <option value="" className="text-black">Select a role...</option>
               {allRoles.map((r) => (
@@ -81,18 +130,18 @@ export function UsersBulkActions({
               ))}
             </select>
             <button
-              onClick={handleAssign}
-              disabled={!selectedRoleId || isProcessing}
-              className="ml-2 rounded bg-white px-3 py-1 text-xs font-medium text-[#1A2B4A] hover:bg-gray-100 disabled:opacity-50"
+              onClick={handleAssignRole}
+              disabled={!selectedRole || isPending}
+              className="ml-2 rounded bg-white px-3 py-1 text-xs font-medium text-[#1A2B4A] hover:bg-gray-100 disabled:opacity-50 cursor-pointer"
             >
-              {isProcessing ? "Saving..." : "Apply"}
+              {isPending ? "Saving..." : "Apply"}
             </button>
             <button
               onClick={() => {
                 setShowRoleSelect(false);
-                setSelectedRoleId("");
+                setSelectedRole("");
               }}
-              className="ml-2 text-white/60 hover:text-white"
+              className="ml-2 text-white/60 hover:text-white cursor-pointer"
             >
               Cancel
             </button>
@@ -101,30 +150,41 @@ export function UsersBulkActions({
           <>
             <button
               onClick={() => setShowRoleSelect(true)}
-              disabled={isProcessing}
+              disabled={isPending}
               className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors hover:bg-white/10 hover:text-[#C89B3C]"
             >
               <ShieldCheck className="h-4 w-4" /> Assign role
             </button>
             <button
               onClick={handleDeactivate}
-              disabled={isProcessing}
+              disabled={isPending}
               className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors hover:bg-white/10 hover:text-red-300"
             >
-              {isProcessing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
+              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
               Deactivate
             </button>
           </>
         )}
 
         <button
-          onClick={onClear}
+          onClick={onClearSelection}
           aria-label="Clear selection"
           className="ml-2 cursor-pointer rounded-full p-1.5 transition-colors hover:bg-white/10"
         >
           <X className="h-4 w-4" />
         </button>
       </motion.div>
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        description={confirmModal.description}
+        type={confirmModal.type}
+        isAlert={confirmModal.isAlert}
+        isLoading={isPending}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 }
