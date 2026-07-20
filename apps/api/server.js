@@ -34,7 +34,26 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use(cors());
+// FIX #6: Restrict CORS to an explicit allowed-origins list instead of using
+// the open cors() default (which accepts all origins).
+// In development: allow common localhost ports for the web admin and mobile metro.
+// In production:  set ALLOWED_ORIGINS as a comma-separated list in your env.
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(",").map((o) => o.trim())
+  : ["http://localhost:3000", "http://localhost:8081", "http://localhost:19006"];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      // Allow requests with no origin (mobile apps, curl, Postman)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      logger.warn(`CORS rejected request from origin: ${origin}`);
+      return callback(new Error(`Origin ${origin} not allowed by CORS policy`));
+    },
+    credentials: true,
+  }),
+);
 app.use(express.json());
 
 app.get("/health", (req, res) => {
