@@ -14,6 +14,7 @@ import {
   Text,
   TouchableOpacity,
   View,
+  FlatList,
 } from "react-native";
 import Animated, { FadeInDown, SlideInDown } from "react-native-reanimated";
 import {
@@ -71,31 +72,60 @@ export default function SessionsManager({
   const [refreshing, setRefreshing] = useState(false);
   const [activeFilter, setActiveFilter] = useState<FilterStatus>("all");
 
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+
   // Modal State
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
 
-  const fetchSessions = async () => {
+  const fetchSessions = async (pageNum = 1) => {
     if (!authSession?.accessToken) return;
     try {
-      const data = await apiRequest<Session[]>(endpoint, {
+      const sep = endpoint.includes("?") ? "&" : "?";
+      const paginatedEndpoint = `${endpoint}${sep}page=${pageNum}&limit=20`;
+      
+      const res = await apiRequest<{ data: Session[], meta: any }>(paginatedEndpoint, {
         headers: { Authorization: `Bearer ${authSession.accessToken}` },
       });
-      setSessions(data || []);
+      
+      const newData = res?.data || [];
+      if (pageNum === 1) {
+        setSessions(newData);
+      } else {
+        setSessions(prev => [...prev, ...newData]);
+      }
+      
+      if (res?.meta) {
+        setHasMore(pageNum < res.meta.totalPages);
+      } else {
+        setHasMore(newData.length === 20);
+      }
+      setPage(pageNum);
     } catch (err) {
       console.error("Error fetching sessions:", err);
+      setHasMore(false);
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setLoadingMore(false);
     }
   };
 
   useEffect(() => {
-    fetchSessions();
+    fetchSessions(1);
   }, [authSession?.accessToken, endpoint]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchSessions();
+    fetchSessions(1);
+  };
+
+  const handleLoadMore = () => {
+    if (hasMore && !loadingMore && !loading) {
+      setLoadingMore(true);
+      fetchSessions(page + 1);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -190,9 +220,11 @@ export default function SessionsManager({
           <ActivityIndicator size="large" color="#1A2B4A" />
         </View>
       ) : (
-        <ScrollView
+        <FlatList
           style={styles.scroll}
           contentContainerStyle={styles.content}
+          data={displayedSessions}
+          keyExtractor={(item) => item.id}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -200,8 +232,9 @@ export default function SessionsManager({
               tintColor="#1A2B4A"
             />
           }
-        >
-          {displayedSessions.length === 0 ? (
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
+          ListEmptyComponent={
             <View style={styles.emptyState}>
               <IconSymbol
                 name="calendar.badge.exclamationmark"
@@ -210,123 +243,126 @@ export default function SessionsManager({
               />
               <Text style={styles.emptyText}>No sessions found.</Text>
             </View>
-          ) : (
-            displayedSessions.map((item: any, index: number) => {
-              const dateStr =
-                item.date || item.scheduled_at || new Date().toISOString();
-              const dateObj = new Date(dateStr);
-              
-              const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-              const formattedMonth = isNaN(dateObj.getTime()) ? "UNK" : monthNames[dateObj.getMonth()];
-              const formattedDay = isNaN(dateObj.getTime()) ? "--" : dateObj.getDate();
-              
-              const hours = dateObj.getHours();
-              const minutes = dateObj.getMinutes();
-              const ampm = hours >= 12 ? 'PM' : 'AM';
-              const formattedHours = hours % 12 || 12;
-              const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
-              const formattedTime = isNaN(dateObj.getTime()) ? "--:--" : `${formattedHours}:${formattedMinutes} ${ampm}`;
+          }
+          ListFooterComponent={
+            loadingMore ? (
+              <ActivityIndicator size="small" color="#1A2B4A" style={{ marginVertical: 16 }} />
+            ) : null
+          }
+          renderItem={({ item, index }) => {
+            const dateStr =
+              item.date || item.scheduled_at || new Date().toISOString();
+            const dateObj = new Date(dateStr);
+            
+            const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+            const formattedMonth = isNaN(dateObj.getTime()) ? "UNK" : monthNames[dateObj.getMonth()];
+            const formattedDay = isNaN(dateObj.getTime()) ? "--" : dateObj.getDate();
+            
+            const hours = dateObj.getHours();
+            const minutes = dateObj.getMinutes();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const formattedHours = hours % 12 || 12;
+            const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
+            const formattedTime = isNaN(dateObj.getTime()) ? "--:--" : `${formattedHours}:${formattedMinutes} ${ampm}`;
 
-              return (
-                <Animated.View
-                  key={item.id}
-                  entering={FadeInDown.delay(index * 50).duration(400)}
+            return (
+              <Animated.View
+                entering={FadeInDown.delay((index % 10) * 50).duration(400)}
+              >
+                <TouchableOpacity
+                  style={styles.card}
+                  onPress={() => setSelectedSession(item)}
+                  activeOpacity={0.7}
                 >
-                  <TouchableOpacity
-                    style={styles.card}
-                    onPress={() => setSelectedSession(item)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={styles.cardHeader}>
-                      <View style={styles.dateBox}>
-                        <Text style={styles.dateMonth}>
-                          {formattedMonth}
-                        </Text>
-                        <Text style={styles.dateDay}>{formattedDay}</Text>
-                      </View>
-                      <View style={styles.timeInfo}>
-                        <Text style={styles.timeText}>
-                          {formattedTime}
-                        </Text>
-                        <Text style={styles.typeText}>
-                          {getUnitLabel(item.unit_id, item.type)}
-                        </Text>
-                      </View>
-                      <View
-                        style={[
-                          styles.statusBadge,
-                          {
-                            backgroundColor: `${getStatusColor(item.status)}15`,
-                          },
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.statusText,
-                            { color: getStatusColor(item.status) },
-                          ]}
-                        >
-                          {item.status.toUpperCase()}
-                        </Text>
-                      </View>
+                  <View style={styles.cardHeader}>
+                    <View style={styles.dateBox}>
+                      <Text style={styles.dateMonth}>
+                        {formattedMonth}
+                      </Text>
+                      <Text style={styles.dateDay}>{formattedDay}</Text>
                     </View>
-
-                    {item.title ? (
-                      <Text style={styles.sessionTitle}>{item.title}</Text>
-                    ) : null}
-
-                    <View style={styles.divider} />
-
-                    <View style={styles.participantsRow}>
-                      <View style={styles.participant}>
-                        <View style={styles.avatarFallback}>
-                          <Text style={styles.avatarFallbackText}>
-                            {item.provider_name?.charAt(0) || "C"}
-                          </Text>
-                        </View>
-                        <View>
-                          <Text style={styles.roleLabel}>{getProviderRoleLabel(item.unit_id, item.type)}</Text>
-                          <Text style={styles.nameText}>
-                            {item.provider_name || "Unknown"}
-                          </Text>
-                        </View>
-                      </View>
-                      <IconSymbol
-                        name="arrow.right"
-                        size={16}
-                        color="#9CA3AF"
-                      />
-                      <View style={styles.participant}>
-                        <View style={styles.avatarFallback}>
-                          <Text style={styles.avatarFallbackText}>
-                            {item.student_name?.charAt(0) || "S"}
-                          </Text>
-                        </View>
-                        <View>
-                          <Text style={styles.roleLabel}>Student</Text>
-                          <Text style={styles.nameText}>
-                            {item.student_name || "Unknown"}
-                          </Text>
-                        </View>
-                      </View>
-                    </View>
-
-                    <View style={styles.locationRow}>
-                      <IconSymbol
-                        name="mappin.and.ellipse"
-                        size={14}
-                        color="#6B7280"
-                      />
-                      <Text style={styles.locationText}>
-                        {item.location || "TBD"}
+                    <View style={styles.timeInfo}>
+                      <Text style={styles.timeText}>
+                        {formattedTime}
+                      </Text>
+                      <Text style={styles.typeText}>
+                        {getUnitLabel(item.unit_id, item.type)}
                       </Text>
                     </View>
-                  </TouchableOpacity>
-                </Animated.View>
-              );
-            })
-          )}
-        </ScrollView>
+                    <View
+                      style={[
+                        styles.statusBadge,
+                        {
+                          backgroundColor: `${getStatusColor(item.status)}15`,
+                        },
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.statusText,
+                          { color: getStatusColor(item.status) },
+                        ]}
+                      >
+                        {item.status.toUpperCase()}
+                      </Text>
+                    </View>
+                  </View>
+
+                  {item.title ? (
+                    <Text style={styles.sessionTitle}>{item.title}</Text>
+                  ) : null}
+
+                  <View style={styles.divider} />
+
+                  <View style={styles.participantsRow}>
+                    <View style={styles.participant}>
+                      <View style={styles.avatarFallback}>
+                        <Text style={styles.avatarFallbackText}>
+                          {item.provider_name?.charAt(0) || "C"}
+                        </Text>
+                      </View>
+                      <View>
+                        <Text style={styles.roleLabel}>{getProviderRoleLabel(item.unit_id, item.type)}</Text>
+                        <Text style={styles.nameText}>
+                          {item.provider_name || "Unknown"}
+                        </Text>
+                      </View>
+                    </View>
+                    <IconSymbol
+                      name="arrow.right"
+                      size={16}
+                      color="#9CA3AF"
+                    />
+                    <View style={styles.participant}>
+                      <View style={styles.avatarFallback}>
+                        <Text style={styles.avatarFallbackText}>
+                          {item.student_name?.charAt(0) || "S"}
+                        </Text>
+                      </View>
+                      <View>
+                        <Text style={styles.roleLabel}>Student</Text>
+                        <Text style={styles.nameText}>
+                          {item.student_name || "Unknown"}
+                        </Text>
+                      </View>
+                    </View>
+                  </View>
+
+                  <View style={styles.locationRow}>
+                    <IconSymbol
+                      name="mappin.and.ellipse"
+                      size={14}
+                      color="#6B7280"
+                    />
+                    <Text style={styles.locationText}>
+                      {item.location || "TBD"}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </Animated.View>
+            );
+          }}
+        />
       )}
 
       <SessionDetailModal
