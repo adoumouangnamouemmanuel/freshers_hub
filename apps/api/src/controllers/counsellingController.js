@@ -31,14 +31,14 @@ const getCounsellingDashboard = asyncHandler(async (req, res) => {
     // Get stats in a single query batch
     const statsQuery = `
       SELECT
-        (SELECT COUNT(*) FROM sessions WHERE unit_id = $1 AND provider_id = $2 AND status = 'scheduled' AND scheduled_at > NOW()) AS upcoming_sessions,
-        (SELECT COUNT(*) FROM sessions WHERE unit_id = $1 AND provider_id = $2 AND status = 'scheduled' AND scheduled_at < NOW()) AS overdue_sessions,
-        (SELECT COUNT(*) FROM sessions WHERE unit_id = $1 AND provider_id = $2 AND status = 'completed') AS completed_sessions,
+        (SELECT COUNT(*) FROM sessions WHERE unit_id = $1 AND (provider_id = $2 OR student_id = $2) AND status = 'scheduled' AND scheduled_at > NOW()) AS upcoming_sessions,
+        (SELECT COUNT(*) FROM sessions WHERE unit_id = $1 AND (provider_id = $2 OR student_id = $2) AND status = 'scheduled' AND scheduled_at < NOW()) AS overdue_sessions,
+        (SELECT COUNT(*) FROM sessions WHERE unit_id = $1 AND (provider_id = $2 OR student_id = $2) AND status = 'completed') AS completed_sessions,
         (SELECT COUNT(*) FROM users u JOIN user_roles ur ON u.id = ur.user_id JOIN roles r ON ur.role_id = r.id WHERE r.name = 'student' AND u.is_active = true) AS total_students_seen,
-        (SELECT COUNT(*) FROM sessions WHERE unit_id = $1 AND provider_id = $2 
+        (SELECT COUNT(*) FROM sessions WHERE unit_id = $1 AND (provider_id = $2 OR student_id = $2) 
           AND scheduled_at >= date_trunc('week', NOW()) 
           AND scheduled_at < date_trunc('week', NOW()) + interval '7 days') AS this_week_sessions,
-        (SELECT COUNT(*) FROM sessions WHERE unit_id = $1 AND provider_id = $2 
+        (SELECT COUNT(*) FROM sessions WHERE unit_id = $1 AND (provider_id = $2 OR student_id = $2) 
           AND scheduled_at::date = CURRENT_DATE AND status = 'scheduled') AS today_sessions
     `;
     const { rows: [stats] } = await client.query(statsQuery, [unitId, counsellorId]);
@@ -50,7 +50,7 @@ const getCounsellingDashboard = asyncHandler(async (req, res) => {
         u.full_name AS student_name, u.avatar_url AS student_avatar, u.email AS student_email
       FROM sessions s
       JOIN users u ON s.student_id = u.id
-      WHERE s.unit_id = $1 AND s.provider_id = $2 AND s.status = 'scheduled' AND s.scheduled_at > NOW()
+      WHERE s.unit_id = $1 AND (s.provider_id = $2 OR s.student_id = $2) AND s.status = 'scheduled' AND s.scheduled_at > NOW()
       ORDER BY s.scheduled_at ASC
       LIMIT 5
     `, [unitId, counsellorId]);
@@ -63,7 +63,7 @@ const getCounsellingDashboard = asyncHandler(async (req, res) => {
         EXISTS (SELECT 1 FROM session_reports sr WHERE sr.session_id = s.id) AS has_report
       FROM sessions s
       JOIN users u ON s.student_id = u.id
-      WHERE s.unit_id = $1 AND s.provider_id = $2 AND s.status = 'completed'
+      WHERE s.unit_id = $1 AND (s.provider_id = $2 OR s.student_id = $2) AND s.status = 'completed'
       ORDER BY s.scheduled_at DESC
       LIMIT 5
     `, [unitId, counsellorId]);
@@ -102,7 +102,7 @@ const getCounsellingSessions = asyncHandler(async (req, res) => {
       FROM sessions s
       JOIN users u1 ON s.student_id = u1.id
       JOIN users u2 ON s.provider_id = u2.id
-      WHERE s.unit_id = $1 AND s.provider_id = $2
+      WHERE s.unit_id = $1 AND (s.provider_id = $2 OR s.student_id = $2)
       ORDER BY s.scheduled_at DESC
     `, [unitId, req.user.id]);
 
