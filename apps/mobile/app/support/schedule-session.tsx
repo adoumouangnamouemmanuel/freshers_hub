@@ -13,7 +13,7 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
 export default function ScheduleSessionScreen() {
   const router = useRouter();
-  const { userId, name, sessionId, editDate, editLocation, editDescription, editStudentId, editStudentName, asCoach, asAdvisor, unitId } = useLocalSearchParams();
+  const { userId, name, sessionId, editDate, editLocation, editDescription, editStudentId, editStudentName, asCoach, asAdvisor, unitId, role } = useLocalSearchParams();
   const isEditMode = !!sessionId;
   const isAsCoach = asCoach === "true";
   const isAsAdvisor = asAdvisor === "true";
@@ -22,7 +22,8 @@ export default function ScheduleSessionScreen() {
   const insets = useSafeAreaInsets();
   const isCoachAdmin = hasRole(session?.user.roles || [], "coach_admin") || hasRole(session?.user.roles || [], "admin");
   const isAdvisorRole = hasRole(session?.user.roles || [], "advisor");
-  const canPickUser = isCoachAdmin || isAsAdvisor || isAdvisorRole;
+  const isCounsellorRole = hasRole(session?.user.roles || [], "counsellor");
+  const canPickUser = isCoachAdmin || isAsAdvisor || isAdvisorRole || isCounsellorRole;
 
   const [loading, setLoading] = useState(false);
   
@@ -53,7 +54,9 @@ export default function ScheduleSessionScreen() {
   const fetchUsers = async () => {
     setFetchingUsers(true);
     try {
-      const endpoint = (isAsAdvisor || isAdvisorRole) ? '/support/advising/students' : '/support/admin/students';
+      const endpoint = (isAsAdvisor || isAdvisorRole) ? '/support/advising/students' 
+                     : isCounsellorRole ? '/support/counselling/students'
+                     : '/support/admin/students';
       const res = await fetch(`${API_URL}${endpoint}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -104,6 +107,7 @@ export default function ScheduleSessionScreen() {
       const endpoint = isEditMode 
         ? `/support/sessions/${sessionId}`
         : isAdvisorBooking ? "/support/advising/sessions"
+        : isCounsellorRole && canPickUser ? "/support/counselling/sessions"
         : isCoachAdmin ? "/support/admin/sessions" 
         : "/support/sessions";
       const method = isEditMode ? "PUT" : "POST";
@@ -113,6 +117,12 @@ export default function ScheduleSessionScreen() {
         description: form.description,
         scheduledAt,
       } : isAdvisorBooking ? {
+        academicYearId: 1,
+        studentId: form.targetUserId,
+        scheduledAt,
+        location: form.location,
+        description: form.description,
+      } : isCounsellorRole && canPickUser ? {
         academicYearId: 1,
         studentId: form.targetUserId,
         scheduledAt,
@@ -134,7 +144,7 @@ export default function ScheduleSessionScreen() {
         scheduledAt,
         location: form.location,
         description: form.description,
-        withType: "peer_coach"
+        withType: (role === "University Counsellor") ? "counsellor" : (role === "Academic Advisor" ? "advisor" : "peer_coach")
       };
 
       const res = await fetch(`${API_URL}${endpoint}`, {
@@ -152,7 +162,11 @@ export default function ScheduleSessionScreen() {
         ]);
       } else {
         const errData = await res.json();
-        Alert.alert("Error", errData.error || (isEditMode ? "Failed to update session." : "Failed to schedule session."));
+        let errorMsg = errData.message || errData.error || (isEditMode ? "Failed to update session." : "Failed to schedule session.");
+        if (typeof errorMsg !== "string") {
+          errorMsg = JSON.stringify(errorMsg);
+        }
+        Alert.alert("Error", errorMsg);
       }
     } catch (err) {
       console.error(err);
