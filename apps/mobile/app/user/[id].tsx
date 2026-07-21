@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Linking, Alert } from "react-native";
+import { Image } from "expo-image";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/auth-context";
@@ -146,9 +147,13 @@ export default function UserProfileScreen() {
         
         {/* Profile Card Overlay */}
         <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.profileCard}>
-          <View style={styles.avatarCircle}>
-            <Text style={styles.avatarInitial}>{userInitial}</Text>
-          </View>
+          {profile.avatar_url ? (
+            <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} />
+          ) : (
+            <View style={styles.avatarCircle}>
+              <Text style={styles.avatarInitial}>{userInitial}</Text>
+            </View>
+          )}
           
           <Text style={styles.name}>{profile.full_name}</Text>
           <Text style={styles.majorMeta}>{profile.country || "Unknown"} • {profile.major || "Undeclared"} • '{profile.graduation_year || profile.class_year || "XX"}</Text>
@@ -493,6 +498,13 @@ const styles = StyleSheet.create({
     borderRadius: 45, 
     backgroundColor: "#1A2B4A", 
     alignItems: "center", justifyContent: "center", 
+    marginBottom: 16,
+    borderWidth: 4,
+    borderColor: "#FFFFFF"
+  },
+  avatarImage: {
+    width: 90, height: 90,
+    borderRadius: 45,
     marginBottom: 16,
     borderWidth: 4,
     borderColor: "#FFFFFF"
