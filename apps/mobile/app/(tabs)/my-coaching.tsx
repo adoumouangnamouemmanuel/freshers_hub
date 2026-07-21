@@ -61,7 +61,7 @@ export default function MyCoachingScreen() {
 
   // Calculate stats for freshers
   const freshersWithStats = freshers.map(f => {
-    const fSessions = allSessions.filter(s => s.student_id === f.fresher_id && s.type === 'peer_coaching');
+    const fSessions = allSessions.filter(s => s.student_id === f.fresher_id && (s.type === 'peer_coach' || s.type === 'peer_coaching'));
     const completed = fSessions.filter(s => s.status === 'completed').length;
     // Assume 3 mandatory sessions if not dynamically provided
     const totalMandatory = fSessions.filter(s => s.is_mandatory).length || 3;
@@ -185,7 +185,7 @@ export default function MyCoachingScreen() {
             </View>
             <View style={styles.fresherInfo}>
               <Text style={styles.fresherName}>Coach Yvonne</Text>
-              <Text style={styles.fresherDetail}>Head Coach</Text>
+              <Text style={styles.fresherDetail}>Senior Coach</Text>
             </View>
             <TouchableOpacity style={styles.iconBtn} onPress={() => handleWhatsApp("+233200000004")}>
                <FontAwesome name="whatsapp" size={24} color="#25D366" />
