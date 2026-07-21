@@ -54,7 +54,6 @@ const advisingController = require("../controllers/advisingController");
 const advisingMiddleware = requireRoles('advisor');
 
 router.get("/advising/dashboard", advisingMiddleware, advisingController.getAdvisingDashboard);
-router.get("/advising/sessions", advisingMiddleware, advisingController.getAdvisingSessions);
 router.get("/advising/students", advisingMiddleware, advisingController.getAdvisingStudents);
 router.get("/advising/reports", advisingMiddleware, advisingController.getAdvisingReports);
 router.post("/advising/sessions", advisingMiddleware, advisingController.advisorBookSession);
@@ -64,7 +63,6 @@ const counsellingController = require("../controllers/counsellingController");
 const counsellingMiddleware = requireRoles('counsellor');
 
 router.get("/counselling/dashboard", counsellingMiddleware, counsellingController.getCounsellingDashboard);
-router.get("/counselling/sessions", counsellingMiddleware, counsellingController.getCounsellingSessions);
 router.get("/counselling/students", counsellingMiddleware, counsellingController.getCounsellingStudents);
 router.get("/counselling/reports", counsellingMiddleware, counsellingController.getCounsellingReports);
 router.post("/counselling/sessions", counsellingMiddleware, counsellingController.counsellorBookSession);
