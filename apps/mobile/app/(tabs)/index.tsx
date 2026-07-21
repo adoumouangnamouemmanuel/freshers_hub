@@ -139,7 +139,7 @@ export default function FeedScreen() {
         const overdue: any[] = [];
         
         (d || []).forEach(s => {
-          if (s.status === 'scheduled' || s.status === 'pending') {
+          if (s.status === 'scheduled') {
             let sessionDate;
             if (s.date) {
                sessionDate = new Date(s.date);
@@ -151,14 +151,26 @@ export default function FeedScreen() {
                sessionDate = new Date(); // fallback
             }
 
-            if (sessionDate < now) {
+            const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+            if (sessionDate < oneHourAgo) {
               overdue.push(s);
             } else {
               upcoming.push(s);
             }
           }
         });
+        upcoming.sort((a, b) => {
+          const d1 = new Date(a.date || a.session_date || a.scheduled_at).getTime();
+          const d2 = new Date(b.date || b.session_date || b.scheduled_at).getTime();
+          return d1 - d2;
+        });
         
+        overdue.sort((a, b) => {
+          const d1 = new Date(a.date || a.session_date || a.scheduled_at).getTime();
+          const d2 = new Date(b.date || b.session_date || b.scheduled_at).getTime();
+          return d2 - d1;
+        });
+
         setUpcomingSessions(upcoming);
         setOverdueSessions(overdue);
       };
@@ -410,7 +422,7 @@ export default function FeedScreen() {
                 <IconSymbol name="calendar" size={18} color="#059669" />
               </View>
               <Text style={styles.elevatedDesc}>
-                {nextSession.title || 'Your next session'}: {new Date(nextSession.session_date).toLocaleDateString()} at {nextSession.start_time.substring(0, 5)}
+                {nextSession.title || 'Your next session'}: {new Date(nextSession.date || nextSession.session_date || nextSession.scheduled_at || new Date()).toLocaleDateString()} at {new Date(nextSession.date || nextSession.session_date || nextSession.scheduled_at || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </Text>
             </Pressable>
           )}
