@@ -49,6 +49,22 @@ export function isAdvisor(roles: AuthRole[]): boolean {
   return hasRole(roles, "advisor");
 }
 
+export function isCounsellor(roles: AuthRole[]): boolean {
+  return hasRole(roles, "counsellor");
+}
+
+export function isPeerCounsellor(roles: AuthRole[]): boolean {
+  return hasRole(roles, "peer_counsellor");
+}
+
+export function isBuddy(roles: AuthRole[]): boolean {
+  return hasRole(roles, "buddy");
+}
+
+export function isOipccAdmin(roles: AuthRole[]): boolean {
+  return hasRole(roles, "oipcc_admin");
+}
+
 export function isStudentLeader(roles: AuthRole[]): boolean {
   return hasRole(roles, "student_leader");
 }
@@ -68,12 +84,16 @@ export function formatRoleName(role: string | { name: string }): string {
     "coach_admin": "Senior Mental Wellness Coach",
     "peer_coach": "Peer Coach",
     "peer_counsellor": "Peer Counsellor",
+    "counsellor": "University Counsellor",
     "student": "Student",
+    "fresher": "Fresher",
     "club_lead": "Club Lead",
     "student_leader": "Student Leader",
     "staff": "Staff",
     "faculty": "Faculty",
-    "advisor": "Advisor",
+    "advisor": "Academic Advisor",
+    "buddy": "Buddy",
+    "oipcc_admin": "OIPCC Administrator",
     "platform_admin": "Admin",
   };
   
