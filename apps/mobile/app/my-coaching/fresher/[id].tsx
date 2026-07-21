@@ -114,10 +114,10 @@ export default function FresherDetailsScreen() {
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.socialBtn, { backgroundColor: '#F3F4F6', borderColor: '#E5E7EB' }]} 
-              onPress={() => router.push(`/my-coaching/book?studentId=${fresher.fresher_id}&name=${encodeURIComponent(fresher.fresher_name)}` as any)}
+              onPress={() => router.push(`/support/schedule-session?userId=${fresher.fresher_id}&name=${encodeURIComponent(fresher.fresher_name)}&asCoach=true` as any)}
             >
               <Ionicons name="calendar" size={20} color="#4B5563" />
-              <Text style={[styles.socialBtnText, { color: '#4B5563' }]}>Book Session</Text>
+              <Text style={[styles.socialBtnText, { color: '#4B5563' }]}>Check In</Text>
             </TouchableOpacity>
           </View>
 
