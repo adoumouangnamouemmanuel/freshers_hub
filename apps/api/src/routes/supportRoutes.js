@@ -68,5 +68,6 @@ router.get("/counselling/reports", counsellingMiddleware, counsellingController.
 router.post("/counselling/sessions", counsellingMiddleware, counsellingController.counsellorBookSession);
 router.get("/counselling/peer-counsellors", counsellingMiddleware, counsellingController.getPeerCounsellors);
 router.post("/counselling/assignments", counsellingMiddleware, counsellingController.assignStudentToPeer);
+router.get("/counselling/assignments/:peerId", counsellingMiddleware, counsellingController.getPeerAssignedStudents);
 
 module.exports = router;
