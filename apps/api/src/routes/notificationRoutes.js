@@ -8,26 +8,33 @@ const {
   handleMarkRead,
   handleMarkAllRead,
   handleUnreadCount,
+  handleRegisterPushToken,
+  handleRemovePushToken,
+  handleSendNotification,
 } = require("../controllers/notificationController");
 
 const router = express.Router();
-
 router.use(requireAuth);
 
+// ── In-app notifications ──────────────────────────────────────────────────────
 router.get(
   "/",
   validate(z.object({ query: notificationQuerySchema })),
   handleGetNotifications
 );
-
 router.get("/unread-count", handleUnreadCount);
-
 router.patch("/read-all", handleMarkAllRead);
-
 router.patch(
   "/:id/read",
   validate(z.object({ params: z.object({ id: uuidSchema }) })),
   handleMarkRead
 );
+
+// ── Push token opt-in / opt-out ───────────────────────────────────────────────
+router.post("/push-token", handleRegisterPushToken);
+router.delete("/push-token", handleRemovePushToken);
+
+// ── Send notification (immediate or scheduled reminder) ───────────────────────
+router.post("/send", handleSendNotification);
 
 module.exports = router;
