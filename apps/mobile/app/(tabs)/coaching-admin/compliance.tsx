@@ -4,6 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../../context/auth-context";
 import { IconSymbol } from "../../../components/ui/icon-symbol";
+import SendNotificationModal from "../../../components/features/notifications/SendNotificationModal";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -15,6 +16,7 @@ export default function ComplianceScreen() {
   const [loading, setLoading] = useState(true);
   const [freshers, setFreshers] = useState<any[]>([]);
   const [filterType, setFilterType] = useState<"All" | "At Risk" | "Non-Compliant" | "Compliant">("All");
+  const [notifyTarget, setNotifyTarget] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     const fetchFreshers = async () => {
@@ -110,15 +112,26 @@ export default function ComplianceScreen() {
                       <Text style={styles.progressText}>{sessions} / 3 Sessions</Text>
                     </View>
                   </View>
-                  <TouchableOpacity style={styles.actionBtn} onPress={() => logFollowUp(item.id)}>
-                    <IconSymbol name="paperplane.fill" size={14} color="#FFFFFF" />
-                    <Text style={styles.actionText}>Nudge</Text>
+                  <TouchableOpacity style={styles.actionBtn} onPress={() => setNotifyTarget({ id: item.id, name: item.full_name })}>
+                    <IconSymbol name="bell.badge.fill" size={14} color="#FFFFFF" />
+                    <Text style={styles.actionText}>Notify</Text>
                   </TouchableOpacity>
                 </View>
               );
             }}
           />
         </>
+      )}
+
+      {notifyTarget && (
+        <SendNotificationModal
+          visible={!!notifyTarget}
+          onClose={() => setNotifyTarget(null)}
+          targetUserId={notifyTarget?.id ?? ""}
+          targetUserName={notifyTarget?.name ?? ""}
+          accessToken={token || ""}
+          defaultCategory="nudge"
+        />
       )}
     </SafeAreaView>
   );
