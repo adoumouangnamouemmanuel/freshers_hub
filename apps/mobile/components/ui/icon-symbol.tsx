@@ -18,6 +18,7 @@ const MAPPING = {
   'paperplane.fill': 'send',
   'chevron.left.forwardslash.chevron.right': 'code',
   'chevron.right': 'chevron-right',
+  'alarm.fill': 'alarm',
   // Fresher Hub tabs
   'newspaper.fill': 'article',
   'map.fill': 'map',
@@ -51,6 +52,7 @@ const MAPPING = {
   'arrow.triangle.turn.up.right.circle.fill': 'directions',
   'location.fill': 'my-location',
   'bell.fill': 'notifications',
+  'bell.badge.fill': 'notifications-active',
   'bell.slash.fill': 'notifications-off',
   'mappin.and.ellipse': 'location-on',
   'megaphone.fill': 'campaign',
