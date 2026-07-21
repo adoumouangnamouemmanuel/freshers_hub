@@ -4,6 +4,10 @@ const { pool } = require("../services/db");
 
 // Get all sessions (filtered automatically by RLS)
 const getSessions = asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 20;
+  const offset = (page - 1) * limit;
+
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -11,6 +15,7 @@ const getSessions = asyncHandler(async (req, res) => {
 
     let queryStr = `
       SELECT 
+        COUNT(*) OVER() AS total_count,
         s.id, s.unit_id, s.academic_year_id, s.student_id, s.provider_id, 
         s.with_type as type, s.scheduled_at as date, s.location, s.description, s.status, s.is_mandatory,
         EXISTS (SELECT 1 FROM session_reports sr WHERE sr.session_id = s.id) AS has_report,
@@ -29,20 +34,35 @@ const getSessions = asyncHandler(async (req, res) => {
         "SELECT id FROM units WHERE name = 'coaching' LIMIT 1"
       );
       if (unitRows.length > 0) {
-        queryStr += ` WHERE s.unit_id = $1`;
         params.push(unitRows[0].id);
+        queryStr += ` WHERE s.unit_id = $${params.length}`;
       }
     } else {
-      queryStr += ` WHERE s.student_id = $1 OR s.provider_id = $1`;
       params.push(req.user.id);
+      queryStr += ` WHERE s.student_id = $${params.length} OR s.provider_id = $${params.length}`;
     }
 
     queryStr += ` ORDER BY s.scheduled_at DESC`;
+    
+    params.push(limit);
+    queryStr += ` LIMIT $${params.length}`;
+    params.push(offset);
+    queryStr += ` OFFSET $${params.length}`;
 
     const { rows } = await client.query(queryStr, params);
 
     await client.query("COMMIT");
-    res.json(rows);
+    
+    const total = rows.length > 0 ? parseInt(rows[0].total_count, 10) : 0;
+    res.json({
+      data: rows,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } finally {
     client.release();
   }
@@ -50,10 +70,15 @@ const getSessions = asyncHandler(async (req, res) => {
 
 // Get sessions for the current coach (their own sessions)
 const getMySessions = asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 20;
+  const offset = (page - 1) * limit;
+
   const client = await pool.connect();
   try {
     const { rows } = await client.query(`
       SELECT 
+        COUNT(*) OVER() AS total_count,
         s.id, s.unit_id, s.academic_year_id, s.student_id, s.provider_id, 
         s.with_type as type, s.scheduled_at as date, s.location, s.description, s.status, s.is_mandatory, s.title,
         EXISTS (SELECT 1 FROM session_reports sr WHERE sr.session_id = s.id) AS has_report,
@@ -64,9 +89,19 @@ const getMySessions = asyncHandler(async (req, res) => {
       JOIN users u2 ON s.provider_id = u2.id
       WHERE s.provider_id = $1 OR s.student_id = $1
       ORDER BY s.scheduled_at DESC
-    `, [req.user.id]);
+      LIMIT $2 OFFSET $3
+    `, [req.user.id, limit, offset]);
 
-    res.json(rows);
+    const total = rows.length > 0 ? parseInt(rows[0].total_count, 10) : 0;
+    res.json({
+      data: rows,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } finally {
     client.release();
   }
