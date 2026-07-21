@@ -12,6 +12,7 @@ export type Post = {
   authorName: string;
   authorAvatar: string | null;
   authorId: string;
+  targetGroupName?: string;
   eventId?: string;
   eventDate?: string;
   eventTime?: string;
