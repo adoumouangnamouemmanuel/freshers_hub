@@ -585,18 +585,18 @@ export default function FeedScreen() {
                <Text style={styles.premiumTitle}>Counselling Overview</Text>
                
                <View style={styles.premiumRow}>
-                 <Pressable style={[styles.premiumCardActive, { backgroundColor: '#10B981' }]} onPress={() => router.push("/(tabs)/counselling-dashboard/index")}>
+                 <Pressable style={[styles.premiumCardActive, { backgroundColor: '#10B981' }]} onPress={() => router.push("/counselling-dashboard/index")}>
                    <IconSymbol name="calendar" size={24} color="#FFFFFF" />
                    <Text style={styles.premiumValueWhite}>{counsellingData?.stats?.today_sessions ?? 0}</Text>
                    <Text style={styles.premiumLabelWhite}>Sessions Today</Text>
                  </Pressable>
                  
                  <View style={styles.premiumCol}>
-                   <Pressable style={styles.premiumCardSmall} onPress={() => router.push("/(tabs)/counselling-dashboard/index")}>
+                   <Pressable style={styles.premiumCardSmall} onPress={() => router.push("/(tabs)/counselling-dashboard")}>
                      <Text style={styles.premiumValueDark}>{counsellingData?.stats?.this_week_sessions ?? 0}</Text>
                      <Text style={styles.premiumLabelDark}>This Week</Text>
                    </Pressable>
-                   <Pressable style={styles.premiumCardSmallRed} onPress={() => router.push("/(tabs)/counselling-dashboard/index")}>
+                   <Pressable style={styles.premiumCardSmallRed} onPress={() => router.push("/(tabs)/counselling-dashboard")}>
                      <Text style={styles.premiumValueRed}>{counsellingData?.stats?.overdue_sessions ?? 0}</Text>
                      <Text style={styles.premiumLabelRed}>Overdue</Text>
                    </Pressable>
@@ -604,7 +604,7 @@ export default function FeedScreen() {
                </View>
                
                {counsellingData?.upcomingSessions?.[0] && (
-                 <Pressable style={styles.premiumNextCard} onPress={() => router.push("/(tabs)/counselling-dashboard/index")}>
+                 <Pressable style={styles.premiumNextCard} onPress={() => router.push("/(tabs)/counselling-dashboard")}>
                    <View style={styles.premiumNextLeft}>
                      <Text style={styles.premiumNextLabel}>UP NEXT</Text>
                      <Text style={styles.premiumNextStudent}>{counsellingData.upcomingSessions[0].student_name}</Text>
