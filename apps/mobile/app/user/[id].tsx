@@ -97,7 +97,7 @@ export default function UserProfileScreen() {
   const userInitial = profile.full_name?.charAt(0).toUpperCase() ?? "?";
   const roles = profile.roles || [];
   
-  const isCoach = roles.includes("peer_coach");
+  const isCoach = roles.includes("peer_coach") || roles.includes("peer_counsellor");
   const isAdvisorUser = session?.user?.roles?.some((r: any) => r.name === "advisor");
   const assignedFreshers = profile.assigned_freshers || [];
   const assignedCoach = profile.assigned_coach;
@@ -106,7 +106,7 @@ export default function UserProfileScreen() {
     isCoach ? (profile.completed_sessions_as_provider || 0) : (profile.completed_sessions_as_student || 0)
   );
   
-  // A coach's target is 3 sessions per assigned fresher. A fresher's target is simply 3.
+  // A coach/peer counsellor's target is 3 sessions per assigned fresher. A fresher's target is simply 3.
   const targetSessions = isCoach ? (assignedFreshers.length * 3) : 3;
   const progressPct = targetSessions > 0 ? Math.min((completedSessions / targetSessions) * 100, 100) : 0;
   
