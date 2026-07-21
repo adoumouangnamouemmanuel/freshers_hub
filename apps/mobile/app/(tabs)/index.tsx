@@ -240,14 +240,24 @@ export default function FeedScreen() {
         );
       }
 
-      const processSessions = (d: Session[] | void) => {
+      const processSessions = (d: any[] | void) => {
         const now = new Date();
-        const upcoming: Session[] = [];
-        const overdue: Session[] = [];
+        const upcoming: any[] = [];
+        const overdue: any[] = [];
         
         (d || []).forEach(s => {
           if (s.status === 'scheduled' || s.status === 'pending') {
-            const sessionDate = new Date(`${s.session_date}T${s.start_time || '00:00:00'}`);
+            let sessionDate;
+            if (s.date) {
+               sessionDate = new Date(s.date);
+            } else if (s.session_date) {
+               sessionDate = new Date(`${s.session_date}T${s.start_time || '00:00:00'}`);
+            } else if (s.scheduled_at) {
+               sessionDate = new Date(s.scheduled_at);
+            } else {
+               sessionDate = new Date(); // fallback
+            }
+
             if (sessionDate < now) {
               overdue.push(s);
             } else {
@@ -457,7 +467,7 @@ export default function FeedScreen() {
                     <IconSymbol name="calendar" size={20} color="#059669" />
                   </View>
                   <Text style={styles.statValue}>{upcomingSessions.length}</Text>
-                  <Text style={styles.statLabel}>Sessions</Text>
+                  <Text style={styles.statLabel}>Upcoming</Text>
                 </Pressable>
                 
                 <Pressable style={styles.coachStatCard} onPress={() => router.push("/(tabs)/support")}>
