@@ -97,8 +97,8 @@ export default function UserProfileScreen() {
   const userInitial = profile.full_name?.charAt(0).toUpperCase() ?? "?";
   const roles = profile.roles || [];
   
-  // Calculate dynamic stats based on role
   const isCoach = roles.includes("peer_coach");
+  const isAdvisorUser = session?.user?.roles?.some((r: any) => r.name === "advisor");
   const assignedFreshers = profile.assigned_freshers || [];
   const assignedCoach = profile.assigned_coach;
   
@@ -111,6 +111,24 @@ export default function UserProfileScreen() {
   const progressPct = targetSessions > 0 ? Math.min((completedSessions / targetSessions) * 100, 100) : 0;
   
   const reportsFiled = parseInt(profile.reports_filed || 0);
+
+  // Academic Year calculation
+  const classYearStr = profile.graduation_year || profile.class_year;
+  const currentYear = new Date().getFullYear();
+  let academicYear = 0;
+  if (classYearStr) {
+    const gradYear = parseInt(classYearStr.toString().replace(/\D/g,''), 10);
+    if (!isNaN(gradYear)) {
+      academicYear = Math.max(1, Math.min(4, 5 - (gradYear - currentYear)));
+    }
+  }
+
+  const filteredSessions = (profile.recent_sessions || []).filter((s: any) => {
+    if (isAdvisorUser) {
+      return s.provider_id === session?.user?.id || s.student_id === session?.user?.id;
+    }
+    return true;
+  });
 
   return (
     <View style={styles.screen}>
@@ -171,26 +189,28 @@ export default function UserProfileScreen() {
           </View>
         </Animated.View>
 
-        {/* Sessions Overview Card */}
-        <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.detailsCard}>
-          <Text style={styles.cardTitle}>Sessions Overview</Text>
-          <View style={styles.overviewRow}>
-            <View style={styles.overviewItem}>
-              <Text style={styles.overviewLabel}>Completed</Text>
-              <Text style={styles.overviewValue}>{completedSessions}</Text>
+        {/* Sessions Overview Card - Hidden for Advisors */}
+        {!isAdvisorUser && (
+          <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.detailsCard}>
+            <Text style={styles.cardTitle}>Sessions Overview</Text>
+            <View style={styles.overviewRow}>
+              <View style={styles.overviewItem}>
+                <Text style={styles.overviewLabel}>Completed</Text>
+                <Text style={styles.overviewValue}>{completedSessions}</Text>
+              </View>
+              <View style={styles.overviewItem}>
+                <Text style={styles.overviewLabel}>Target</Text>
+                <Text style={styles.overviewValue}>{targetSessions}</Text>
+              </View>
             </View>
-            <View style={styles.overviewItem}>
-              <Text style={styles.overviewLabel}>Target</Text>
-              <Text style={styles.overviewValue}>{targetSessions}</Text>
+            <View style={styles.progressContainer}>
+              <View style={styles.progressBarBg}>
+                <View style={[styles.progressBarFill, { width: `${progressPct}%`, backgroundColor: '#A93C40' }]} />
+              </View>
+              <Text style={styles.progressText}>{progressPct.toFixed(0)}% Completion</Text>
             </View>
-          </View>
-          <View style={styles.progressContainer}>
-            <View style={styles.progressBarBg}>
-              <View style={[styles.progressBarFill, { width: `${progressPct}%`, backgroundColor: '#A93C40' }]} />
-            </View>
-            <Text style={styles.progressText}>{progressPct.toFixed(0)}% Completion</Text>
-          </View>
-        </Animated.View>
+          </Animated.View>
+        )}
 
         {roles.includes("peer_coach") && assignedFreshers.length > 0 && (
           <Animated.View entering={FadeInDown.delay(220).duration(500)} style={styles.detailsCard}>
@@ -220,7 +240,7 @@ export default function UserProfileScreen() {
           </Animated.View>
         )}
 
-        {!isCoach && assignedCoach && !session?.user?.roles?.some(role => role.name === "peer_coach") && (
+        {!isCoach && assignedCoach && !session?.user?.roles?.some((role: any) => role.name === "peer_coach") && !isAdvisorUser && (
           <Animated.View entering={FadeInDown.delay(220).duration(500)} style={styles.detailsCard}>
             <Text style={styles.cardTitle}>Assigned Peer Coach</Text>
             <View style={styles.infoRow}>
@@ -237,7 +257,7 @@ export default function UserProfileScreen() {
         {/* Recent Sessions List */}
         <Animated.View entering={FadeInDown.delay(250).duration(500)} style={styles.detailsCard}>
           <Text style={styles.cardTitle}>Recent Sessions</Text>
-          {(profile.recent_sessions || []).map((session: any, idx: number) => {
+          {filteredSessions.map((session: any, idx: number) => {
             const isExpanded = expandedSessionId === session.id;
             return (
               <View key={session.id}>
@@ -283,35 +303,83 @@ export default function UserProfileScreen() {
                     ) : null}
                   </View>
                 )}
-                {idx < (profile.recent_sessions || []).length - 1 && <View style={styles.divider} />}
+                {idx < filteredSessions.length - 1 && <View style={styles.divider} />}
               </View>
             );
           })}
-          {(!profile.recent_sessions || profile.recent_sessions.length === 0) && (
-            <Text style={{color: '#6B7280', fontSize: 13, marginTop: 8}}>No recent sessions.</Text>
+          {filteredSessions.length === 0 && (
+            <Text style={{color: '#6B7280', fontSize: 13, marginTop: 8}}>No recent sessions available.</Text>
           )}
         </Animated.View>
 
-        {/* Academic Details */}
-        <Animated.View entering={FadeInDown.delay(300).duration(500)} style={styles.detailsCard}>
-          <Text style={styles.cardTitle}>Academic Information</Text>
-          <View style={styles.infoRow}>
-            <View style={styles.infoIconBox}>
-              <IconSymbol name="person.text.rectangle.fill" size={16} color="#6B7280" />
+        {/* Academic Details - Stunning Progress */}
+        <Animated.View entering={FadeInDown.delay(300).duration(500)} style={[styles.detailsCard, { padding: 0, overflow: 'hidden' }]}>
+          <View style={{ backgroundColor: '#1A2B4A', padding: 24 }}>
+            <Text style={[styles.cardTitle, { color: '#FFFFFF', marginBottom: 24 }]}>Academic Progress</Text>
+            
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, fontWeight: '600', textTransform: 'uppercase' }}>Current Status</Text>
+              <Text style={{ color: '#E0E7FF', fontSize: 14, fontWeight: '800' }}>Class of '{classYearStr ? String(classYearStr).slice(-2) : 'XX'}</Text>
             </View>
-            <View style={styles.infoTextContainer}>
-              <Text style={styles.infoLabel}>Student ID</Text>
-              <Text style={styles.infoValue}>{profile.school_id || "Not Provided"}</Text>
-            </View>
+            <Text style={{ color: '#FFFFFF', fontSize: 28, fontWeight: '900', letterSpacing: -0.5, marginBottom: 32 }}>
+              {academicYear === 1 ? "Freshman" : academicYear === 2 ? "Sophomore" : academicYear === 3 ? "Junior" : academicYear === 4 ? "Senior" : "Unknown Year"}
+            </Text>
+            
+            {/* Progress Bar Timeline */}
+            {academicYear > 0 && (
+              <View style={{ position: 'relative', marginTop: 10 }}>
+                {/* Background line */}
+                <View style={{ position: 'absolute', top: 11, left: 16, right: 16, height: 2, backgroundColor: 'rgba(255,255,255,0.1)' }} />
+                
+                {/* Active line */}
+                <View style={{ position: 'absolute', top: 11, left: 16, width: `${(academicYear - 1) * 33.33}%`, height: 2, backgroundColor: '#A93C40' }} />
+                
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  {[1, 2, 3, 4].map((year) => {
+                    const isActive = year <= academicYear;
+                    const isCurrent = year === academicYear;
+                    return (
+                      <View key={year} style={{ alignItems: 'center', width: 32 }}>
+                        <View style={{ 
+                          width: 24, height: 24, borderRadius: 12, 
+                          backgroundColor: isActive ? '#A93C40' : '#0F172A',
+                          borderWidth: 2, borderColor: isActive ? '#A93C40' : 'rgba(255,255,255,0.2)',
+                          alignItems: 'center', justifyContent: 'center',
+                          marginBottom: 8,
+                          ...(isCurrent ? { shadowColor: '#A93C40', shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.8, shadowRadius: 8, elevation: 4 } : {})
+                        }}>
+                          {isActive && <IconSymbol name="checkmark" size={12} color="#FFFFFF" />}
+                        </View>
+                        <Text style={{ color: isCurrent ? '#FFFFFF' : 'rgba(255,255,255,0.4)', fontSize: 11, fontWeight: isCurrent ? '800' : '600' }}>
+                          Y{year}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
+              </View>
+            )}
           </View>
-          <View style={styles.divider} />
-          <View style={styles.infoRow}>
-            <View style={styles.infoIconBox}>
-              <IconSymbol name="building.columns.fill" size={16} color="#6B7280" />
+          
+          <View style={{ backgroundColor: '#FFFFFF', padding: 24 }}>
+            <View style={styles.infoRow}>
+              <View style={styles.infoIconBox}>
+                <IconSymbol name="person.text.rectangle.fill" size={16} color="#6B7280" />
+              </View>
+              <View style={styles.infoTextContainer}>
+                <Text style={styles.infoLabel}>Student ID</Text>
+                <Text style={styles.infoValue}>{profile.school_id || "Not Provided"}</Text>
+              </View>
             </View>
-            <View style={styles.infoTextContainer}>
-              <Text style={styles.infoLabel}>Major & Class</Text>
-              <Text style={styles.infoValue}>{profile.major || "Undeclared"} • Class of {profile.graduation_year || profile.class_year || "Unknown"}</Text>
+            <View style={styles.divider} />
+            <View style={styles.infoRow}>
+              <View style={styles.infoIconBox}>
+                <IconSymbol name="building.columns.fill" size={16} color="#6B7280" />
+              </View>
+              <View style={styles.infoTextContainer}>
+                <Text style={styles.infoLabel}>Major / Program</Text>
+                <Text style={styles.infoValue}>{profile.major || "Undeclared"}</Text>
+              </View>
             </View>
           </View>
         </Animated.View>
