@@ -62,7 +62,7 @@ export function PostCard({ post, onUpdate }: { post: Post; onUpdate: () => void 
           <Text style={styles.postAuthorName}>{post.authorName}</Text>
           <Text style={styles.postDate}>
             {new Date(post.createdAt).toLocaleDateString()} • {post.category}
-            {post.visibility === "targeted" && " • Targeted"}
+            {post.targetGroupName ? ` • To: ${post.targetGroupName}` : ""}
           </Text>
         </View>
       </View>
