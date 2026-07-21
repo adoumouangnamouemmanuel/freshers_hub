@@ -240,6 +240,9 @@ export default function counsellingDashboard() {
                       <Text style={styles.sessionDateDay}>{dateObj.getDate()}</Text>
                     </View>
                     <View style={styles.sessionInfo}>
+                      {s.title ? (
+                        <Text style={{ fontSize: 15, fontWeight: "700", color: "#111827", marginBottom: 4 }}>{s.title}</Text>
+                      ) : null}
                       <Text style={styles.sessionStudentName}>{s.student_name}</Text>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                         <Ionicons name="time-outline" size={14} color="#6B7280" />
@@ -289,6 +292,9 @@ export default function counsellingDashboard() {
                 return (
                   <View key={s.id} style={[styles.recentCard]}>
                     <View style={{ flex: 1 }}>
+                      {s.title ? (
+                        <Text style={{ fontSize: 14, fontWeight: "700", color: "#111827", marginBottom: 2 }}>{s.title}</Text>
+                      ) : null}
                       <Text style={styles.recentStudentName}>{s.student_name}</Text>
                       <Text style={styles.recentDate}>
                         {dateObj.toLocaleDateString(undefined, {
