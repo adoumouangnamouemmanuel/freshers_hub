@@ -127,24 +127,6 @@ export const complianceFollowUps = pgTable("compliance_follow_ups", {
     .defaultNow(),
 });
 
-export const announcementAudienceEnum = pgEnum("announcement_audience", [
-  "school_wide",
-  "coaching_unit",
-]);
-
-export const announcements = pgTable("announcements", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  authorId: uuid("author_id")
-    .notNull()
-    .references(() => users.id),
-  targetAudience: announcementAudienceEnum("target_audience").notNull(),
-  title: text("title").notNull(),
-  content: text("content").notNull(),
-  postId: uuid("post_id"),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
 
 export const sessionFeedback = pgTable("session_feedback", {
   id: uuid("id").defaultRandom().primaryKey(),
