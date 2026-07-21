@@ -74,8 +74,10 @@ const getMySessions = asyncHandler(async (req, res) => {
 
 // Book a new session
 const bookSession = asyncHandler(async (req, res) => {
-  const { unitId, academicYearId, providerId, studentId, withType, scheduledAt, location, isMandatory, description } = req.body;
-  
+  const { unitId, academicYearId, studentId, providerId, withType, scheduledAt, location, description, isMandatory, title } = req.body;
+
+  // Let students request sessions (so providerId may be null initially) or 
+  // Let providers create sessions (so studentId may be null initially)
   const finalStudentId = studentId || req.user.id;
   const finalProviderId = providerId || req.user.id;
 
@@ -88,13 +90,20 @@ const bookSession = asyncHandler(async (req, res) => {
     await client.query("BEGIN");
     await client.query("SELECT set_config('app.current_user_id', $1, true)", [req.user.id]);
 
+    let finalTitle = title;
+    if (!finalTitle) {
+      const { rows: userRows } = await client.query("SELECT full_name FROM users WHERE id = $1", [req.user.id]);
+      const userName = userRows[0]?.full_name || "User";
+      finalTitle = `${userName}'s session`;
+    }
+
     const { rows } = await client.query(`
       INSERT INTO sessions 
-        (unit_id, academic_year_id, student_id, provider_id, with_type, scheduled_at, location, description, is_mandatory, status)
+        (title, unit_id, academic_year_id, student_id, provider_id, with_type, scheduled_at, location, description, is_mandatory, status)
       VALUES 
-        ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'scheduled')
+        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'scheduled')
       RETURNING *
-    `, [unitId, academicYearId, finalStudentId, finalProviderId, withType, scheduledAt, location, description, isMandatory || false]);
+    `, [finalTitle, unitId, academicYearId, finalStudentId, finalProviderId, withType, scheduledAt, location, description, isMandatory || false]);
 
     await client.query("COMMIT");
     res.status(201).json(rows[0]);
