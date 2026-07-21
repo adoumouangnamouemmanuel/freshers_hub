@@ -98,6 +98,14 @@ class SupportAdminRepository {
       FROM coach_assignments ca
       JOIN users f ON ca.fresher_id = f.id
       WHERE ca.peer_coach_id = $1
+      UNION
+      SELECT 
+        f.id, f.full_name as name,
+        (SELECT COUNT(*) FROM sessions WHERE student_id = f.id AND status = 'completed') as sessions_completed,
+        3 as total_assigned
+      FROM counsellor_assignments ca
+      JOIN users f ON ca.student_id = f.id
+      WHERE ca.peer_counsellor_id = $1
     `, [coachId]);
     return rows;
   }
@@ -108,6 +116,11 @@ class SupportAdminRepository {
       FROM coach_assignments ca
       JOIN users c ON ca.peer_coach_id = c.id
       WHERE ca.fresher_id = $1
+      UNION
+      SELECT c.id, c.full_name as name, c.avatar_url
+      FROM counsellor_assignments ca
+      JOIN users c ON ca.peer_counsellor_id = c.id
+      WHERE ca.student_id = $1
     `, [fresherId]);
     return rows.length ? rows[0] : null;
   }
