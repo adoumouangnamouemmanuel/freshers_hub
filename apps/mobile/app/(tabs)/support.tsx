@@ -9,7 +9,7 @@ import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { useAuth } from "@/context/auth-context";
 import { apiRequest } from "@/lib/api";
 
-import { isCoach } from "@/lib/permissions";
+import { isCoach, isAdvisor } from "@/lib/permissions";
 
 export default function SupportScreen() {
   const router = useRouter();
@@ -21,6 +21,7 @@ export default function SupportScreen() {
   const [refreshing, setRefreshing] = useState(false);
   
   const isPeerCoach = session?.user?.roles ? isCoach(session.user.roles) : false;
+  const isAdvisorUser = session?.user?.roles ? isAdvisor(session.user.roles) : false;
 
   const [assignedCoach, setAssignedCoach] = useState<any>(null);
   const [buddy, setBuddy] = useState<any>(null);
@@ -264,23 +265,27 @@ export default function SupportScreen() {
           <Ionicons name="chevron-forward" size={20} color="#DC2626" />
         </TouchableOpacity>
 
-        {/* Advising */}
-        <View style={styles.sectionHeader}>
-          <View style={[styles.sectionIcon, { backgroundColor: "#E0E7FF" }]}>
-            <Ionicons name="library" size={24} color="#4F46E5" />
-          </View>
-          <Text style={styles.sectionTitle}>Academic Advising</Text>
-        </View>
-        <Text style={styles.sectionDesc}>Expert guidance on your courses and university policies.</Text>
+        {/* Advising — hidden for advisors (they have their own dashboard) */}
+        {!isAdvisorUser && (
+          <>
+            <View style={styles.sectionHeader}>
+              <View style={[styles.sectionIcon, { backgroundColor: "#E0E7FF" }]}>
+                <Ionicons name="library" size={24} color="#4F46E5" />
+              </View>
+              <Text style={styles.sectionTitle}>Academic Advising</Text>
+            </View>
+            <Text style={styles.sectionDesc}>Expert guidance on your courses and university policies.</Text>
 
-        <View style={styles.listSection}>
-          {advisors.map(a => renderStaffCard(a, "Academic Advisor", "#E0E7FF"))}
-          {advisors.length === 0 && (
-             <View style={styles.emptyCard}>
-               <Text style={styles.emptyCardDesc}>No advisors available.</Text>
-             </View>
-          )}
-        </View>
+            <View style={styles.listSection}>
+              {advisors.map(a => renderStaffCard(a, "Academic Advisor", "#E0E7FF"))}
+              {advisors.length === 0 && (
+                 <View style={styles.emptyCard}>
+                   <Text style={styles.emptyCardDesc}>No advisors available.</Text>
+                 </View>
+              )}
+            </View>
+          </>
+        )}
 
         {!isPeerCoach && (
           <>
