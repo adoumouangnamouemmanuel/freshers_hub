@@ -12,8 +12,8 @@ class SupportAdminRepository {
         (SELECT COUNT(DISTINCT ca.fresher_id) FROM coach_assignments ca JOIN users u ON ca.fresher_id = u.id WHERE u.class_year = 2030) as assigned_freshers,
         (SELECT COUNT(*) FROM sessions s JOIN users u ON s.student_id = u.id WHERE s.with_type = 'peer_coach' AND s.status = 'completed' AND u.class_year = 2030) as completed_mandatory_sessions,
         (SELECT COUNT(DISTINCT ca.fresher_id) * 3 FROM coach_assignments ca JOIN users u ON ca.fresher_id = u.id WHERE u.class_year = 2030) as target_mandatory_sessions,
-        (SELECT COUNT(*) FROM sessions s JOIN users u ON s.student_id = u.id WHERE s.status = 'scheduled' AND s.scheduled_at >= now() AND u.class_year = 2030) as upcoming_sessions_count,
-        (SELECT COUNT(*) FROM sessions s JOIN users u ON s.student_id = u.id WHERE s.status = 'scheduled' AND s.scheduled_at < now() AND u.class_year = 2030) as overdue_sessions_count
+        (SELECT COUNT(*) FROM sessions s WHERE s.with_type = 'peer_coach' AND s.status = 'scheduled' AND s.scheduled_at >= now()) as upcoming_sessions_count,
+        (SELECT COUNT(*) FROM sessions s WHERE s.with_type = 'peer_coach' AND s.status = 'scheduled' AND s.scheduled_at < now()) as overdue_sessions_count
     `);
     return rows[0];
   }
