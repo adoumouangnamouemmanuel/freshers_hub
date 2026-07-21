@@ -6,6 +6,7 @@ import { useAuth } from "../../../context/auth-context";
 import { IconSymbol } from "../../../components/ui/icon-symbol";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import SendNotificationModal from "../../../components/features/notifications/SendNotificationModal";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -19,6 +20,7 @@ export default function CoachingAdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [data, setData] = useState<any>(null);
+  const [notifyTarget, setNotifyTarget] = useState<{ id: string; name: string } | null>(null);
 
   const fetchDashboard = async () => {
     try {
@@ -61,8 +63,9 @@ export default function CoachingAdminDashboard() {
     : 0;
 
   return (
-    <View style={styles.screen}>
-      {/* Premium Header Overlay */}
+    <>
+      <View style={styles.screen}>
+        {/* Premium Header Overlay */}
       <Animated.View entering={FadeInDown.duration(400)} style={[styles.headerBg, { paddingTop: insets.top }]}>
         <View style={styles.headerRow}>
           <View>
@@ -205,11 +208,13 @@ export default function CoachingAdminDashboard() {
                 style={styles.navCard} 
                 onPress={() => router.push(item.route as any)}
               >
-                <View style={[styles.navIcon, { backgroundColor: item.bg }]}>
-                  <Ionicons name={item.icon as any} size={24} color={item.color} />
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                  <View style={[styles.navIcon, { backgroundColor: item.bg }]}>
+                    <Ionicons name={item.icon as any} size={24} color={item.color} />
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color="#D1D5DB" />
                 </View>
                 <Text style={styles.navLabel}>{item.label}</Text>
-                <Ionicons name="chevron-forward" size={16} color="#D1D5DB" />
               </TouchableOpacity>
             ))}
           </View>
@@ -235,8 +240,8 @@ export default function CoachingAdminDashboard() {
                     <Text style={styles.attentionName}>{item.full_name}</Text>
                     <Text style={styles.attentionSub}>Coach: {item.coach_name}</Text>
                   </View>
-                  <TouchableOpacity style={styles.followUpBtn}>
-                    <Text style={styles.followUpBtnText}>Nudge</Text>
+                  <TouchableOpacity style={styles.followUpBtn} onPress={() => setNotifyTarget({ id: item.id, name: item.full_name })}>
+                    <Text style={styles.followUpBtnText}>Notify</Text>
                   </TouchableOpacity>
                 </View>
               ))
@@ -250,7 +255,19 @@ export default function CoachingAdminDashboard() {
         </Animated.View>
 
       </ScrollView>
-    </View>
+      </View>
+
+      {notifyTarget && (
+        <SendNotificationModal
+          visible={!!notifyTarget}
+          onClose={() => setNotifyTarget(null)}
+          targetUserId={notifyTarget?.id ?? ""}
+          targetUserName={notifyTarget?.name ?? ""}
+          accessToken={token || ""}
+          defaultCategory="nudge"
+        />
+      )}
+    </>
   );
 }
 
@@ -326,9 +343,9 @@ const styles = StyleSheet.create({
   progressBarFill: { height: "100%", backgroundColor: "#10B981", borderRadius: 5 },
   
   navGrid: { flexDirection: "row", flexWrap: "wrap", gap: 16 },
-  navCard: { width: "47%", backgroundColor: "#FFFFFF", padding: 20, borderRadius: 24, flexDirection: 'row', alignItems: "center", justifyContent: 'space-between', gap: 12, ...Platform.select({ ios: { shadowColor: "#1A2B4A", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.04, shadowRadius: 16 }, android: { elevation: 3 } }), borderWidth: 1, borderColor: "rgba(0,0,0,0.03)" },
+  navCard: { width: "47%", backgroundColor: "#FFFFFF", padding: 16, borderRadius: 24, flexDirection: 'column', alignItems: "flex-start", gap: 16, ...Platform.select({ ios: { shadowColor: "#1A2B4A", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.04, shadowRadius: 16 }, android: { elevation: 3 } }), borderWidth: 1, borderColor: "rgba(0,0,0,0.03)" },
   navIcon: { width: 44, height: 44, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  navLabel: { fontSize: 14, fontWeight: "800", color: "#111827", flex: 1 },
+  navLabel: { fontSize: 15, fontWeight: "800", color: "#111827" },
   
   attentionSection: { backgroundColor: "#FFFFFF", borderRadius: 28, padding: 24, ...Platform.select({ ios: { shadowColor: "#1A2B4A", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.04, shadowRadius: 16 }, android: { elevation: 3 } }), borderWidth: 1, borderColor: "rgba(0,0,0,0.03)" },
   attentionHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
