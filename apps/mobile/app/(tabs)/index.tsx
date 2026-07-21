@@ -151,12 +151,11 @@ export default function FeedScreen() {
                sessionDate = new Date(); // fallback
             }
 
-            const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-            if (sessionDate < oneHourAgo) {
-              overdue.push(s);
-            } else {
-              upcoming.push(s);
-            }
+            if (sessionDate > now) {
+                upcoming.push(s);
+              } else if (sessionDate <= now) {
+                overdue.push(s);
+              }
           }
         });
         upcoming.sort((a, b) => {
