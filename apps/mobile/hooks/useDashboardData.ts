@@ -30,7 +30,7 @@ export type CoachAssignment = { id: string; peer_coach_id: string; coach_name: s
 export type BuddyPairing = { id: string; buddy_id: string; buddy_name: string; avatar_url: string | null; };
 export type AssignedFresher = { id: string; fresher_id: string; fresher_name: string; avatar_url: string | null; };
 export type Group = { id: string; name: string; image_url: string | null; is_leader: boolean; member_count?: number; category?: string; };
-export type Session = { id: string; session_date: string; start_time: string; status: string; };
+export type Session = { id: string; title: string; session_date: string; start_time: string; status: string; };
 export type AdminStats = {
   stats: {
     total_freshers: number;
