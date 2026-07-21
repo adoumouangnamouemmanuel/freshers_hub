@@ -148,7 +148,7 @@ const updateSessionStatus = asyncHandler(async (req, res) => {
 // Update session details (location, description, scheduledAt)
 const updateSession = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const { location, description, scheduledAt } = req.body;
+  const { location, description, scheduledAt, title } = req.body;
 
   const client = await pool.connect();
   try {
@@ -157,10 +157,11 @@ const updateSession = asyncHandler(async (req, res) => {
       SET location = COALESCE($1, location),
           description = COALESCE($2, description),
           scheduled_at = COALESCE($3, scheduled_at),
+          title = COALESCE($4, title),
           updated_at = now()
-      WHERE id = $4 AND (student_id = $5 OR provider_id = $5)
+      WHERE id = $5 AND (student_id = $6 OR provider_id = $6)
       RETURNING *
-    `, [location, description, scheduledAt, id, req.user.id]);
+    `, [location, description, scheduledAt, title, id, req.user.id]);
 
     if (rows.length === 0) {
       throw new AppError("Session not found", 404);
