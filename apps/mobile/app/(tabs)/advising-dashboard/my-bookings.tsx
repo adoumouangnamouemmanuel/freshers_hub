@@ -55,8 +55,9 @@ export default function AdvisingMyBookingsScreen() {
       });
       if (res.ok) {
         const data = await res.json();
-        // Filter to advising sessions only (unit_id === 3 or type not peer_coaching)
-        setSessions(data || []);
+        // Filter to advising sessions only (unit_id === 3 or type not peer_coach)
+        const advisingSessions = data.filter((s: any) => s.type !== "peer_coach");
+        setSessions(advisingSessions || []);
       }
     } catch (err) {
       console.error(err);
