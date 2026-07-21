@@ -25,6 +25,7 @@ import { getUnitLabel, getProviderRoleLabel } from "@/lib/session-utils";
 
 type Session = {
   id: string;
+  title: string;
   type: string;
   date: string;
   scheduled_at?: string;
@@ -263,6 +264,10 @@ export default function SessionsManager({
                       </View>
                     </View>
 
+                    {item.title ? (
+                      <Text style={styles.sessionTitle}>{item.title}</Text>
+                    ) : null}
+
                     <View style={styles.divider} />
 
                     <View style={styles.participantsRow}>
@@ -444,7 +449,19 @@ const styles = StyleSheet.create({
     color: "#1A2B4A",
     marginBottom: 2,
   },
-  typeText: { fontSize: 12, color: "#6B7280" },
+  typeText: {
+    fontSize: 12,
+    fontWeight: "500",
+    color: "#6B7280",
+  },
+  sessionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+    paddingHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 4,
+  },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   statusText: { fontSize: 10, fontWeight: "800" },
 
