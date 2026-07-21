@@ -155,16 +155,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="students"
-        options={{
-          title: 'Students',
-          href: (showCoachAdmin || showAdvisor || showCounsellor) ? '/(tabs)/students' : null,
-          tabBarIcon: ({ color }) => (
-            <IconSymbol size={26} name="person.3.fill" color={color} />
-          ),
-        }}
-      />
+      
       <Tabs.Screen
         name="advising-dashboard"
         options={{
@@ -182,6 +173,16 @@ export default function TabLayout() {
           href: showMyRoles ? null : (showCounsellor ? '/(tabs)/counselling-dashboard' as any : null),
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="heart.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="students"
+        options={{
+          title: 'Students',
+          href: (showCoachAdmin || showAdvisor || showCounsellor) ? '/(tabs)/students' : null,
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={26} name="person.3.fill" color={color} />
           ),
         }}
       />
