@@ -47,6 +47,7 @@ type SessionsManagerProps = {
   hideBackButton?: boolean;
   hideMySessions?: boolean;
   showFab?: boolean;
+  isCounsellorView?: boolean;
 };
 
 export default function SessionsManager({
@@ -56,6 +57,7 @@ export default function SessionsManager({
   hideBackButton = false,
   hideMySessions = false,
   showFab = true,
+  isCounsellorView = false,
 }: SessionsManagerProps) {
   const router = useRouter();
   const { session: authSession } = useAuth();
@@ -325,6 +327,7 @@ export default function SessionsManager({
         onRefresh={fetchSessions}
         currentUserId={authSession?.user?.id}
         accessToken={authSession?.accessToken}
+        isCounsellorView={isCounsellorView}
       />
 
       {/* Floating Action Button */}
