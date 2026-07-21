@@ -17,7 +17,7 @@ class AdminFeedRepository {
 
     const { rows } = await pool.query(
       `SELECT p.id, p.title, p.content, p.category, p.created_at,
-              u.full_name AS author_name, u.id AS author_id
+              u.full_name AS author_name, u.id AS author_id, u.avatar_url AS author_avatar
        FROM posts p
        JOIN users u ON u.id = p.author_id
        ${where}
