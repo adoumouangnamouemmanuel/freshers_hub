@@ -5,15 +5,15 @@ class SupportAdminRepository {
   async getDashboardStats() {
     const { rows } = await pool.query(`
       SELECT 
-        (SELECT COUNT(*) FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE r.name = 'student' AND NOT EXISTS (
+        (SELECT COUNT(DISTINCT ur.user_id) FROM user_roles ur JOIN roles r ON ur.role_id = r.id JOIN users u ON ur.user_id = u.id WHERE r.name = 'student' AND u.class_year = 2030 AND NOT EXISTS (
           SELECT 1 FROM user_roles ur2 JOIN roles r2 ON ur2.role_id = r2.id WHERE ur2.user_id = ur.user_id AND r2.name = 'peer_coach'
         )) as total_freshers,
-        (SELECT COUNT(*) FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE r.name = 'peer_coach') as total_coaches,
-        (SELECT COUNT(DISTINCT fresher_id) FROM coach_assignments) as assigned_freshers,
-        (SELECT COUNT(*) FROM sessions WHERE with_type = 'peer_coach' AND status = 'completed') as completed_mandatory_sessions,
-        (SELECT COUNT(DISTINCT fresher_id) * 3 FROM coach_assignments) as target_mandatory_sessions,
-        (SELECT COUNT(*) FROM sessions WHERE status = 'scheduled' AND scheduled_at >= now()) as upcoming_sessions_count,
-        (SELECT COUNT(*) FROM sessions WHERE status = 'scheduled' AND scheduled_at < now()) as overdue_sessions_count
+        (SELECT COUNT(DISTINCT ur.user_id) FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE r.name = 'peer_coach') as total_coaches,
+        (SELECT COUNT(DISTINCT ca.fresher_id) FROM coach_assignments ca JOIN users u ON ca.fresher_id = u.id WHERE u.class_year = 2030) as assigned_freshers,
+        (SELECT COUNT(*) FROM sessions s JOIN users u ON s.student_id = u.id WHERE s.with_type = 'peer_coach' AND s.status = 'completed' AND u.class_year = 2030) as completed_mandatory_sessions,
+        (SELECT COUNT(DISTINCT ca.fresher_id) * 3 FROM coach_assignments ca JOIN users u ON ca.fresher_id = u.id WHERE u.class_year = 2030) as target_mandatory_sessions,
+        (SELECT COUNT(*) FROM sessions s JOIN users u ON s.student_id = u.id WHERE s.status = 'scheduled' AND s.scheduled_at >= now() AND u.class_year = 2030) as upcoming_sessions_count,
+        (SELECT COUNT(*) FROM sessions s JOIN users u ON s.student_id = u.id WHERE s.status = 'scheduled' AND s.scheduled_at < now() AND u.class_year = 2030) as overdue_sessions_count
     `);
     return rows[0];
   }
@@ -24,7 +24,7 @@ class SupportAdminRepository {
       FROM coach_assignments ca
       JOIN users u ON ca.fresher_id = u.id
       JOIN users c ON ca.peer_coach_id = c.id
-      WHERE (
+      WHERE u.class_year = 2030 AND (
         SELECT COUNT(*) FROM sessions 
         WHERE student_id = ca.fresher_id AND status = 'completed'
       ) = 0
@@ -50,7 +50,7 @@ class SupportAdminRepository {
 
   async getAdminFreshers() {
     const { rows } = await pool.query(`
-      SELECT 
+      SELECT DISTINCT
         u.id, u.full_name, u.avatar_url, u.country, u.major,
         c.full_name as coach_name,
         (SELECT COUNT(*) FROM sessions WHERE student_id = u.id AND status = 'completed') as completed_sessions
@@ -59,7 +59,7 @@ class SupportAdminRepository {
       JOIN roles r ON ur.role_id = r.id
       LEFT JOIN coach_assignments ca ON u.id = ca.fresher_id
       LEFT JOIN users c ON ca.peer_coach_id = c.id
-      WHERE r.name = 'student'
+      WHERE r.name = 'student' AND u.class_year = 2030
         AND NOT EXISTS (
           SELECT 1 FROM user_roles ur2 
           JOIN roles r2 ON ur2.role_id = r2.id 
@@ -157,7 +157,7 @@ class SupportAdminRepository {
         FROM user_roles ur
         JOIN users u ON ur.user_id = u.id
         JOIN roles r ON ur.role_id = r.id
-        WHERE r.name = 'student'
+        WHERE r.name = 'student' AND u.class_year = 2030
           AND NOT EXISTS (
             SELECT 1 FROM user_roles ur2 JOIN roles r2 ON ur2.role_id = r2.id WHERE ur2.user_id = u.id AND r2.name = 'peer_coach'
           )
@@ -342,11 +342,12 @@ class SupportAdminRepository {
 
   async getAdminStudents() {
     const { rows } = await pool.query(`
-      SELECT u.id, u.full_name as name, u.avatar_url, u.country, u.major, r.name as type
+      SELECT u.id, u.full_name as name, u.avatar_url, u.country, u.major, MIN(r.name) as type
       FROM users u
       JOIN user_roles ur ON u.id = ur.user_id
       JOIN roles r ON ur.role_id = r.id
-      WHERE r.name IN ('student', 'peer_coach')
+      WHERE r.name = 'peer_coach' OR (r.name = 'student' AND u.class_year = 2030)
+      GROUP BY u.id, u.full_name, u.avatar_url, u.country, u.major
       ORDER BY u.full_name ASC
     `);
     return rows;
