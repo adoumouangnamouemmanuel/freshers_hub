@@ -263,7 +263,7 @@ const getAdminStudents = asyncHandler(async (req, res) => {
 
 // Book a session as an admin
 const adminBookSession = asyncHandler(async (req, res) => {
-  const { unitId, academicYearId, studentId, providerId, withType, scheduledAt, location, isMandatory, description } = req.body;
+  const { unitId, academicYearId, studentId, providerId, withType, scheduledAt, location, isMandatory, description, title } = req.body;
   
   if (!unitId || !academicYearId || !studentId || !providerId || !scheduledAt) {
     throw new AppError("Missing required fields", 400);
@@ -271,7 +271,7 @@ const adminBookSession = asyncHandler(async (req, res) => {
 
   try {
     const session = await supportAdminRepository.adminBookSession(
-      unitId, academicYearId, studentId, providerId, withType, scheduledAt, location, isMandatory, description
+      unitId, academicYearId, studentId, providerId, withType, scheduledAt, location, isMandatory, description, title, req.user?.id
     );
     res.status(201).json(session);
   } catch (err) {
