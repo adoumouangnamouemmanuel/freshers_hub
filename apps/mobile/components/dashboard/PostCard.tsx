@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, View, Text } from 'react-native'; 
+import { Pressable, View, Text, Image } from 'react-native'; 
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/context/auth-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -55,9 +55,13 @@ export function PostCard({ post, onUpdate }: { post: Post; onUpdate: () => void 
       }}
     >
       <View style={styles.postHeader}>
-        <View style={styles.postAuthorAvatar}>
-          <Text style={styles.postAuthorInitial}>{post.authorName.charAt(0).toUpperCase()}</Text>
-        </View>
+        {post.authorAvatar ? (
+          <Image source={{ uri: post.authorAvatar }} style={styles.postAuthorAvatarImage} />
+        ) : (
+          <View style={styles.postAuthorAvatar}>
+            <Text style={styles.postAuthorInitial}>{post.authorName.charAt(0).toUpperCase()}</Text>
+          </View>
+        )}
         <View style={styles.postAuthorInfo}>
           <Text style={styles.postAuthorName}>{post.authorName}</Text>
           <Text style={styles.postDate}>
