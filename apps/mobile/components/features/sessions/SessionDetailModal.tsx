@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { apiRequest } from "@/lib/api";
+import { getProviderRoleLabel } from "@/lib/session-utils";
 
 type Session = any;
 
@@ -43,9 +44,9 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
   useEffect(() => {
     if (isCounsellorView && visible) {
       // Fetch peer counsellors
-      apiRequest('/support/counselling/peer-counsellors', {
+      apiRequest<any[]>('/support/counselling/peer-counsellors', {
         headers: { Authorization: `Bearer ${accessToken}` }
-      }).then(res => setPeerCounsellors(res)).catch(console.error);
+      }).then(res => setPeerCounsellors(res || [])).catch(console.error);
     }
   }, [isCounsellorView, visible]);
 
@@ -271,7 +272,7 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
                         • {session.student_name} <Text style={{ fontSize: 14, color: "#6B7280" }}>(Fresher)</Text>
                       </Text>
                       <Text style={styles.detailValue}>
-                        • {session.provider_name} <Text style={{ fontSize: 14, color: "#6B7280" }}>(Coach)</Text>
+                        • {session.provider_name} <Text style={{ fontSize: 14, color: "#6B7280" }}>({getProviderRoleLabel(session.unit_id, session.type)})</Text>
                       </Text>
                     </View>
                   ) : (
