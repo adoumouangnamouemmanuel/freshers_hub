@@ -57,6 +57,7 @@ export const coachAssignments = pgTable(
 
 export const sessions = pgTable("sessions", {
   id: uuid("id").defaultRandom().primaryKey(),
+  title: text("title").notNull().default('Session'),
   unitId: integer("unit_id")
     .notNull()
     .references(() => units.id),
