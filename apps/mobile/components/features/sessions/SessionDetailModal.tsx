@@ -338,6 +338,22 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
               </View>
             ) : (
               <>
+                {isCounsellorView && session.status === 'scheduled' && (
+                  <View style={{ marginBottom: 16, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }}>
+                    <TouchableOpacity 
+                      style={{ backgroundColor: '#4F46E5', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 12 }} 
+                      onPress={() => setIsAssigning(true)}
+                      disabled={isSaving}
+                    >
+                      <Ionicons name="people" size={20} color="#FFFFFF" />
+                      <Text style={{ color: "#FFFFFF", fontSize: 16, fontWeight: "700" }}>Assign to Peer Counsellor</Text>
+                    </TouchableOpacity>
+                    <Text style={{ textAlign: 'center', marginTop: 10, fontSize: 13, color: '#6B7280' }}>
+                      Hand this session over to a peer counsellor for follow-up.
+                    </Text>
+                  </View>
+                )}
+
                 {isParticipant && (session.status === 'scheduled' || session.status === 'overdue') && (
                   <TouchableOpacity 
                     style={styles.modalBtnSuccess} 
@@ -346,17 +362,6 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
                   >
                     <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
                     <Text style={styles.modalBtnPrimaryText}>Mark Complete</Text>
-                  </TouchableOpacity>
-                )}
-
-                {isCounsellorView && session.status === 'scheduled' && (
-                  <TouchableOpacity 
-                    style={[styles.modalBtnPrimary, { backgroundColor: '#10B981', marginTop: 10 }]} 
-                    onPress={() => setIsAssigning(true)}
-                    disabled={isSaving}
-                  >
-                    <Ionicons name="people-outline" size={20} color="#FFFFFF" />
-                    <Text style={styles.modalBtnPrimaryText}>Assign Follow-up Peer</Text>
                   </TouchableOpacity>
                 )}
                 
