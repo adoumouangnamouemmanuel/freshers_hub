@@ -7,7 +7,7 @@ export default function counsellingSessionsScreen() {
       endpoint="/support/counselling/sessions"
       title="counselling Sessions"
       isAdminView={true}
-      hideMySessions={false}
+      hideMySessions={true}
       showFab={true}
       isCounsellorView={true}
     />
