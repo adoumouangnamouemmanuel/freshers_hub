@@ -19,6 +19,7 @@ import { apiRequest } from "@/lib/api";
 import { hasRole } from "@/lib/permissions";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
+import Animated, { FadeInDown } from "react-native-reanimated";
 // import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Post = {
@@ -191,6 +192,7 @@ export default function FeedScreen() {
   const [myGroups, setMyGroups] = useState<Group[]>([]);
   const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
   const [adminStats, setAdminStats] = useState<AdminStats | null>(null);
+  const [advisingData, setAdvisingData] = useState<any>(null);
 
   // Role Checks
   const currentYear = new Date().getFullYear();
@@ -204,7 +206,8 @@ export default function FeedScreen() {
   const isAdmin = hasRole(roles, "admin");
   const isCoachAdmin = hasRole(roles, "coach_admin") || isAdmin;
   const isStaff = hasRole(roles, "staff") || hasRole(roles, "faculty");
-  const isContinuingStudent = !isFresher && !isStaff && !isCoachAdmin && !isAdmin && !isPeerCoach && !isPeerCounsellor && !isClubLead;
+  const isAdvisor = hasRole(roles, "advisor");
+  const isContinuingStudent = !isFresher && !isStaff && !isCoachAdmin && !isAdmin && !isPeerCoach && !isPeerCounsellor && !isClubLead && !isAdvisor;
 
   const fetchData = async () => {
     if (!session?.accessToken) return;
@@ -257,6 +260,12 @@ export default function FeedScreen() {
       if (isCoachAdmin) {
         promises.push(
           apiRequest<AdminStats>("/support/admin/dashboard", { headers }).then(d => setAdminStats(d || null)).catch(() => {})
+        );
+      }
+
+      if (isAdvisor) {
+        promises.push(
+          apiRequest<any>("/support/advising/dashboard", { headers }).then(d => setAdvisingData(d || null)).catch(() => {})
         );
       }
 
@@ -507,39 +516,81 @@ export default function FeedScreen() {
             </Pressable>
           ))}
 
-           {/* COACH ADMIN - Senior Mental Wellness Coach Dashboard */}
-           {isCoachAdmin && !isPeerCoach && !isClubLead && (
-             <View style={styles.coachDashboardContainer}>
-               <Text style={styles.cardSectionTitle}>Coach Admin Overview</Text>
+           {/* ADVISOR - Daily Agenda & Impact Widget */}
+           {isAdvisor && !isCoachAdmin && (
+             <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.premiumDashboardContainer}>
+               <Text style={styles.premiumTitle}>Advising Command Center</Text>
                
-               <View style={styles.coachStatsRow}>
-                 <Pressable style={styles.coachStatCard} onPress={() => router.push("/(tabs)/schedule")}>
-                   <View style={styles.statIconBg}>
-                     <IconSymbol name="calendar" size={20} color="#3B82F6" />
-                   </View>
-                   <Text style={styles.statValue}>{adminStats?.upcoming_sessions_count ?? 0}</Text>
-                   <Text style={styles.statLabel}>Upcoming</Text>
+               <View style={styles.premiumRow}>
+                 <Pressable style={styles.premiumCardActive} onPress={() => router.push("/(tabs)/advising-dashboard")}>
+                   <IconSymbol name="calendar" size={24} color="#FFFFFF" />
+                   <Text style={styles.premiumValueWhite}>{advisingData?.stats?.today_sessions ?? 0}</Text>
+                   <Text style={styles.premiumLabelWhite}>Sessions Today</Text>
                  </Pressable>
+                 
+                 <View style={styles.premiumCol}>
+                   <Pressable style={styles.premiumCardSmall} onPress={() => router.push("/(tabs)/advising-dashboard")}>
+                     <Text style={styles.premiumValueDark}>{advisingData?.stats?.this_week_sessions ?? 0}</Text>
+                     <Text style={styles.premiumLabelDark}>This Week</Text>
+                   </Pressable>
+                   <Pressable style={styles.premiumCardSmallRed} onPress={() => router.push("/(tabs)/advising-dashboard")}>
+                     <Text style={styles.premiumValueRed}>{advisingData?.stats?.overdue_sessions ?? 0}</Text>
+                     <Text style={styles.premiumLabelRed}>Overdue</Text>
+                   </Pressable>
+                 </View>
+               </View>
+               
+               {advisingData?.upcomingSessions?.[0] && (
+                 <Pressable style={styles.premiumNextCard} onPress={() => router.push("/(tabs)/advising-dashboard")}>
+                   <View style={styles.premiumNextLeft}>
+                     <Text style={styles.premiumNextLabel}>UP NEXT</Text>
+                     <Text style={styles.premiumNextStudent}>{advisingData.upcomingSessions[0].student_name}</Text>
+                     <Text style={styles.premiumNextTime}>
+                       {new Date(advisingData.upcomingSessions[0].date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                     </Text>
+                   </View>
+                   <View style={styles.premiumNextIcon}>
+                     <IconSymbol name="arrow.right" size={20} color="#4F46E5" />
+                   </View>
+                 </Pressable>
+               )}
+             </Animated.View>
+           )}
 
-                 <Pressable style={styles.coachStatCard} onPress={() => router.push("/(tabs)/schedule")}>
-                   <View style={[styles.statIconBg, { backgroundColor: '#FEF2F2' }]}>
-                     <IconSymbol name="exclamationmark.triangle.fill" size={20} color="#DC2626" />
-                   </View>
-                   <Text style={styles.statValue}>{adminStats?.overdue_sessions_count ?? 0}</Text>
-                   <Text style={styles.statLabel}>Overdue</Text>
+           {/* COACH ADMIN - Executive Command Center */}
+           {isCoachAdmin && !isPeerCoach && !isClubLead && (
+             <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.premiumDashboardDark}>
+               <Text style={styles.premiumTitleDark}>Senior Coach Admin</Text>
+               
+               <View style={styles.premiumRow}>
+                 <Pressable style={styles.premiumCardDarkPrimary} onPress={() => router.push("/(tabs)/coaching-admin")}>
+                   <IconSymbol name="person.3.fill" size={24} color="#FFFFFF" />
+                   <Text style={styles.premiumValueWhiteLarge}>{adminStats?.total_freshers ?? 0}</Text>
+                   <Text style={styles.premiumLabelWhiteOp}>Total Freshers</Text>
                  </Pressable>
+                 
+                 <View style={styles.premiumCol}>
+                   <Pressable style={styles.premiumCardDarkSecondary} onPress={() => router.push("/(tabs)/coaching-admin/peer-coaches")}>
+                     <Text style={styles.premiumValueWhite}>{adminStats?.active_coaches ?? 0}</Text>
+                     <Text style={styles.premiumLabelWhiteOp}>Active Coaches</Text>
+                   </Pressable>
+                   <Pressable style={styles.premiumCardDarkWarning} onPress={() => router.push("/(tabs)/coaching-admin/compliance")}>
+                     <Text style={styles.premiumValueRed}>{adminStats?.overdue_sessions_count ?? 0}</Text>
+                     <Text style={styles.premiumLabelRed}>Needs Attention</Text>
+                   </Pressable>
+                 </View>
                </View>
 
-               <Pressable style={styles.fresherListPreview} onPress={() => router.push("/(tabs)/coaching-admin/peer-coaches")}>
-                 <Text style={styles.previewTitle}>Active Coaches: {adminStats?.active_coaches ?? 0}</Text>
-                 <IconSymbol name="chevron.right" size={18} color="#6B7280" />
+               <Pressable style={styles.premiumActionBtn} onPress={() => router.push("/(tabs)/coaching-admin")}>
+                 <Text style={styles.premiumActionText}>Open Coaching Admin</Text>
+                 <IconSymbol name="chevron.right" size={16} color="#FFFFFF" />
                </Pressable>
-             </View>
+             </Animated.View>
            )}
 
           {/* STAFF / FACULTY / ADMIN (Quick Post) */}
-          {(isCoachAdmin || isStaff) && canPost && !isPeerCoach && !isClubLead && (
-             <View style={[styles.cardsStack, { marginTop: isCoachAdmin ? 0 : 12 }]}>
+          {(isCoachAdmin || isStaff || isAdvisor) && canPost && !isPeerCoach && !isClubLead && (
+             <View style={[styles.cardsStack, { marginTop: isCoachAdmin || isAdvisor ? 0 : 12 }]}>
                 <Link href="/new-post" asChild>
                   <Pressable style={styles.quickPostCard}>
                     <IconSymbol name="plus" size={20} color="#4338CA" />
@@ -748,6 +799,155 @@ const styles = StyleSheet.create({
     backgroundColor: "#C7D2FE",
     alignItems: "center",
     justifyContent: "center",
+  },
+  emptyActionText: { fontSize: 14, fontWeight: "700", color: "#4338CA" },
+
+  // --- PREMIUM WIDGET STYLES ---
+  premiumDashboardContainer: {
+    backgroundColor: "#F4F7FB",
+    borderRadius: 24,
+    padding: 2,
+    marginBottom: 20,
+  },
+  premiumDashboardDark: {
+    backgroundColor: "#0F172A",
+    borderRadius: 28,
+    padding: 24,
+    marginBottom: 20,
+    shadowColor: "#0F172A",
+    shadowOffset: { width: 0, height: 16 },
+    shadowOpacity: 0.4,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  premiumTitle: {
+    fontSize: 16,
+    fontWeight: "800",
+    color: "#4F46E5",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginBottom: 16,
+    marginLeft: 4,
+  },
+  premiumTitleDark: {
+    fontSize: 15,
+    fontWeight: "800",
+    color: "#94A3B8",
+    textTransform: "uppercase",
+    letterSpacing: 1.2,
+    marginBottom: 20,
+  },
+  premiumRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  premiumCol: {
+    flex: 1,
+    gap: 12,
+  },
+  premiumCardActive: {
+    flex: 1,
+    backgroundColor: "#4F46E5",
+    borderRadius: 24,
+    padding: 20,
+    justifyContent: "center",
+    shadowColor: "#4F46E5",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 5,
+  },
+  premiumValueWhite: { fontSize: 32, fontWeight: "900", color: "#FFFFFF", letterSpacing: -1, marginTop: 12, marginBottom: 4 },
+  premiumValueWhiteLarge: { fontSize: 44, fontWeight: "900", color: "#FFFFFF", letterSpacing: -2, marginTop: 16, marginBottom: 4 },
+  premiumLabelWhite: { fontSize: 14, fontWeight: "600", color: "rgba(255,255,255,0.8)" },
+  premiumLabelWhiteOp: { fontSize: 13, fontWeight: "600", color: "rgba(255,255,255,0.6)" },
+  
+  premiumCardSmall: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    padding: 16,
+    justifyContent: "center",
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  premiumValueDark: { fontSize: 24, fontWeight: "900", color: "#111827", letterSpacing: -1, marginBottom: 2 },
+  premiumLabelDark: { fontSize: 12, fontWeight: "600", color: "#6B7280" },
+
+  premiumCardSmallRed: {
+    flex: 1,
+    backgroundColor: "#FEF2F2",
+    borderRadius: 20,
+    padding: 16,
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "#FECACA",
+  },
+  premiumValueRed: { fontSize: 24, fontWeight: "900", color: "#DC2626", letterSpacing: -1, marginBottom: 2 },
+  premiumLabelRed: { fontSize: 12, fontWeight: "700", color: "#EF4444" },
+
+  premiumNextCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFFFFF",
+    marginTop: 16,
+    padding: 18,
+    borderRadius: 20,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 3,
+  },
+  premiumNextLeft: { flex: 1 },
+  premiumNextLabel: { fontSize: 11, fontWeight: "800", color: "#8B5CF6", letterSpacing: 1, marginBottom: 6 },
+  premiumNextStudent: { fontSize: 17, fontWeight: "800", color: "#111827", marginBottom: 2 },
+  premiumNextTime: { fontSize: 14, fontWeight: "600", color: "#6B7280" },
+  premiumNextIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
+
+  premiumCardDarkPrimary: {
+    flex: 1,
+    backgroundColor: "#1E293B",
+    borderRadius: 24,
+    padding: 20,
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.1)",
+  },
+  premiumCardDarkSecondary: {
+    flex: 1,
+    backgroundColor: "rgba(255,255,255,0.05)",
+    borderRadius: 20,
+    padding: 16,
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.05)",
+  },
+  premiumCardDarkWarning: {
+    flex: 1,
+    backgroundColor: "rgba(239, 68, 68, 0.1)",
+    borderRadius: 20,
+    padding: 16,
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: "rgba(239, 68, 68, 0.2)",
+  },
+  premiumActionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "rgba(255,255,255,0.1)",
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 16,
+  },
+  premiumActionText: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
   personImagePlaceholderText: {
     fontSize: 20,
