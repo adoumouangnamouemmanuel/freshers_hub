@@ -55,6 +55,7 @@ const MAPPING = {
   'megaphone.fill': 'campaign',
   'person.3.fill': 'groups',
   'checkmark.circle.fill': 'check-circle',
+  'checkmark': 'check',
   'chart.bar.fill': 'bar-chart',
   'checkmark.seal.fill': 'verified',
   'exclamationmark.triangle.fill': 'warning',
