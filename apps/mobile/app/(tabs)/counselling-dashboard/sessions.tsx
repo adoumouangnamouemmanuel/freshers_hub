@@ -8,7 +8,7 @@ export default function counsellingSessionsScreen() {
       title="counselling Sessions"
       isAdminView={true}
       hideMySessions={false}
-      showFab={false}
+      showFab={true}
       isCounsellorView={true}
     />
   );
