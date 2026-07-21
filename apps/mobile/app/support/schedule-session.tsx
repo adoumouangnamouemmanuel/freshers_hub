@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, Text, View, ScrollView, Pressable, TextInput, ActivityIndicator, Platform, Alert, Modal, TouchableOpacity } from "react-native";
+import { StyleSheet, Text, View, ScrollView, Pressable, TextInput, ActivityIndicator, Platform, Alert, Modal, TouchableOpacity, FlatList } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams, Stack } from "expo-router";
 import { useAuth } from "../../context/auth-context";
@@ -51,22 +51,49 @@ export default function ScheduleSessionScreen() {
     }
   }, [editDate]);
 
-  const fetchUsers = async () => {
-    setFetchingUsers(true);
+  const [userPage, setUserPage] = useState(1);
+  const [hasMoreUsers, setHasMoreUsers] = useState(true);
+  const [loadingMoreUsers, setLoadingMoreUsers] = useState(false);
+
+  const fetchUsers = async (pageNum = 1) => {
+    setFetchingUsers(pageNum === 1);
     try {
       const endpoint = (isAsAdvisor || isAdvisorRole) ? '/support/advising/students' 
                      : isCounsellorRole ? '/support/counselling/students'
                      : '/support/admin/students';
-      const res = await fetch(`${API_URL}${endpoint}`, {
+      const res = await fetch(`${API_URL}${endpoint}?page=${pageNum}&limit=20`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
-        setUsers(await res.json());
+        const responseData = await res.json();
+        const rawData = responseData.data || [];
+        
+        if (pageNum === 1) {
+          setUsers(rawData);
+        } else {
+          setUsers(prev => [...prev, ...rawData]);
+        }
+        
+        if (responseData.meta) {
+          setHasMoreUsers(pageNum < responseData.meta.totalPages);
+        } else {
+          setHasMoreUsers(rawData.length === 20);
+        }
+        setUserPage(pageNum);
       }
     } catch (err) {
       console.error("Failed to fetch users:", err);
+      setHasMoreUsers(false);
     } finally {
       setFetchingUsers(false);
+      setLoadingMoreUsers(false);
+    }
+  };
+
+  const handleLoadMoreUsers = () => {
+    if (hasMoreUsers && !loadingMoreUsers && !fetchingUsers) {
+      setLoadingMoreUsers(true);
+      fetchUsers(userPage + 1);
     }
   };
 
@@ -354,35 +381,46 @@ export default function ScheduleSessionScreen() {
               )}
             </View>
           </View>
-          <ScrollView style={styles.scroll}>
+          <View style={{ flex: 1 }}>
             {fetchingUsers ? (
               <ActivityIndicator size="large" color="#A93C40" style={{ marginTop: 40 }} />
             ) : (
-              users.filter(u => u.name?.toLowerCase().includes(searchQuery.toLowerCase())).map((u, index) => (
-                <TouchableOpacity 
-                  key={`${u.id}-${index}`} 
-                  style={styles.userListItem}
-                  onPress={() => {
-                    setForm({ ...form, targetUserId: u.id, targetUserName: u.name });
-                    setShowUserModal(false);
-                  }}
-                >
-                  {u.avatar_url ? (
-                    <Image source={{ uri: u.avatar_url }} style={styles.userListAvatar} />
-                  ) : (
-                    <View style={styles.userListAvatarFallback}>
-                      <Text style={styles.userListAvatarText}>{u.name ? u.name.charAt(0).toUpperCase() : '?'}</Text>
+              <FlatList
+                style={styles.scroll}
+                data={users.filter(u => u.name?.toLowerCase().includes(searchQuery.toLowerCase()))}
+                keyExtractor={(item, index) => `${item.id}-${index}`}
+                onEndReached={handleLoadMoreUsers}
+                onEndReachedThreshold={0.5}
+                ListFooterComponent={
+                  loadingMoreUsers ? (
+                    <ActivityIndicator size="small" color="#A93C40" style={{ marginVertical: 16 }} />
+                  ) : null
+                }
+                renderItem={({ item: u }) => (
+                  <TouchableOpacity 
+                    style={styles.userListItem}
+                    onPress={() => {
+                      setForm({ ...form, targetUserId: u.id, targetUserName: u.name });
+                      setShowUserModal(false);
+                    }}
+                  >
+                    {u.avatar_url ? (
+                      <Image source={{ uri: u.avatar_url }} style={styles.userListAvatar} />
+                    ) : (
+                      <View style={styles.userListAvatarFallback}>
+                        <Text style={styles.userListAvatarText}>{u.name ? u.name.charAt(0).toUpperCase() : '?'}</Text>
+                      </View>
+                    )}
+                    <View style={styles.userListInfo}>
+                      <Text style={styles.userListName}>{u.name}</Text>
+                      <Text style={styles.userListRole}>{u.type === "peer_coach" ? "Coach" : "Fresher"}</Text>
                     </View>
-                  )}
-                  <View style={styles.userListInfo}>
-                    <Text style={styles.userListName}>{u.name}</Text>
-                    <Text style={styles.userListRole}>{u.type === "peer_coach" ? "Coach" : "Fresher"}</Text>
-                  </View>
-                  <IconSymbol name="plus" size={20} color="#9CA3AF" />
-                </TouchableOpacity>
-              ))
+                    <IconSymbol name="plus" size={20} color="#9CA3AF" />
+                  </TouchableOpacity>
+                )}
+              />
             )}
-          </ScrollView>
+          </View>
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
