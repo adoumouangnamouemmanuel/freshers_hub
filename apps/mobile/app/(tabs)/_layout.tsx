@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuth } from '@/context/auth-context';
-import { isClubLead, isCoachAdmin, isCoach } from '@/lib/permissions';
+import { isClubLead, isCoachAdmin, isCoach, isAdvisor } from '@/lib/permissions';
 
 const ACTIVE_TINT   = '#A93C40';
 const INACTIVE_TINT = '#9CA3AF';
@@ -22,8 +22,9 @@ export default function TabLayout() {
   const showClubAdmin = session?.user?.roles ? isClubLead(session.user.roles) : false;
   const showCoachAdmin = session?.user?.roles ? isCoachAdmin(session.user.roles) : false;
   const showPeerCoach = session?.user?.roles ? isCoach(session.user.roles) : false;
+  const showAdvisor = session?.user?.roles ? isAdvisor(session.user.roles) : false;
   
-  const elevatedRolesCount = [showClubAdmin, showPeerCoach].filter(Boolean).length;
+  const elevatedRolesCount = [showClubAdmin, showPeerCoach, showAdvisor].filter(Boolean).length;
   const showMyRoles = elevatedRolesCount > 1;
 
   return (
@@ -66,7 +67,7 @@ export default function TabLayout() {
         name="map"
         options={{
           title: 'Map',
-          href: showCoachAdmin ? null : '/(tabs)/map',
+          href: (showCoachAdmin || showAdvisor) ? null : '/(tabs)/map',
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="map.fill" color={color} />
           ),
@@ -86,7 +87,7 @@ export default function TabLayout() {
         name="support"
         options={{
           title: 'Support',
-          href: showCoachAdmin ? null : '/(tabs)/support',
+          href: (showCoachAdmin || showAdvisor) ? null : '/(tabs)/support',
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="heart.text.square.fill" color={color} />
           ),
@@ -96,7 +97,7 @@ export default function TabLayout() {
         name="clubs"
         options={{
           title: 'Clubs',
-          href: showCoachAdmin ? null : '/(tabs)/clubs',
+          href: (showCoachAdmin || showAdvisor) ? null : '/(tabs)/clubs',
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="flag.fill" color={color} />
           ),
@@ -106,7 +107,7 @@ export default function TabLayout() {
         name="help"
         options={{
           title: 'Help',
-          href: showCoachAdmin ? null : '/(tabs)/help',
+          href: (showCoachAdmin || showAdvisor) ? null : '/(tabs)/help',
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="questionmark.circle.fill" color={color} />
           ),
@@ -146,7 +147,7 @@ export default function TabLayout() {
         name="schedule"
         options={{
           title: 'Schedule',
-          href: showCoachAdmin ? '/(tabs)/schedule' : null,
+          href: showAdvisor ? null : '/(tabs)/schedule',
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="calendar" color={color} />
           ),
@@ -156,9 +157,19 @@ export default function TabLayout() {
         name="students"
         options={{
           title: 'Students',
-          href: showCoachAdmin ? '/(tabs)/students' : null,
+          href: '/(tabs)/students',
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="person.3.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="advising-dashboard"
+        options={{
+          title: 'Advising',
+          href: showMyRoles ? null : (showAdvisor ? '/(tabs)/advising-dashboard' : null),
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={26} name="book.fill" color={color} />
           ),
         }}
       />
