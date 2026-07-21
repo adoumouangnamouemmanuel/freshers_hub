@@ -192,19 +192,12 @@ export default function MyCoachingScreen() {
             </TouchableOpacity>
           </View>
           
-          {upcomingYvonneSession ? (
-            <View style={styles.upcomingBox}>
-              <Ionicons name="calendar" size={16} color="#1A2B4A" />
-              <Text style={styles.upcomingText}>Next: {new Date(upcomingYvonneSession.date).toLocaleDateString()}</Text>
-            </View>
-          ) : (
-            <TouchableOpacity 
-              style={[styles.btnSecondary, { marginTop: 12, justifyContent: 'center' }]} 
-              onPress={() => router.push(`/support/schedule-session?userId=44444444-4444-4444-4444-444444444444&name=${encodeURIComponent('Yvonne Ansah')}` as any)}
-            >
-              <Text style={styles.btnSecondaryText}>Schedule a Check-in</Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity 
+            style={[styles.btnSecondary, { marginTop: 12, justifyContent: 'center' }]} 
+            onPress={() => router.push(`/support/schedule-session?userId=44444444-4444-4444-4444-444444444444&name=${encodeURIComponent('Coach Yvonne')}` as any)}
+          >
+            <Text style={styles.btnSecondaryText}>Schedule Session</Text>
+          </TouchableOpacity>
         </View>
 
       </ScrollView>
