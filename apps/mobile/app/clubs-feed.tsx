@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, View, ScrollView, ActivityIndicator, Pressable, RefreshControl } from "react-native";
+import { StyleSheet, Text, View, ScrollView, ActivityIndicator, Pressable, RefreshControl, Image } from "react-native";
 import { useRouter, Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -53,9 +53,13 @@ function ClubPostCard({ post, index }: { post: Post; index: number }) {
         )}
         
         <View style={styles.postHeader}>
-          <View style={styles.authorAvatar}>
-            <Text style={styles.authorInitial}>{post.authorName?.charAt(0) || '?'}</Text>
-          </View>
+          {post.authorAvatar ? (
+            <Image source={{ uri: post.authorAvatar }} style={styles.authorAvatarImage} />
+          ) : (
+            <View style={styles.authorAvatar}>
+              <Text style={styles.authorInitial}>{post.authorName?.charAt(0) || '?'}</Text>
+            </View>
+          )}
           <View style={styles.authorInfo}>
             <Text style={styles.authorName}>{post.authorName}</Text>
             <Text style={styles.postMeta}>
@@ -268,6 +272,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#1A2B4A',
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: 12,
+  },
+  authorAvatarImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     marginRight: 12,
   },
   authorInitial: {
