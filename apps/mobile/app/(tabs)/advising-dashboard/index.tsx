@@ -160,7 +160,7 @@ export default function AdvisingDashboard() {
               </View>
               <TouchableOpacity
                 style={styles.alertAction}
-                onPress={() => router.push("/(tabs)/advising-dashboard/sessions" as any)}
+                onPress={() => router.push("/(tabs)/advising-dashboard/my-bookings" as any)}
               >
                 <Text style={styles.alertActionText}>View</Text>
               </TouchableOpacity>
@@ -173,11 +173,11 @@ export default function AdvisingDashboard() {
           <View style={styles.navGrid}>
             {[
               {
-                label: "All Sessions",
-                icon: "calendar-outline" as const,
-                route: "/(tabs)/advising-dashboard/sessions",
-                color: "#4F46E5",
-                bg: "#E0E7FF",
+                label: "My Bookings",
+                icon: "bookmark-outline" as const,
+                route: "/(tabs)/advising-dashboard/my-bookings",
+                color: "#8B5CF6",
+                bg: "#EDE9FE",
               },
               {
                 label: "Reports",
@@ -185,13 +185,6 @@ export default function AdvisingDashboard() {
                 route: "/(tabs)/advising-dashboard/reports",
                 color: "#EC4899",
                 bg: "#FCE7F3",
-              },
-              {
-                label: "My Bookings",
-                icon: "bookmark-outline" as const,
-                route: "/(tabs)/advising-dashboard/my-bookings",
-                color: "#8B5CF6",
-                bg: "#EDE9FE",
               },
             ].map((item) => (
               <TouchableOpacity
@@ -214,7 +207,7 @@ export default function AdvisingDashboard() {
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Upcoming Sessions</Text>
             {upcomingSessions.length > 0 && (
-              <TouchableOpacity onPress={() => router.push("/(tabs)/advising-dashboard/sessions" as any)}>
+              <TouchableOpacity onPress={() => router.push("/(tabs)/advising-dashboard/my-bookings" as any)}>
                 <Text style={styles.seeAll}>See All</Text>
               </TouchableOpacity>
             )}
