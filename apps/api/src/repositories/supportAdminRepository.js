@@ -336,9 +336,11 @@ class SupportAdminRepository {
     return rows[0];
   }
 
-  async getAdminSessions() {
+  async getAdminSessions(page = 1, limit = 20) {
+    const offset = (page - 1) * limit;
     const { rows } = await pool.query(`
       SELECT 
+        COUNT(*) OVER() AS total_count,
         s.id, s.with_type as type, s.scheduled_at as date, s.status, s.location, s.description, s.is_mandatory,
         s.student_id, s.provider_id, s.title,
         u1.full_name as student_name, u1.avatar_url as student_avatar,
@@ -350,21 +352,45 @@ class SupportAdminRepository {
       LEFT JOIN session_reports r ON s.id = r.session_id
       WHERE s.with_type = 'peer_coach'
       ORDER BY s.scheduled_at DESC
-    `);
-    return rows;
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+    
+    const total = rows.length > 0 ? parseInt(rows[0].total_count, 10) : 0;
+    return {
+      data: rows,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
   }
 
-  async getAdminStudents() {
+  async getAdminStudents(page = 1, limit = 20) {
+    const offset = (page - 1) * limit;
     const { rows } = await pool.query(`
-      SELECT u.id, u.full_name as name, u.avatar_url, u.country, u.major, MIN(r.name) as type
+      SELECT COUNT(*) OVER() AS total_count,
+             u.id, u.full_name as name, u.avatar_url, u.country, u.major, MIN(r.name) as type
       FROM users u
       JOIN user_roles ur ON u.id = ur.user_id
       JOIN roles r ON ur.role_id = r.id
       WHERE r.name = 'peer_coach' OR (r.name = 'student' AND u.class_year = 2030)
       GROUP BY u.id, u.full_name, u.avatar_url, u.country, u.major
       ORDER BY u.full_name ASC
-    `);
-    return rows;
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
+    
+    const total = rows.length > 0 ? parseInt(rows[0].total_count, 10) : 0;
+    return {
+      data: rows,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
   }
 
   async adminBookSession(unitId, academicYearId, studentId, providerId, withType, scheduledAt, location, isMandatory, description, title, bookedById) {
