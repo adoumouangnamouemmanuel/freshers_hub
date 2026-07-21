@@ -30,12 +30,14 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [editLocation, setEditLocation] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editTitle, setEditTitle] = useState("");
 
   useEffect(() => {
     if (session) {
       setEditDate(new Date(session.date || session.scheduled_at || new Date()));
       setEditLocation(session.location || "");
       setEditDescription(session.description || "");
+      setEditTitle(session.title || "");
       setIsEditMode(false);
       setIsAssigning(false);
     }
@@ -115,7 +117,8 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
         body: JSON.stringify({
           scheduledAt: editDate.toISOString(),
           location: editLocation,
-          description: editDescription
+          description: editDescription,
+          title: editTitle
         })
       });
       setIsEditMode(false);
@@ -224,7 +227,15 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
                     onChange={onTimeChange}
                   />
                 )}
-                
+                <Text style={styles.label}>Title</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editTitle}
+                  onChangeText={setEditTitle}
+                  placeholder="e.g. Initial Consultation"
+                  placeholderTextColor="#9CA3AF"
+                />
+
                 <Text style={styles.label}>Location</Text>
                 <TextInput 
                   style={styles.input} 
