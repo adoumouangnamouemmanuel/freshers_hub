@@ -6,7 +6,7 @@ const supportAdminRepository = require("../repositories/supportAdminRepository")
 // Dashboard Overview
 const getAdminDashboardStats = asyncHandler(async (req, res) => {
   try {
-    const stats = await supportAdminRepository.getDashboardStats();
+    const stats = await supportAdminRepository.getDashboardStats(req.user.id);
 
     const totalFreshers = parseInt(stats.total_freshers);
     const totalCoaches = parseInt(stats.total_coaches);
