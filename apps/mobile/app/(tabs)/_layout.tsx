@@ -147,7 +147,7 @@ export default function TabLayout() {
         name="schedule"
         options={{
           title: 'Schedule',
-          href: showAdvisor ? null : '/(tabs)/schedule',
+          href: showCoachAdmin ? '/(tabs)/schedule' : null,
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="calendar" color={color} />
           ),
@@ -157,7 +157,7 @@ export default function TabLayout() {
         name="students"
         options={{
           title: 'Students',
-          href: '/(tabs)/students',
+          href: (showCoachAdmin || showAdvisor) ? '/(tabs)/students' : null,
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="person.3.fill" color={color} />
           ),
