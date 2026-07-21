@@ -55,32 +55,58 @@ export default function MyBookingsManager({ unitId }: Props) {
 
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
 
-  const fetchMyBookings = async () => {
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+
+  const fetchMyBookings = async (pageNum = 1) => {
     try {
-      const res = await fetch(`${API_URL}/support/my-sessions`, {
+      const res = await fetch(`${API_URL}/support/my-sessions?page=${pageNum}&limit=20`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        const data = await res.json();
+        const responseData = await res.json();
+        const rawData = responseData.data || [];
         // Filter by unit_id if provided
-        const filteredSessions = unitId ? data.filter((s: any) => s.unit_id === unitId) : data;
-        setSessions(filteredSessions || []);
+        const filteredSessions = unitId ? rawData.filter((s: any) => s.unit_id === unitId) : rawData;
+        
+        if (pageNum === 1) {
+          setSessions(filteredSessions);
+        } else {
+          setSessions(prev => [...prev, ...filteredSessions]);
+        }
+
+        if (responseData.meta) {
+          setHasMore(pageNum < responseData.meta.totalPages);
+        } else {
+          setHasMore(rawData.length === 20);
+        }
+        setPage(pageNum);
       }
     } catch (err) {
       console.error(err);
+      setHasMore(false);
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setLoadingMore(false);
     }
   };
 
   useEffect(() => {
-    if (token) fetchMyBookings();
+    if (token) fetchMyBookings(1);
   }, [token]);
 
   const onRefresh = () => {
     setRefreshing(true);
-    fetchMyBookings();
+    fetchMyBookings(1);
+  };
+  
+  const handleLoadMore = () => {
+    if (hasMore && !loadingMore && !loading) {
+      setLoadingMore(true);
+      fetchMyBookings(page + 1);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -154,12 +180,19 @@ export default function MyBookingsManager({ unitId }: Props) {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#4F46E5" />
           }
+          onEndReached={handleLoadMore}
+          onEndReachedThreshold={0.5}
           ListEmptyComponent={() => (
             <View style={styles.emptyState}>
               <Ionicons name="calendar-outline" size={48} color="#D1D5DB" />
               <Text style={styles.emptyText}>No sessions found.</Text>
             </View>
           )}
+          ListFooterComponent={
+            loadingMore ? (
+              <ActivityIndicator size="small" color="#4F46E5" style={{ marginVertical: 16 }} />
+            ) : null
+          }
           renderItem={({ item, index }) => {
             const dateStr = item.date || item.scheduled_at || new Date().toISOString();
             const dateObj = new Date(dateStr);
