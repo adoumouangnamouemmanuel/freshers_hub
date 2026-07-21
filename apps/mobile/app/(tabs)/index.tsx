@@ -519,7 +519,7 @@ export default function FeedScreen() {
            {/* ADVISOR - Daily Agenda & Impact Widget */}
            {isAdvisor && !isCoachAdmin && (
              <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.premiumDashboardContainer}>
-               <Text style={styles.premiumTitle}>Advising Command Center</Text>
+               <Text style={styles.premiumTitle}>Quick Overview</Text>
                
                <View style={styles.premiumRow}>
                  <Pressable style={styles.premiumCardActive} onPress={() => router.push("/(tabs)/advising-dashboard")}>
