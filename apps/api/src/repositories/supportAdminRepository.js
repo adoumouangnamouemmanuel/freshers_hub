@@ -127,7 +127,7 @@ class SupportAdminRepository {
 
   async getRecentSessions(userId, sessionFilter, params) {
     const { rows } = await pool.query(`
-      SELECT s.id, s.with_type as type, s.scheduled_at as date, s.status, s.location, s.provider_id, s.student_id,
+      SELECT s.id, s.with_type as type, s.scheduled_at as date, s.status, s.location, s.provider_id, s.student_id, s.title,
              u.full_name as with_name, r.content as report_content
       FROM sessions s
       LEFT JOIN session_reports r ON s.id = r.session_id
