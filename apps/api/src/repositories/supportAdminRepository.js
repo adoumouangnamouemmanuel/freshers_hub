@@ -366,14 +366,23 @@ class SupportAdminRepository {
     return rows;
   }
 
-  async adminBookSession(unitId, academicYearId, studentId, providerId, withType, scheduledAt, location, isMandatory, description) {
+  async adminBookSession(unitId, academicYearId, studentId, providerId, withType, scheduledAt, location, isMandatory, description, title, bookedById) {
+    let finalTitle = title;
+    if (!finalTitle && bookedById) {
+      const { rows: userRows } = await pool.query("SELECT full_name FROM users WHERE id = $1", [bookedById]);
+      const userName = userRows[0]?.full_name || "Admin";
+      finalTitle = `${userName}'s session`;
+    } else if (!finalTitle) {
+      finalTitle = "Admin's session";
+    }
+
     const { rows } = await pool.query(`
       INSERT INTO sessions 
-        (unit_id, academic_year_id, student_id, provider_id, with_type, scheduled_at, location, description, is_mandatory, status)
+        (title, unit_id, academic_year_id, student_id, provider_id, with_type, scheduled_at, location, description, is_mandatory, status)
       VALUES 
-        ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'scheduled')
+        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'scheduled')
       RETURNING *
-    `, [unitId, academicYearId, studentId, providerId, withType || 'peer_coach', scheduledAt, location, description, isMandatory || false]);
+    `, [finalTitle, unitId, academicYearId, studentId, providerId, withType || 'peer_coach', scheduledAt, location, description, isMandatory || false]);
     return rows[0];
   }
 }
