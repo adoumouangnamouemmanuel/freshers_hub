@@ -97,57 +97,63 @@ export default function SupportScreen() {
   const totalMandatory = coachingSessions.filter(s => s.is_mandatory).length || 3;
   const completionRate = Math.min((completedSessions / Math.max(totalMandatory, 1)) * 100, 100);
 
-  const renderStaffCard = (staff: any, roleLabel: string, bgColor: string, index: number = 0) => (
-    <Animated.View entering={FadeInDown.delay(index * 100).duration(400)} key={staff.id} style={styles.staffCard}>
-      <View style={styles.staffHeader}>
-        {staff.avatar_url ? (
-          <Image source={{ uri: staff.avatar_url }} style={styles.staffAvatar} />
-        ) : (
-          <View style={[styles.staffAvatarPlaceholder, { backgroundColor: bgColor }]}>
-            <Text style={styles.staffAvatarText}>{staff.name?.charAt(0) || "S"}</Text>
+  const renderStaffCard = (staff: any, roleLabel: string, bgColor: string, index: number = 0) => {
+    let targetUnitId = 1;
+    if (roleLabel === "University Counsellor") targetUnitId = 2;
+    else if (roleLabel === "Academic Advisor") targetUnitId = 3;
+
+    return (
+      <Animated.View entering={FadeInDown.delay(index * 100).duration(400)} key={staff.id} style={styles.staffCard}>
+        <View style={styles.staffHeader}>
+          {staff.avatar_url ? (
+            <Image source={{ uri: staff.avatar_url }} style={styles.staffAvatar} />
+          ) : (
+            <View style={[styles.staffAvatarPlaceholder, { backgroundColor: bgColor }]}>
+              <Text style={styles.staffAvatarText}>{staff.name?.charAt(0) || "S"}</Text>
+            </View>
+          )}
+          <View style={styles.staffInfo}>
+            <Text style={styles.staffName}>{staff.name}</Text>
+            <Text style={styles.staffRole}>{roleLabel}</Text>
           </View>
-        )}
-        <View style={styles.staffInfo}>
-          <Text style={styles.staffName}>{staff.name}</Text>
-          <Text style={styles.staffRole}>{roleLabel}</Text>
         </View>
-      </View>
 
-      <View style={styles.staffContactRow}>
-        <View style={styles.contactItem}>
-          <IconSymbol name="envelope.fill" size={14} color="#6B7280" />
-          <Text style={styles.contactText} numberOfLines={1}>{staff.email || "No email"}</Text>
+        <View style={styles.staffContactRow}>
+          <View style={styles.contactItem}>
+            <IconSymbol name="envelope.fill" size={14} color="#6B7280" />
+            <Text style={styles.contactText} numberOfLines={1}>{staff.email || "No email"}</Text>
+          </View>
+          <View style={styles.contactItem}>
+            <IconSymbol name="phone.fill" size={14} color="#6B7280" />
+            <Text style={styles.contactText}>{staff.phone || "No phone"}</Text>
+          </View>
         </View>
-        <View style={styles.contactItem}>
-          <IconSymbol name="phone.fill" size={14} color="#6B7280" />
-          <Text style={styles.contactText}>{staff.phone || "No phone"}</Text>
-        </View>
-      </View>
 
-      <View style={styles.staffActions}>
-        <View style={styles.socialRow}>
+        <View style={styles.staffActions}>
+          <View style={styles.socialRow}>
+            <TouchableOpacity 
+              style={[styles.socialBtn, { backgroundColor: "#DCFCE7" }]} 
+              onPress={() => handleWhatsApp(staff.phone)}
+            >
+              <FontAwesome name="whatsapp" size={20} color="#16A34A" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.socialBtn, { backgroundColor: "#F3F4F6" }]} 
+              onPress={() => handleCall(staff.phone)}
+            >
+              <IconSymbol name="phone.fill" size={18} color="#4B5563" />
+            </TouchableOpacity>
+          </View>
           <TouchableOpacity 
-            style={[styles.socialBtn, { backgroundColor: "#DCFCE7" }]} 
-            onPress={() => handleWhatsApp(staff.phone)}
+            style={styles.bookBtn} 
+            onPress={() => router.push(`/support/schedule-session?userId=${staff.id}&name=${encodeURIComponent(staff.name)}&unitId=${targetUnitId}&role=${encodeURIComponent(roleLabel)}` as any)}
           >
-            <FontAwesome name="whatsapp" size={20} color="#16A34A" />
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.socialBtn, { backgroundColor: "#F3F4F6" }]} 
-            onPress={() => handleCall(staff.phone)}
-          >
-            <IconSymbol name="phone.fill" size={18} color="#4B5563" />
+            <Text style={styles.bookBtnText}>Book Session</Text>
           </TouchableOpacity>
         </View>
-        <TouchableOpacity 
-          style={styles.bookBtn} 
-          onPress={() => router.push(`/support/schedule-session?userId=${staff.id}&name=${encodeURIComponent(staff.name)}` as any)}
-        >
-          <Text style={styles.bookBtnText}>Book Session</Text>
-        </TouchableOpacity>
-      </View>
-    </Animated.View>
-  );
+      </Animated.View>
+    );
+  };
 
   return (
     <View style={styles.screen}>
