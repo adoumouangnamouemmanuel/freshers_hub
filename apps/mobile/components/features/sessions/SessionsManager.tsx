@@ -15,6 +15,7 @@ import {
   TouchableOpacity,
   View,
   FlatList,
+  Image,
 } from "react-native";
 import Animated, { FadeInDown, SlideInDown } from "react-native-reanimated";
 import {
@@ -39,6 +40,7 @@ type Session = {
   provider_id: string;
   student_id: string;
   provider_avatar: string;
+  student_avatar?: string;
   unit_id?: number;
 };
 
@@ -316,11 +318,15 @@ export default function SessionsManager({
 
                   <View style={styles.participantsRow}>
                     <View style={styles.participant}>
-                      <View style={styles.avatarFallback}>
-                        <Text style={styles.avatarFallbackText}>
-                          {item.provider_name?.charAt(0) || "C"}
-                        </Text>
-                      </View>
+                      {item.provider_avatar ? (
+                        <Image source={{ uri: item.provider_avatar }} style={[styles.avatarFallback, { backgroundColor: 'transparent' }]} />
+                      ) : (
+                        <View style={styles.avatarFallback}>
+                          <Text style={styles.avatarFallbackText}>
+                            {item.provider_name?.charAt(0) || "C"}
+                          </Text>
+                        </View>
+                      )}
                       <View>
                         <Text style={styles.roleLabel}>{getProviderRoleLabel(item.unit_id, item.type)}</Text>
                         <Text style={styles.nameText}>
@@ -334,11 +340,15 @@ export default function SessionsManager({
                       color="#9CA3AF"
                     />
                     <View style={styles.participant}>
-                      <View style={styles.avatarFallback}>
-                        <Text style={styles.avatarFallbackText}>
-                          {item.student_name?.charAt(0) || "S"}
-                        </Text>
-                      </View>
+                      {item.student_avatar ? (
+                        <Image source={{ uri: item.student_avatar }} style={[styles.avatarFallback, { backgroundColor: 'transparent' }]} />
+                      ) : (
+                        <View style={styles.avatarFallback}>
+                          <Text style={styles.avatarFallbackText}>
+                            {item.student_name?.charAt(0) || "S"}
+                          </Text>
+                        </View>
+                      )}
                       <View>
                         <Text style={styles.roleLabel}>Student</Text>
                         <Text style={styles.nameText}>
