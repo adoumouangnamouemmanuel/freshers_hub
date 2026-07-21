@@ -23,12 +23,12 @@ export default function MyCoachingScreen() {
     try {
       const headers = { Authorization: `Bearer ${session.accessToken}` };
       const [freshersRes, sessionsRes] = await Promise.all([
-        apiRequest<any[]>("/support/coaches/freshers", { headers }).catch(() => []),
-        apiRequest<any[]>("/support/sessions", { headers }).catch(() => []),
+        apiRequest<any>("/support/coaches/freshers", { headers }).catch(() => []),
+        apiRequest<any>("/support/sessions", { headers }).catch(() => []),
       ]);
 
-      setFreshers(freshersRes || []);
-      setAllSessions(sessionsRes || []);
+      setFreshers(Array.isArray(freshersRes) ? freshersRes : freshersRes?.data || []);
+      setAllSessions(Array.isArray(sessionsRes) ? sessionsRes : sessionsRes?.data || []);
     } catch (err) {
       console.error("Error fetching coaching data", err);
     } finally {
