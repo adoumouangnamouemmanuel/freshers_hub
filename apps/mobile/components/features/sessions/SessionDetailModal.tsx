@@ -14,11 +14,14 @@ type SessionDetailModalProps = {
   onRefresh: () => void;
   currentUserId?: string;
   accessToken?: string;
+  isCounsellorView?: boolean;
 };
 
-export default function SessionDetailModal({ session, visible, onClose, onRefresh, currentUserId, accessToken }: SessionDetailModalProps) {
+export default function SessionDetailModal({ session, visible, onClose, onRefresh, currentUserId, accessToken, isCounsellorView }: SessionDetailModalProps) {
   const [isEditMode, setIsEditMode] = useState(false);
+  const [isAssigning, setIsAssigning] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [peerCounsellors, setPeerCounsellors] = useState<any[]>([]);
 
   // Edit Form State
   const [editDate, setEditDate] = useState<Date>(new Date());
@@ -33,8 +36,18 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
       setEditLocation(session.location || "");
       setEditDescription(session.description || "");
       setIsEditMode(false);
+      setIsAssigning(false);
     }
   }, [session]);
+
+  useEffect(() => {
+    if (isCounsellorView && visible) {
+      // Fetch peer counsellors
+      apiRequest('/support/counselling/peer-counsellors', {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      }).then(res => setPeerCounsellors(res)).catch(console.error);
+    }
+  }, [isCounsellorView, visible]);
 
   const onDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
@@ -59,6 +72,33 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
       onClose();
     } catch (err) {
       Alert.alert("Error", "Could not update session status");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleAssignPeer = async (peerId: string) => {
+    if (!session || !accessToken) return;
+    setIsSaving(true);
+    try {
+      await apiRequest('/support/counselling/assignments', {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({
+          studentId: session.student_id,
+          peerCounsellorId: peerId
+        })
+      });
+      // Mark as completed
+      await apiRequest(`/support/sessions/${session.id}/status`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${accessToken}` },
+        body: JSON.stringify({ status: 'completed' })
+      });
+      onRefresh();
+      onClose();
+    } catch (err) {
+      Alert.alert("Error", "Could not assign peer counsellor");
     } finally {
       setIsSaving(false);
     }
@@ -201,6 +241,23 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
                   multiline
                 />
               </View>
+            ) : isAssigning ? (
+              <View style={styles.form}>
+                <Text style={styles.label}>Select Peer Counsellor</Text>
+                <Text style={{ fontSize: 14, color: "#6B7280", marginBottom: 12 }}>
+                  Assigning a peer counsellor will automatically complete this session.
+                </Text>
+                {peerCounsellors.map(peer => (
+                  <TouchableOpacity
+                    key={peer.id}
+                    style={{ padding: 12, backgroundColor: "#F3F4F6", borderRadius: 8, marginBottom: 8 }}
+                    onPress={() => handleAssignPeer(peer.id)}
+                  >
+                    <Text style={{ fontSize: 16, fontWeight: "600", color: "#111827" }}>{peer.name}</Text>
+                    <Text style={{ fontSize: 14, color: "#6B7280" }}>{peer.email}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             ) : (
               <View style={styles.detailsView}>
                 <View style={styles.detailBlock}>
@@ -273,6 +330,12 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
                   {isSaving ? <ActivityIndicator color="#FFF"/> : <Text style={styles.modalBtnPrimaryText}>Save Changes</Text>}
                 </TouchableOpacity>
               </View>
+            ) : isAssigning ? (
+              <View style={styles.actionRow}>
+                <TouchableOpacity style={styles.modalBtnAlt} onPress={() => setIsAssigning(false)}>
+                  <Text style={styles.modalBtnAltText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
             ) : (
               <>
                 {isParticipant && (session.status === 'scheduled' || session.status === 'overdue') && (
@@ -283,6 +346,17 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
                   >
                     <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
                     <Text style={styles.modalBtnPrimaryText}>Mark Complete</Text>
+                  </TouchableOpacity>
+                )}
+
+                {isCounsellorView && session.status === 'scheduled' && (
+                  <TouchableOpacity 
+                    style={[styles.modalBtnPrimary, { backgroundColor: '#10B981', marginTop: 10 }]} 
+                    onPress={() => setIsAssigning(true)}
+                    disabled={isSaving}
+                  >
+                    <Ionicons name="people-outline" size={20} color="#FFFFFF" />
+                    <Text style={styles.modalBtnPrimaryText}>Assign Follow-up Peer</Text>
                   </TouchableOpacity>
                 )}
                 
