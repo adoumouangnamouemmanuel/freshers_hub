@@ -22,6 +22,7 @@ const MAPPING = {
   'newspaper.fill': 'article',
   'map.fill': 'map',
   'heart.text.square.fill': 'support',
+  'heart.fill': 'favorite',
   'person.2.fill': 'groups',
   'questionmark.circle.fill': 'help',
   'star.fill': 'star',
