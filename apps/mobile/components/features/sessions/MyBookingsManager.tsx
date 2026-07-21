@@ -21,6 +21,7 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
 type Session = {
   id: string;
+  title: string;
   type: string;
   date: string;
   scheduled_at?: string;
@@ -196,6 +197,10 @@ export default function MyBookingsManager({ unitId }: Props) {
                     </View>
                   </View>
 
+                  {item.title ? (
+                    <Text style={styles.sessionTitle}>{item.title}</Text>
+                  ) : null}
+
                   <View style={styles.divider} />
 
                   <View style={styles.participantsRow}>
@@ -306,6 +311,13 @@ const styles = StyleSheet.create({
   timeInfo: { flex: 1 },
   timeText: { fontSize: 15, fontWeight: "700", color: "#111827", marginBottom: 2 },
   typeText: { fontSize: 12, color: "#6B7280", fontWeight: "600", letterSpacing: 0.5 },
+  sessionTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+    marginTop: 12,
+    marginBottom: 4,
+  },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   statusText: { fontSize: 10, fontWeight: "800" },
 
