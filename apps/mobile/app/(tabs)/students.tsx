@@ -204,7 +204,7 @@ export default function StudentsScreen() {
               </View>
               <View style={[styles.roleBadge, { backgroundColor: item.type === "peer_coach" ? "#E0E7FF" : "#F3F4F6" }]}>
                 <Text style={[styles.roleText, { color: item.type === "peer_coach" ? "#4338CA" : "#4B5563" }]}>
-                  {item.type === "peer_coach" ? "Coach" : "Fresher"}
+                  {item.type === "peer_coach" ? "Coach" : (showClassYears ? "Student" : "Fresher")}
                 </Text>
               </View>
               <IconSymbol name="chevron.right" size={20} color="#D1D5DB" style={{ marginLeft: 8 }} />
