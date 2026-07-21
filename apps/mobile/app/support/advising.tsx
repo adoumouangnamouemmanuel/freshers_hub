@@ -77,6 +77,9 @@ export default function AdvisingScreen() {
                 </Text>
               </View>
               <View style={styles.sessionInfo}>
+                {session.title ? (
+                  <Text style={{ fontSize: 16, fontWeight: '700', marginBottom: 6, color: '#111827' }}>{session.title}</Text>
+                ) : null}
                 <Text style={styles.sessionTime}>
                   <IconSymbol name="calendar" size={14} color="#6B7280" /> {new Date(session.scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </Text>
