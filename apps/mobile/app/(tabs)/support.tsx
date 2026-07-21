@@ -43,14 +43,14 @@ export default function SupportScreen() {
         apiRequest<any>("/support/buddy", { headers }).catch(() => null),
         apiRequest<any[]>("/support/staff/counselling", { headers }).catch(() => []),
         apiRequest<any[]>("/support/staff/advising", { headers }).catch(() => []),
-        apiRequest<any[]>("/support/sessions", { headers }).catch(() => []),
+        apiRequest<any>("/support/sessions", { headers }).catch(() => []),
       ]);
 
       setAssignedCoach(coachRes?.[0] || null);
       setBuddy(buddyRes || null);
       setCounsellors(counsellorsRes || []);
       setAdvisors(advisorsRes || []);
-      setSessions(sessionsRes || []);
+      setSessions(Array.isArray(sessionsRes) ? sessionsRes : sessionsRes?.data || []);
     } catch (err) {
       console.error("Error fetching support data", err);
     } finally {
