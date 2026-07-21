@@ -37,7 +37,10 @@ function requireRoles(...allowedRoles) {
       return res.status(401).json({ error: "Not authenticated" });
     }
 
-    const hasAccess = req.user.roles.some((r) => allowedRoles.includes(r));
+    const hasAccess = req.user.roles.some((r) => {
+      const roleName = typeof r === 'string' ? r : (r.name || r);
+      return allowedRoles.includes(roleName);
+    });
     if (!hasAccess) {
       return res.status(403).json({ error: "Insufficient permissions" });
     }
