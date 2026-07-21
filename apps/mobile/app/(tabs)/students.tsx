@@ -7,6 +7,7 @@ import { useAuth } from "../../context/auth-context";
 import { IconSymbol } from "../../components/ui/icon-symbol";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { Image } from "expo-image";
+import { hasRole, isAdvisor } from "../../lib/permissions";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -21,9 +22,12 @@ export default function StudentsScreen() {
   const [activeTab, setActiveTab] = useState("all"); // 'all', 'freshers', 'coaches'
   const [searchQuery, setSearchQuery] = useState("");
 
+  const isAdvisorUser = hasRole(session?.user?.roles || [], "advisor");
+
   const fetchDirectory = async () => {
     try {
-      const res = await fetch(`${API_URL}/support/admin/students`, {
+      const endpoint = isAdvisorUser ? '/support/advising/students' : '/support/admin/students';
+      const res = await fetch(`${API_URL}${endpoint}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -42,16 +46,26 @@ export default function StudentsScreen() {
   }, [token]);
 
   const filteredUsers = users.filter((u: any) => {
-    const matchesTab = 
-      activeTab === "all" || 
-      (activeTab === "freshers" && u.type === "student") || 
-      (activeTab === "coaches" && u.type === "peer_coach");
+    let matchesTab = false;
+    if (isAdvisorUser) {
+      matchesTab = activeTab === "all" || String(u.class_year) === activeTab;
+    } else {
+      matchesTab = 
+        activeTab === "all" || 
+        (activeTab === "freshers" && u.type === "student") || 
+        (activeTab === "coaches" && u.type === "peer_coach");
+    }
     
     const matchesSearch = u.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
                           u.major?.toLowerCase().includes(searchQuery.toLowerCase());
                           
     return matchesTab && matchesSearch;
   });
+
+  // Extract unique class years for the advisor tabs
+  const classYears = isAdvisorUser 
+    ? Array.from(new Set(users.map((u: any) => u.class_year).filter(Boolean))).sort()
+    : [];
 
   if (loading) {
     return (
@@ -84,24 +98,41 @@ export default function StudentsScreen() {
       </View>
 
       <View style={styles.tabContainer}>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === "all" && styles.activeTab]} 
-          onPress={() => setActiveTab("all")}
-        >
-          <Text style={[styles.tabText, activeTab === "all" && styles.activeTabText]}>All</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === "freshers" && styles.activeTab]} 
-          onPress={() => setActiveTab("freshers")}
-        >
-          <Text style={[styles.tabText, activeTab === "freshers" && styles.activeTabText]}>Freshers</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={[styles.tab, activeTab === "coaches" && styles.activeTab]} 
-          onPress={() => setActiveTab("coaches")}
-        >
-          <Text style={[styles.tabText, activeTab === "coaches" && styles.activeTabText]}>Coaches</Text>
-        </TouchableOpacity>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexGrow: 1 }}>
+          <TouchableOpacity 
+            style={[styles.tab, activeTab === "all" && styles.activeTab]} 
+            onPress={() => setActiveTab("all")}
+          >
+            <Text style={[styles.tabText, activeTab === "all" && styles.activeTabText]}>All</Text>
+          </TouchableOpacity>
+          
+          {isAdvisorUser ? (
+            classYears.map((year: any) => (
+              <TouchableOpacity 
+                key={year}
+                style={[styles.tab, activeTab === String(year) && styles.activeTab, { minWidth: 60 }]} 
+                onPress={() => setActiveTab(String(year))}
+              >
+                <Text style={[styles.tabText, activeTab === String(year) && styles.activeTabText]}>{year}</Text>
+              </TouchableOpacity>
+            ))
+          ) : (
+            <>
+              <TouchableOpacity 
+                style={[styles.tab, activeTab === "freshers" && styles.activeTab]} 
+                onPress={() => setActiveTab("freshers")}
+              >
+                <Text style={[styles.tabText, activeTab === "freshers" && styles.activeTabText]}>Freshers</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.tab, activeTab === "coaches" && styles.activeTab]} 
+                onPress={() => setActiveTab("coaches")}
+              >
+                <Text style={[styles.tabText, activeTab === "coaches" && styles.activeTabText]}>Coaches</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </ScrollView>
       </View>
 
       <ScrollView 
