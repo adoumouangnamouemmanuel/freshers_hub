@@ -25,7 +25,7 @@ router.get("/staff/:unitName", supportController.getStaffByUnit);
 router.post("/contact", supportController.logContactClick);
 
 // Shared Profile Route for Coaches, Admins, and Advisors
-const profileMiddleware = requireRoles('admin', 'coach_admin', 'peer_coach', 'advisor');
+const profileMiddleware = requireRoles('admin', 'coach_admin', 'peer_coach', 'advisor', 'counsellor', 'peer_counsellor');
 router.get("/admin/users/:id", profileMiddleware, supportAdminController.getAdminUserProfile);
 
 // Admin Routes - Restrict to specific roles
@@ -58,5 +58,17 @@ router.get("/advising/sessions", advisingMiddleware, advisingController.getAdvis
 router.get("/advising/students", advisingMiddleware, advisingController.getAdvisingStudents);
 router.get("/advising/reports", advisingMiddleware, advisingController.getAdvisingReports);
 router.post("/advising/sessions", advisingMiddleware, advisingController.advisorBookSession);
+
+// ─── Counselling Routes — Restrict to counsellor role ────────────────────────
+const counsellingController = require("../controllers/counsellingController");
+const counsellingMiddleware = requireRoles('counsellor');
+
+router.get("/counselling/dashboard", counsellingMiddleware, counsellingController.getCounsellingDashboard);
+router.get("/counselling/sessions", counsellingMiddleware, counsellingController.getCounsellingSessions);
+router.get("/counselling/students", counsellingMiddleware, counsellingController.getCounsellingStudents);
+router.get("/counselling/reports", counsellingMiddleware, counsellingController.getCounsellingReports);
+router.post("/counselling/sessions", counsellingMiddleware, counsellingController.counsellorBookSession);
+router.get("/counselling/peer-counsellors", counsellingMiddleware, counsellingController.getPeerCounsellors);
+router.post("/counselling/assignments", counsellingMiddleware, counsellingController.assignStudentToPeer);
 
 module.exports = router;
