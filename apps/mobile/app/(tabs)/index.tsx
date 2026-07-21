@@ -194,6 +194,7 @@ export default function FeedScreen() {
   const [overdueSessions, setOverdueSessions] = useState<Session[]>([]);
   const [adminStats, setAdminStats] = useState<any>(null);
   const [advisingData, setAdvisingData] = useState<any>(null);
+  const [counsellingData, setCounsellingData] = useState<any>(null);
 
   // Role Checks
   const currentYear = new Date().getFullYear();
@@ -204,12 +205,13 @@ export default function FeedScreen() {
   
   const isPeerCoach = hasRole(roles, "peer_coach");
   const isPeerCounsellor = hasRole(roles, "peer_counsellor");
+  const isCounsellor = hasRole(roles, "counsellor");
   const isClubLead = hasRole(roles, "club_lead");
   const isAdmin = hasRole(roles, "admin");
   const isCoachAdmin = hasRole(roles, "coach_admin") || isAdmin;
   const isStaff = hasRole(roles, "staff") || hasRole(roles, "faculty");
   const isAdvisor = hasRole(roles, "advisor");
-  const isContinuingStudent = !isFresher && !isStaff && !isCoachAdmin && !isAdmin && !isPeerCoach && !isPeerCounsellor && !isClubLead && !isAdvisor;
+  const isContinuingStudent = !isFresher && !isStaff && !isCoachAdmin && !isAdmin && !isPeerCoach && !isPeerCounsellor && !isClubLead && !isAdvisor && !isCounsellor;
 
   const fetchData = async () => {
     if (!session?.accessToken) return;
@@ -292,6 +294,12 @@ export default function FeedScreen() {
       if (isAdvisor) {
         promises.push(
           apiRequest<any>("/support/advising/dashboard", { headers }).then(d => setAdvisingData(d || null)).catch(() => {})
+        );
+      }
+
+      if (isCounsellor) {
+        promises.push(
+          apiRequest<any>("/support/counselling/dashboard", { headers }).then(d => setCounsellingData(d || null)).catch(() => {})
         );
       }
 
@@ -570,6 +578,48 @@ export default function FeedScreen() {
                )}
              </Animated.View>
            )}
+
+           {/* COUNSELLOR - Daily Agenda & Impact Widget */}
+           {isCounsellor && (
+             <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.premiumDashboardContainer}>
+               <Text style={styles.premiumTitle}>Counselling Overview</Text>
+               
+               <View style={styles.premiumRow}>
+                 <Pressable style={[styles.premiumCardActive, { backgroundColor: '#10B981' }]} onPress={() => router.push("/(tabs)/counselling-dashboard/index" as any)}>
+                   <IconSymbol name="calendar" size={24} color="#FFFFFF" />
+                   <Text style={styles.premiumValueWhite}>{counsellingData?.stats?.today_sessions ?? 0}</Text>
+                   <Text style={styles.premiumLabelWhite}>Sessions Today</Text>
+                 </Pressable>
+                 
+                 <View style={styles.premiumCol}>
+                   <Pressable style={styles.premiumCardSmall} onPress={() => router.push("/(tabs)/counselling-dashboard/index" as any)}>
+                     <Text style={styles.premiumValueDark}>{counsellingData?.stats?.this_week_sessions ?? 0}</Text>
+                     <Text style={styles.premiumLabelDark}>This Week</Text>
+                   </Pressable>
+                   <Pressable style={styles.premiumCardSmallRed} onPress={() => router.push("/(tabs)/counselling-dashboard/index" as any)}>
+                     <Text style={styles.premiumValueRed}>{counsellingData?.stats?.overdue_sessions ?? 0}</Text>
+                     <Text style={styles.premiumLabelRed}>Overdue</Text>
+                   </Pressable>
+                 </View>
+               </View>
+               
+               {counsellingData?.upcomingSessions?.[0] && (
+                 <Pressable style={styles.premiumNextCard} onPress={() => router.push("/(tabs)/counselling-dashboard/index" as any)}>
+                   <View style={styles.premiumNextLeft}>
+                     <Text style={styles.premiumNextLabel}>UP NEXT</Text>
+                     <Text style={styles.premiumNextStudent}>{counsellingData.upcomingSessions[0].student_name}</Text>
+                     <Text style={styles.premiumNextTime}>
+                       {new Date(counsellingData.upcomingSessions[0].date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                     </Text>
+                   </View>
+                   <View style={styles.premiumNextIcon}>
+                     <IconSymbol name="arrow.right" size={20} color="#10B981" />
+                   </View>
+                 </Pressable>
+               )}
+             </Animated.View>
+           )}
+
 
            {/* COACH ADMIN - Executive Command Center */}
            {isCoachAdmin && !isPeerCoach && !isClubLead && (
