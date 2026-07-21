@@ -99,9 +99,10 @@ export default function MyBookingsManager({ unitId }: Props) {
   };
 
   const now = new Date();
+  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
   const processedSessions = sessions.map((s) => {
     const sessionDate = s.date || s.scheduled_at || new Date().toISOString();
-    const isOverdue = s.status === "scheduled" && new Date(sessionDate) < now;
+    const isOverdue = s.status === "scheduled" && new Date(sessionDate) < oneHourAgo;
     return { ...s, status: isOverdue ? "overdue" : s.status };
   });
 
@@ -163,8 +164,20 @@ export default function MyBookingsManager({ unitId }: Props) {
           renderItem={({ item, index }) => {
             const dateStr = item.date || item.scheduled_at || new Date().toISOString();
             const dateObj = new Date(dateStr);
+            
+            const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
+            const formattedMonth = isNaN(dateObj.getTime()) ? "UNK" : monthNames[dateObj.getMonth()];
+            const formattedDay = isNaN(dateObj.getTime()) ? "--" : dateObj.getDate();
+            
+            const hours = dateObj.getHours();
+            const minutes = dateObj.getMinutes();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            const formattedHours = hours % 12 || 12;
+            const formattedMinutes = minutes < 10 ? '0' + minutes : minutes;
+            const formattedTime = isNaN(dateObj.getTime()) ? "--:--" : `${formattedHours}:${formattedMinutes} ${ampm}`;
+
             return (
-              <Animated.View entering={FadeInDown.delay(index * 50).duration(400)}>
+              <Animated.View key={item.id} entering={FadeInDown.delay(index * 50).duration(400)}>
                 <TouchableOpacity
                   style={styles.card}
                   onPress={() => setSelectedSession(item)}
@@ -172,15 +185,11 @@ export default function MyBookingsManager({ unitId }: Props) {
                 >
                   <View style={styles.cardHeader}>
                     <View style={styles.dateBox}>
-                      <Text style={styles.dateMonth}>
-                        {dateObj.toLocaleString("default", { month: "short" }).toUpperCase()}
-                      </Text>
-                      <Text style={styles.dateDay}>{dateObj.getDate()}</Text>
+                      <Text style={styles.dateMonth}>{formattedMonth}</Text>
+                      <Text style={styles.dateDay}>{formattedDay}</Text>
                     </View>
                     <View style={styles.timeInfo}>
-                      <Text style={styles.timeText}>
-                        {dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                      </Text>
+                      <Text style={styles.timeText}>{formattedTime}</Text>
                       <Text style={styles.typeText}>{getUnitLabel(item.unit_id, item.type)} SESSION</Text>
                     </View>
                     <View
