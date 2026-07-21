@@ -261,6 +261,15 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
               </View>
             ) : (
               <View style={styles.detailsView}>
+                {session.title ? (
+                  <View style={styles.detailBlock}>
+                    <View style={styles.detailLabelRow}>
+                      <Ionicons name="text-outline" size={16} color="#6B7280" />
+                      <Text style={styles.detailLabel}>Title</Text>
+                    </View>
+                    <Text style={styles.detailValue}>{session.title}</Text>
+                  </View>
+                ) : null}
                 <View style={styles.detailBlock}>
                   <View style={styles.detailLabelRow}>
                     <Ionicons name="person-outline" size={16} color="#6B7280" />
