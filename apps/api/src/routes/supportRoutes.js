@@ -24,6 +24,10 @@ router.get("/staff/:unitName", supportController.getStaffByUnit);
 
 router.post("/contact", supportController.logContactClick);
 
+// Shared Profile Route for Coaches, Admins, and Advisors
+const profileMiddleware = requireRoles('admin', 'coach_admin', 'peer_coach', 'advisor');
+router.get("/admin/users/:id", profileMiddleware, supportAdminController.getAdminUserProfile);
+
 // Admin Routes - Restrict to specific roles
 const adminMiddleware = requireRoles('admin', 'coach_admin', 'peer_coach');
 router.use("/admin", adminMiddleware);
@@ -32,7 +36,6 @@ router.get("/admin/dashboard", supportAdminController.getAdminDashboardStats);
 router.get("/admin/coaches", supportAdminController.getAdminCoaches);
 router.post("/admin/coaches/promote", supportAdminController.promoteToCoach);
 router.get("/admin/freshers", supportAdminController.getAdminFreshers);
-router.get("/admin/users/:id", supportAdminController.getAdminUserProfile);
 router.post("/admin/assignments", supportAdminController.assignFresherToCoach);
 router.post("/admin/assignments/bulk", supportAdminController.bulkAssignFreshers);
 router.get("/admin/reports", supportAdminController.getAdminReports);
@@ -45,5 +48,15 @@ router.delete("/admin/announcements/:id", supportAdminController.deleteAnnouncem
 router.get("/admin/sessions", supportAdminController.getAdminSessions);
 router.post("/admin/sessions", supportAdminController.adminBookSession);
 router.get("/admin/students", supportAdminController.getAdminStudents);
+
+// ─── Advising Routes — Restrict to advisor role ─────────────────────────────
+const advisingController = require("../controllers/advisingController");
+const advisingMiddleware = requireRoles('advisor');
+
+router.get("/advising/dashboard", advisingMiddleware, advisingController.getAdvisingDashboard);
+router.get("/advising/sessions", advisingMiddleware, advisingController.getAdvisingSessions);
+router.get("/advising/students", advisingMiddleware, advisingController.getAdvisingStudents);
+router.get("/advising/reports", advisingMiddleware, advisingController.getAdvisingReports);
+router.post("/advising/sessions", advisingMiddleware, advisingController.advisorBookSession);
 
 module.exports = router;
