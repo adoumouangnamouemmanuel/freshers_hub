@@ -62,7 +62,7 @@ const getMySessions = asyncHandler(async (req, res) => {
       FROM sessions s
       JOIN users u1 ON s.student_id = u1.id
       JOIN users u2 ON s.provider_id = u2.id
-      WHERE s.provider_id = $1
+      WHERE s.provider_id = $1 OR s.student_id = $1
       ORDER BY s.scheduled_at DESC
     `, [req.user.id]);
 
