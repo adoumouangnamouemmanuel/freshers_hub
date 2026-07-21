@@ -114,12 +114,11 @@ export default function SessionsManager({
   };
 
   const now = new Date();
-  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
 
   // Update internal logic for overdue and filter out coach admin's own sessions
   let processedSessions = sessions.map((s) => {
-    const sessionDate = s.date || s.scheduled_at || new Date().toISOString();
-    const isOverdue = s.status === "scheduled" && new Date(sessionDate) < oneHourAgo;
+    const sessionDate = new Date(s.date || s.scheduled_at || now.toISOString());
+    const isOverdue = s.status === "scheduled" && sessionDate < now;
     return { ...s, status: isOverdue ? "overdue" : s.status };
   });
 
