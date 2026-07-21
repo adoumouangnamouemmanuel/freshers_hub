@@ -193,6 +193,13 @@ export default function counsellingDashboard() {
                 color: "#8B5CF6",
                 bg: "#EDE9FE",
               },
+              {
+                label: "Peer Counsellors",
+                icon: "people-outline" as const,
+                route: "/(tabs)/counselling-dashboard/peer-counsellors",
+                color: "#10B981",
+                bg: "#D1FAE5",
+              },
             ].map((item) => (
               <TouchableOpacity
                 key={item.label}
