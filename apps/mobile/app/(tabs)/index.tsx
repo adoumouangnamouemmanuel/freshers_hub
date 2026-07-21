@@ -51,7 +51,7 @@ type CoachAssignment = { id: string; peer_coach_id: string; coach_name: string; 
 type BuddyPairing = { id: string; buddy_id: string; buddy_name: string; avatar_url: string | null; };
 type AssignedFresher = { id: string; fresher_id: string; fresher_name: string; avatar_url: string | null; };
 type Group = { id: string; name: string; image_url: string | null; isLeader: boolean; member_count?: number; category?: string; };
-type Session = { id: string; title: string; session_date: string; start_time: string; status: string; provider_id?: string; };
+type Session = { id: string; title: string; session_date?: string; start_time?: string; status: string; provider_id?: string; date?: string; scheduled_at?: string; };
 type AdminStats = { 
   unassigned_freshers?: number; 
   total_freshers?: number;
@@ -487,7 +487,7 @@ export default function FeedScreen() {
                <Text style={styles.premiumTitle}>Counselling Overview</Text>
                
                <View style={styles.premiumRow}>
-                 <Pressable style={[styles.premiumCardActive, { backgroundColor: '#10B981' }]} onPress={() => router.push("/counselling-dashboard/index")}>
+                 <Pressable style={[styles.premiumCardActive, { backgroundColor: '#10B981' }]} onPress={() => router.push("/(tabs)/counselling-dashboard")}>
                    <IconSymbol name="calendar" size={24} color="#FFFFFF" />
                    <Text style={styles.premiumValueWhite}>{counsellingData?.stats?.today_sessions ?? 0}</Text>
                    <Text style={styles.premiumLabelWhite}>Sessions Today</Text>
