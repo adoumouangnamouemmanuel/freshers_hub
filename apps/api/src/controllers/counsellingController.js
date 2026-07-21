@@ -231,11 +231,35 @@ const assignStudentToPeer = asyncHandler(async (req, res) => {
   }
 });
 
+// ─── Get Assigned Students for Peer Counsellor ───────────────────────────────
+const getPeerAssignedStudents = asyncHandler(async (req, res) => {
+  const { peerId } = req.params;
+
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query(`
+      SELECT 
+        ca.id AS assignment_id,
+        ca.created_at AS assigned_at,
+        u.id, u.full_name, u.avatar_url, u.email, u.role
+      FROM counsellor_assignments ca
+      JOIN users u ON ca.student_id = u.id
+      WHERE ca.peer_counsellor_id = $1
+      ORDER BY ca.created_at DESC
+    `, [peerId]);
+    
+    res.json({ success: true, students: rows });
+  } finally {
+    client.release();
+  }
+});
+
 module.exports = {
   getCounsellingDashboard,
   getCounsellingStudents,
   getCounsellingReports,
   counsellorBookSession,
   getPeerCounsellors,
-  assignStudentToPeer
+  assignStudentToPeer,
+  getPeerAssignedStudents
 };
