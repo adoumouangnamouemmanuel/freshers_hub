@@ -190,7 +190,7 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
             </TouchableOpacity>
           </View>
 
-          <ScrollView style={styles.modalBody}>
+          <ScrollView style={styles.modalBody} contentContainerStyle={{ paddingBottom: 60 }}>
             {isEditMode ? (
               <View style={styles.form}>
                 <Text style={styles.label}>Date & Time</Text>
@@ -409,11 +409,11 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
 
 const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
-  modalContent: { backgroundColor: "#FFFFFF", borderTopLeftRadius: 24, borderTopRightRadius: 24, height: "85%", shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 10 },
+  modalContent: { backgroundColor: "#FFFFFF", borderTopLeftRadius: 24, borderTopRightRadius: 24, height: "90%", shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 10 },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 24, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: "#F3F4F6" },
   modalTitle: { fontSize: 20, fontWeight: "800", color: "#111827" },
   closeBtn: { padding: 4, backgroundColor: "#F3F4F6", borderRadius: 20 },
-  modalBody: { padding: 24 },
+  modalBody: { flex: 1, paddingHorizontal: 24, paddingTop: 24 },
   
   detailsView: { gap: 24 },
   detailBlock: { gap: 6 },
