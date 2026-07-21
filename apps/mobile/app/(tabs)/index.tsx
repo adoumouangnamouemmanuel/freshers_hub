@@ -20,6 +20,7 @@ import { hasRole } from "@/lib/permissions";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import Animated, { FadeInDown } from "react-native-reanimated";
+import { PostCard } from "@/components/dashboard/PostCard";
 // import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Post = {
@@ -50,7 +51,7 @@ type CoachAssignment = { id: string; peer_coach_id: string; coach_name: string; 
 type BuddyPairing = { id: string; buddy_id: string; buddy_name: string; avatar_url: string | null; };
 type AssignedFresher = { id: string; fresher_id: string; fresher_name: string; avatar_url: string | null; };
 type Group = { id: string; name: string; image_url: string | null; isLeader: boolean; member_count?: number; category?: string; };
-type Session = { id: string; session_date: string; start_time: string; status: string; provider_id?: string; };
+type Session = { id: string; title: string; session_date: string; start_time: string; status: string; provider_id?: string; };
 type AdminStats = { 
   unassigned_freshers?: number; 
   total_freshers?: number;
@@ -409,7 +410,7 @@ export default function FeedScreen() {
                 <IconSymbol name="calendar" size={18} color="#059669" />
               </View>
               <Text style={styles.elevatedDesc}>
-                Your next session: {new Date(nextSession.session_date).toLocaleDateString()} at {nextSession.start_time.substring(0, 5)}
+                {nextSession.title || 'Your next session'}: {new Date(nextSession.session_date).toLocaleDateString()} at {nextSession.start_time.substring(0, 5)}
               </Text>
             </Pressable>
           )}
