@@ -99,10 +99,9 @@ export default function MyBookingsManager({ unitId }: Props) {
   };
 
   const now = new Date();
-  const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-  const processedSessions = sessions.map((s) => {
+  let processedSessions = sessions.map((s) => {
     const sessionDate = s.date || s.scheduled_at || new Date().toISOString();
-    const isOverdue = s.status === "scheduled" && new Date(sessionDate) < oneHourAgo;
+    const isOverdue = s.status === "scheduled" && new Date(sessionDate) < now;
     return { ...s, status: isOverdue ? "overdue" : s.status };
   });
 
