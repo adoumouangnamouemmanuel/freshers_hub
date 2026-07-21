@@ -7,7 +7,7 @@ export default function AdvisingSessionsScreen() {
       endpoint="/support/advising/sessions"
       title="Advising Sessions"
       isAdminView={true}
-      hideMySessions={false}
+      hideMySessions={true}
       showFab={false}
     />
   );
