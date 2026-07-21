@@ -2,7 +2,7 @@ const logger = require('../utils/logger');
 const { pool } = require("../services/db");
 
 class SupportAdminRepository {
-  async getDashboardStats() {
+  async getDashboardStats(adminId) {
     const { rows } = await pool.query(`
       SELECT 
         (SELECT COUNT(DISTINCT ur.user_id) FROM user_roles ur JOIN roles r ON ur.role_id = r.id JOIN users u ON ur.user_id = u.id WHERE r.name = 'student' AND u.class_year = 2030 AND NOT EXISTS (
@@ -12,9 +12,9 @@ class SupportAdminRepository {
         (SELECT COUNT(DISTINCT ca.fresher_id) FROM coach_assignments ca JOIN users u ON ca.fresher_id = u.id WHERE u.class_year = 2030) as assigned_freshers,
         (SELECT COUNT(*) FROM sessions s JOIN users u ON s.student_id = u.id WHERE s.with_type = 'peer_coach' AND s.status = 'completed' AND u.class_year = 2030) as completed_mandatory_sessions,
         (SELECT COUNT(DISTINCT ca.fresher_id) * 3 FROM coach_assignments ca JOIN users u ON ca.fresher_id = u.id WHERE u.class_year = 2030) as target_mandatory_sessions,
-        (SELECT COUNT(*) FROM sessions s WHERE s.with_type = 'peer_coach' AND s.status = 'scheduled' AND s.scheduled_at + interval '1 hour' >= now()) as upcoming_sessions_count,
-        (SELECT COUNT(*) FROM sessions s WHERE s.with_type = 'peer_coach' AND s.status = 'scheduled' AND s.scheduled_at + interval '1 hour' < now()) as overdue_sessions_count
-    `);
+        (SELECT COUNT(*) FROM sessions s WHERE s.with_type = 'peer_coach' AND s.status = 'scheduled' AND s.scheduled_at + interval '1 hour' >= now() AND (s.provider_id = $1 OR s.student_id = $1)) as upcoming_sessions_count,
+        (SELECT COUNT(*) FROM sessions s WHERE s.with_type = 'peer_coach' AND s.status = 'scheduled' AND s.scheduled_at + interval '1 hour' < now() AND (s.provider_id = $1 OR s.student_id = $1)) as overdue_sessions_count
+    `, [adminId]);
     return rows[0];
   }
 
