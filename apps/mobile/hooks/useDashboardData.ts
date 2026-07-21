@@ -60,7 +60,8 @@ export function useDashboardData() {
   const [adminStats, setAdminStats] = useState<AdminStats | null>(null);
 
   const currentYear = new Date().getFullYear();
-  const isFresher = session?.user.studentProfile?.graduationYear === currentYear + 4;
+  const userClassYear = Number(session?.user?.classYear || session?.user?.studentProfile?.graduationYear);
+  const isFresher = userClassYear === currentYear + 4;
   
   const roles = session?.user.roles || [];
   const hasRole = (roleName: string) => roles.some((r: any) => r.name === roleName);
