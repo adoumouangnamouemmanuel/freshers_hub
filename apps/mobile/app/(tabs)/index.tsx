@@ -191,6 +191,7 @@ export default function FeedScreen() {
   const [assignedFreshers, setAssignedFreshers] = useState<AssignedFresher[]>([]);
   const [myGroups, setMyGroups] = useState<Group[]>([]);
   const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
+  const [overdueSessions, setOverdueSessions] = useState<Session[]>([]);
   const [adminStats, setAdminStats] = useState<any>(null);
   const [advisingData, setAdvisingData] = useState<any>(null);
 
@@ -357,55 +358,48 @@ export default function FeedScreen() {
           
           {/* FRESHER CARDS */}
           {isFresher && (
-            <View style={styles.cardsStack}>
+            <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.premiumDashboardContainer}>
+              <Text style={styles.premiumTitle}>Your Support Team</Text>
               
               {(assignedCoaches.length > 0 || assignedBuddy) && (
-                <View style={styles.fresherPeopleCard}>
-                  <Text style={styles.cardSectionTitle}>Your Support Team</Text>
-                  <View style={styles.peopleRow}>
-                    {assignedCoaches.length > 0 && (
-                      <Pressable style={styles.personItem} onPress={() => router.push("/(tabs)/support")}>
-                        {assignedCoaches[0].avatar_url ? (
-                          <Image source={{ uri: assignedCoaches[0].avatar_url }} style={styles.personImage} />
-                        ) : (
-                          <View style={[styles.personImage, styles.personImagePlaceholder]}>
-                            <Text style={styles.personImagePlaceholderText}>{assignedCoaches[0].coach_name.charAt(0)}</Text>
-                          </View>
-                        )}
-                        <Text style={styles.personName}>{assignedCoaches[0].coach_name.split(' ')[0]}</Text>
-                        <Text style={styles.personRole}>Peer Coach</Text>
-                      </Pressable>
-                    )}
-                    
-                    {assignedBuddy && (
-                      <Pressable style={styles.personItem} onPress={() => router.push("/(tabs)/support")}>
-                        {assignedBuddy.avatar_url ? (
-                          <Image source={{ uri: assignedBuddy.avatar_url }} style={styles.personImage} />
-                        ) : (
-                          <View style={[styles.personImage, styles.personImagePlaceholder]}>
-                            <Text style={styles.personImagePlaceholderText}>{assignedBuddy.buddy_name.charAt(0)}</Text>
-                          </View>
-                        )}
-                        <Text style={styles.personName}>{assignedBuddy.buddy_name.split(' ')[0]}</Text>
-                        <Text style={styles.personRole}>Buddy</Text>
-                      </Pressable>
-                    )}
-                  </View>
+                <View style={styles.premiumRow}>
+                  {assignedCoaches.length > 0 && (
+                    <Pressable style={styles.premiumCardActive} onPress={() => router.push("/(tabs)/support")}>
+                      {assignedCoaches[0].avatar_url ? (
+                        <Image source={{ uri: assignedCoaches[0].avatar_url }} style={[styles.personImage, { width: 48, height: 48, borderRadius: 24, marginBottom: 8 }]} />
+                      ) : (
+                        <View style={[styles.personImage, styles.personImagePlaceholder, { width: 48, height: 48, borderRadius: 24, marginBottom: 8, backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                          <Text style={[styles.personImagePlaceholderText, { color: '#FFF' }]}>{assignedCoaches[0].coach_name.charAt(0)}</Text>
+                        </View>
+                      )}
+                      <Text style={[styles.personName, { color: '#FFF' }]}>{assignedCoaches[0].coach_name.split(' ')[0]}</Text>
+                      <Text style={styles.premiumLabelWhiteOp}>Peer Coach</Text>
+                    </Pressable>
+                  )}
+                  
+                  {assignedBuddy && (
+                    <Pressable style={styles.premiumCardSmall} onPress={() => router.push("/(tabs)/support")}>
+                      {assignedBuddy.avatar_url ? (
+                        <Image source={{ uri: assignedBuddy.avatar_url }} style={[styles.personImage, { width: 48, height: 48, borderRadius: 24, marginBottom: 8 }]} />
+                      ) : (
+                        <View style={[styles.personImage, styles.personImagePlaceholder, { width: 48, height: 48, borderRadius: 24, marginBottom: 8, backgroundColor: '#EEF2FF' }]}>
+                          <Text style={styles.personImagePlaceholderText}>{assignedBuddy.buddy_name.charAt(0)}</Text>
+                        </View>
+                      )}
+                      <Text style={[styles.personName, { color: '#111827' }]}>{assignedBuddy.buddy_name.split(' ')[0]}</Text>
+                      <Text style={styles.premiumLabelDark}>OIPCC Buddy</Text>
+                    </Pressable>
+                  )}
                 </View>
               )}
 
-
-
               {myGroups.length === 0 && (
-                <Pressable style={styles.clubNudgeCard} onPress={() => router.push("/(tabs)/clubs")}>
-                  <View style={styles.clubNudgeInfo}>
-                    <Text style={styles.clubNudgeTitle}>Looking for a community?</Text>
-                    <Text style={styles.clubNudgeDesc}>Explore 40+ clubs on campus.</Text>
-                  </View>
-                  <IconSymbol name="chevron.right" size={20} color="#9BA3AE" />
+                <Pressable style={styles.premiumActionBtnLight} onPress={() => router.push("/(tabs)/clubs")}>
+                  <Text style={styles.premiumActionTextLight}>Find a community to join</Text>
+                  <IconSymbol name="chevron.right" size={16} color="#4F46E5" />
                 </Pressable>
               )}
-            </View>
+            </Animated.View>
           )}
 
           {/* CONTINUING STUDENT CARDS (Clubs they are just a member of) */}
@@ -450,6 +444,14 @@ export default function FeedScreen() {
                   </View>
                   <Text style={styles.statValue}>{upcomingSessions.length}</Text>
                   <Text style={styles.statLabel}>Sessions</Text>
+                </Pressable>
+                
+                <Pressable style={styles.coachStatCard} onPress={() => router.push("/(tabs)/support")}>
+                  <View style={[styles.statIconBg, { backgroundColor: '#FEE2E2' }]}>
+                    <IconSymbol name="exclamationmark.triangle.fill" size={20} color="#DC2626" />
+                  </View>
+                  <Text style={[styles.statValue, { color: '#DC2626' }]}>{overdueSessions.length}</Text>
+                  <Text style={styles.statLabel}>Overdue</Text>
                 </Pressable>
               </View>
 
