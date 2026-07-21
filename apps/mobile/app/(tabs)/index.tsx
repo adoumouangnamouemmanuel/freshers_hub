@@ -196,7 +196,8 @@ export default function FeedScreen() {
 
   // Role Checks
   const currentYear = new Date().getFullYear();
-  const isFresher = session?.user.studentProfile?.graduationYear === currentYear + 4;
+  const userClassYear = Number(session?.user?.classYear || session?.user?.studentProfile?.graduationYear);
+  const isFresher = userClassYear === currentYear + 4;
   
   const roles = session?.user.roles || [];
   
@@ -248,7 +249,7 @@ export default function FeedScreen() {
         );
       }
 
-      if (isFresher || isPeerCounsellor || isPeerCoach) {
+      if (isPeerCounsellor || isPeerCoach) {
         promises.push(
            apiRequest<Session[]>("/support/sessions", { headers }).then(d => {
              const upcoming = (d || []).filter(s => s.status === 'scheduled' || s.status === 'pending');
@@ -393,20 +394,7 @@ export default function FeedScreen() {
                 </View>
               )}
 
-              {nextSession && (
-                <Pressable style={styles.upNextCard} onPress={() => router.push("/(tabs)/support")}>
-                  <View style={styles.upNextLeft}>
-                    <Text style={styles.upNextLabel}>Up next</Text>
-                    <Text style={styles.upNextTitle}>Session</Text>
-                    <Text style={styles.upNextTime}>
-                      {new Date(nextSession.session_date).toLocaleDateString()} at {nextSession.start_time.substring(0, 5)}
-                    </Text>
-                  </View>
-                  <View style={styles.progressRing}>
-                    <IconSymbol name="calendar" size={20} color="#FFFFFF" />
-                  </View>
-                </Pressable>
-              )}
+
 
               {myGroups.length === 0 && (
                 <Pressable style={styles.clubNudgeCard} onPress={() => router.push("/(tabs)/clubs")}>
@@ -580,6 +568,21 @@ export default function FeedScreen() {
                    </Pressable>
                  </View>
                </View>
+
+               {upcomingSessions?.[0] && (
+                 <Pressable style={styles.premiumNextCard} onPress={() => router.push("/(tabs)/schedule")}>
+                   <View style={styles.premiumNextLeft}>
+                     <Text style={styles.premiumNextLabel}>UP NEXT</Text>
+                     <Text style={styles.premiumNextStudent}>{(upcomingSessions[0] as any).student_name}</Text>
+                     <Text style={styles.premiumNextTime}>
+                       {new Date((upcomingSessions[0] as any).date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                     </Text>
+                   </View>
+                   <View style={styles.premiumNextIcon}>
+                     <IconSymbol name="arrow.right" size={20} color="#4F46E5" />
+                   </View>
+                 </Pressable>
+               )}
 
                <Pressable style={styles.premiumActionBtnLight} onPress={() => router.push("/(tabs)/coaching-admin")}>
                  <Text style={styles.premiumActionTextLight}>Open Dashboard</Text>
