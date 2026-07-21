@@ -100,6 +100,7 @@ export default function UserProfileScreen() {
   
   const isCoach = roles.includes("peer_coach") || roles.includes("peer_counsellor");
   const isAdvisorUser = session?.user?.roles?.some((r: any) => r.name === "advisor");
+  const isCounsellorUser = session?.user?.roles?.some((r: any) => r.name === "counsellor");
   const assignedFreshers = profile.assigned_freshers || [];
   const assignedCoach = profile.assigned_coach;
   
@@ -217,9 +218,9 @@ export default function UserProfileScreen() {
           </Animated.View>
         )}
 
-        {roles.includes("peer_coach") && assignedFreshers.length > 0 && (
+        {((roles.includes("peer_coach")) || (roles.includes("peer_counsellor") && isCounsellorUser)) && assignedFreshers.length > 0 && (
           <Animated.View entering={FadeInDown.delay(220).duration(500)} style={styles.detailsCard}>
-            <Text style={styles.cardTitle}>Assigned Freshers</Text>
+            <Text style={styles.cardTitle}>{roles.includes("peer_counsellor") ? "Assigned Students" : "Assigned Freshers"}</Text>
             {assignedFreshers.map((fresher: any, idx: number) => {
               const fresherProgressPct = (fresher.sessionsCompleted / fresher.totalAssigned) * 100;
               return (
