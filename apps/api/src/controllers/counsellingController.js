@@ -163,7 +163,7 @@ const getCounsellingReports = asyncHandler(async (req, res) => {
 
 // ─── Book Session as counsellor ────────────────────────────────────────────────
 const counsellorBookSession = asyncHandler(async (req, res) => {
-  const { academicYearId, studentId, scheduledAt, location, description } = req.body;
+  const { academicYearId, studentId, scheduledAt, location, description, title } = req.body;
 
   if (!studentId || !scheduledAt) {
     throw new AppError("Missing required fields (studentId, scheduledAt)", 400);
@@ -176,13 +176,20 @@ const counsellorBookSession = asyncHandler(async (req, res) => {
     await client.query("BEGIN");
     await client.query("SELECT set_config('app.current_user_id', $1, true)", [req.user.id]);
 
+    let finalTitle = title;
+    if (!finalTitle) {
+      const { rows: userRows } = await client.query("SELECT full_name FROM users WHERE id = $1", [req.user.id]);
+      const userName = userRows[0]?.full_name || "User";
+      finalTitle = `${userName}'s session`;
+    }
+
     const { rows } = await client.query(`
       INSERT INTO sessions 
-        (unit_id, academic_year_id, student_id, provider_id, with_type, scheduled_at, location, description, is_mandatory, status)
+        (title, unit_id, academic_year_id, student_id, provider_id, with_type, scheduled_at, location, description, is_mandatory, status)
       VALUES 
-        ($1, $2, $3, $4, NULL, $5, $6, $7, false, 'scheduled')
+        ($1, $2, $3, $4, $5, NULL, $6, $7, $8, false, 'scheduled')
       RETURNING *
-    `, [unitId, academicYearId || 1, studentId, req.user.id, scheduledAt, location, description]);
+    `, [finalTitle, unitId, academicYearId || 1, studentId, req.user.id, scheduledAt, location, description]);
 
     await client.query("COMMIT");
     res.status(201).json(rows[0]);
