@@ -313,7 +313,8 @@ export default function UserProfileScreen() {
         </Animated.View>
 
         {/* Academic Details - Stunning Progress */}
-        <Animated.View entering={FadeInDown.delay(300).duration(500)} style={[styles.detailsCard, { padding: 0, overflow: 'hidden' }]}>
+        {isAdvisorUser && (
+          <Animated.View entering={FadeInDown.delay(300).duration(500)} style={[styles.detailsCard, { padding: 0, overflow: 'hidden' }]}>
           <View style={{ backgroundColor: '#1A2B4A', padding: 24 }}>
             <Text style={[styles.cardTitle, { color: '#FFFFFF', marginBottom: 24 }]}>Academic Progress</Text>
             
@@ -383,6 +384,7 @@ export default function UserProfileScreen() {
             </View>
           </View>
         </Animated.View>
+        )}
 
         {/* Contact Details */}
         <Animated.View entering={FadeInDown.delay(400).duration(500)} style={styles.detailsCard}>
