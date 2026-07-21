@@ -69,7 +69,7 @@ export default function TabLayout() {
         name="map"
         options={{
           title: 'Map',
-          href: (showCoachAdmin || showAdvisor) ? null : '/(tabs)/map',
+          href: (showCoachAdmin || showAdvisor || showCounsellor) ? null : '/(tabs)/map',
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="map.fill" color={color} />
           ),
@@ -89,7 +89,7 @@ export default function TabLayout() {
         name="support"
         options={{
           title: 'Support',
-          href: (showCoachAdmin || showAdvisor) ? null : '/(tabs)/support',
+          href: (showCoachAdmin || showAdvisor || showCounsellor) ? null : '/(tabs)/support',
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="heart.text.square.fill" color={color} />
           ),
@@ -99,7 +99,7 @@ export default function TabLayout() {
         name="clubs"
         options={{
           title: 'Clubs',
-          href: (showCoachAdmin || showAdvisor) ? null : '/(tabs)/clubs',
+          href: (showCoachAdmin || showAdvisor || showCounsellor) ? null : '/(tabs)/clubs',
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="flag.fill" color={color} />
           ),
@@ -109,7 +109,7 @@ export default function TabLayout() {
         name="help"
         options={{
           title: 'Help',
-          href: (showCoachAdmin || showAdvisor) ? null : '/(tabs)/help',
+          href: (showCoachAdmin || showAdvisor || showCounsellor) ? null : '/(tabs)/help',
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="questionmark.circle.fill" color={color} />
           ),
@@ -159,7 +159,7 @@ export default function TabLayout() {
         name="students"
         options={{
           title: 'Students',
-          href: (showCoachAdmin || showAdvisor) ? '/(tabs)/students' : null,
+          href: (showCoachAdmin || showAdvisor || showCounsellor) ? '/(tabs)/students' : null,
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="person.3.fill" color={color} />
           ),
