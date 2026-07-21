@@ -87,12 +87,17 @@ const getAdvisingDashboard = asyncHandler(async (req, res) => {
 
 // ─── All Advising Sessions ──────────────────────────────────────────────────
 const getAdvisingSessions = asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 20;
+  const offset = (page - 1) * limit;
+
   const client = await pool.connect();
   try {
     const unitId = await getAdvisingUnitId(client);
 
     const { rows } = await client.query(`
       SELECT 
+        COUNT(*) OVER() AS total_count,
         s.id, s.unit_id, s.academic_year_id, s.student_id, s.provider_id,
         s.with_type AS type, s.scheduled_at AS date, s.location, s.description, 
         s.status, s.is_mandatory,
@@ -104,9 +109,19 @@ const getAdvisingSessions = asyncHandler(async (req, res) => {
       JOIN users u2 ON s.provider_id = u2.id
       WHERE s.unit_id = $1 AND s.provider_id = $2
       ORDER BY s.scheduled_at DESC
-    `, [unitId, req.user.id]);
+      LIMIT $3 OFFSET $4
+    `, [unitId, req.user.id, limit, offset]);
 
-    res.json(rows);
+    const total = rows.length > 0 ? parseInt(rows[0].total_count, 10) : 0;
+    res.json({
+      data: rows,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } finally {
     client.release();
   }
