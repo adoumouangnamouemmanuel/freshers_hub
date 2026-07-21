@@ -191,7 +191,7 @@ export default function FeedScreen() {
   const [assignedFreshers, setAssignedFreshers] = useState<AssignedFresher[]>([]);
   const [myGroups, setMyGroups] = useState<Group[]>([]);
   const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
-  const [adminStats, setAdminStats] = useState<AdminStats | null>(null);
+  const [adminStats, setAdminStats] = useState<any>(null);
   const [advisingData, setAdvisingData] = useState<any>(null);
 
   // Role Checks
@@ -259,7 +259,7 @@ export default function FeedScreen() {
 
       if (isCoachAdmin) {
         promises.push(
-          apiRequest<AdminStats>("/support/admin/dashboard", { headers }).then(d => setAdminStats(d || null)).catch(() => {})
+          apiRequest<any>("/support/admin/dashboard", { headers }).then(d => setAdminStats(d || null)).catch(() => {})
         );
       }
 
@@ -297,7 +297,7 @@ export default function FeedScreen() {
     return "Good evening";
   };
 
-  const allowedRoles = ["staff", "faculty", "student_leader", "admin", "club_lead"];
+  const allowedRoles = ["staff", "faculty", "student_leader", "admin", "club_lead", "advisor", "peer_coach", "coach_admin"];
   const canPost = allowedRoles.some((roleName) => hasRole(session?.user.roles || [], roleName));
 
   const categories = ["All", "Announcement", "Event", "Alert"];
@@ -559,38 +559,38 @@ export default function FeedScreen() {
 
            {/* COACH ADMIN - Executive Command Center */}
            {isCoachAdmin && !isPeerCoach && !isClubLead && (
-             <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.premiumDashboardDark}>
-               <Text style={styles.premiumTitleDark}>Senior Coach Admin</Text>
+             <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.premiumDashboardContainer}>
+               <Text style={styles.premiumTitle}>Coach Admin Overview</Text>
                
                <View style={styles.premiumRow}>
-                 <Pressable style={styles.premiumCardDarkPrimary} onPress={() => router.push("/(tabs)/coaching-admin")}>
-                   <IconSymbol name="person.3.fill" size={24} color="#FFFFFF" />
-                   <Text style={styles.premiumValueWhiteLarge}>{adminStats?.total_freshers ?? 0}</Text>
-                   <Text style={styles.premiumLabelWhiteOp}>Total Freshers</Text>
+                 <Pressable style={styles.premiumCardWarningActive} onPress={() => router.push("/(tabs)/coaching-admin/compliance")}>
+                   <IconSymbol name="exclamationmark.triangle.fill" size={24} color="#DC2626" />
+                   <Text style={styles.premiumValueWarningLarge}>{adminStats?.needsAttention?.length ?? 0}</Text>
+                   <Text style={styles.premiumLabelWarning}>Needs Attention</Text>
                  </Pressable>
                  
                  <View style={styles.premiumCol}>
-                   <Pressable style={styles.premiumCardDarkSecondary} onPress={() => router.push("/(tabs)/coaching-admin/peer-coaches")}>
-                     <Text style={styles.premiumValueWhite}>{adminStats?.active_coaches ?? 0}</Text>
-                     <Text style={styles.premiumLabelWhiteOp}>Active Coaches</Text>
+                   <Pressable style={styles.premiumCardSmall} onPress={() => router.push("/(tabs)/schedule")}>
+                     <Text style={styles.premiumValueDark}>{adminStats?.stats?.upcoming_sessions_count ?? 0}</Text>
+                     <Text style={styles.premiumLabelDark}>Upcoming Sessions</Text>
                    </Pressable>
-                   <Pressable style={styles.premiumCardDarkWarning} onPress={() => router.push("/(tabs)/coaching-admin/compliance")}>
-                     <Text style={styles.premiumValueRed}>{adminStats?.overdue_sessions_count ?? 0}</Text>
-                     <Text style={styles.premiumLabelRed}>Needs Attention</Text>
+                   <Pressable style={styles.premiumCardSmallRed} onPress={() => router.push("/(tabs)/schedule")}>
+                     <Text style={styles.premiumValueRed}>{adminStats?.stats?.overdue_sessions_count ?? 0}</Text>
+                     <Text style={styles.premiumLabelRed}>Overdue Sessions</Text>
                    </Pressable>
                  </View>
                </View>
 
-               <Pressable style={styles.premiumActionBtn} onPress={() => router.push("/(tabs)/coaching-admin")}>
-                 <Text style={styles.premiumActionText}>Open Coaching Admin</Text>
-                 <IconSymbol name="chevron.right" size={16} color="#FFFFFF" />
+               <Pressable style={styles.premiumActionBtnLight} onPress={() => router.push("/(tabs)/coaching-admin")}>
+                 <Text style={styles.premiumActionTextLight}>Open Dashboard</Text>
+                 <IconSymbol name="chevron.right" size={16} color="#4F46E5" />
                </Pressable>
              </Animated.View>
            )}
 
-          {/* STAFF / FACULTY / ADMIN (Quick Post) */}
-          {(isCoachAdmin || isStaff || isAdvisor) && canPost && !isPeerCoach && !isClubLead && (
-             <View style={[styles.cardsStack, { marginTop: isCoachAdmin || isAdvisor ? 0 : 12 }]}>
+          {/* STAFF / FACULTY / ADMIN / COACH / ADVISOR (Quick Post) */}
+          {(isCoachAdmin || isStaff || isAdvisor || isPeerCoach) && canPost && !isClubLead && (
+             <View style={[styles.cardsStack, { marginTop: (isCoachAdmin && !isPeerCoach) || isAdvisor ? 0 : 12 }]}>
                 <Link href="/new-post" asChild>
                   <Pressable style={styles.quickPostCard}>
                     <IconSymbol name="plus" size={20} color="#4338CA" />
@@ -948,6 +948,36 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: "700",
     color: "#FFFFFF",
+  },
+  premiumCardWarningActive: {
+    flex: 1,
+    backgroundColor: "#FEF2F2",
+    borderRadius: 24,
+    padding: 20,
+    justifyContent: "center",
+    shadowColor: "#DC2626",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.15,
+    shadowRadius: 16,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: "#FECACA",
+  },
+  premiumValueWarningLarge: { fontSize: 44, fontWeight: "900", color: "#DC2626", letterSpacing: -2, marginTop: 16, marginBottom: 4 },
+  premiumLabelWarning: { fontSize: 14, fontWeight: "700", color: "#EF4444" },
+  premiumActionBtnLight: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#E0E7FF",
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 16,
+  },
+  premiumActionTextLight: {
+    fontSize: 14,
+    fontWeight: "700",
+    color: "#4F46E5",
   },
   personImagePlaceholderText: {
     fontSize: 20,
