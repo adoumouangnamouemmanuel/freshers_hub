@@ -61,25 +61,38 @@ export default function NewPostScreen() {
     ? ["Announcement", "Event", "Discussion"] 
     : ["Announcement", "Event", "Alert", "Discussion"];
   const isEvent = category === "Event";
+  const roles = session?.user.roles || [];
+  const isPeerCoach = roles.some((r: any) => r.name === "peer_coach");
 
   useEffect(() => {
-    // Fetch groups for targeting (only groups where user is leader)
     if (session?.accessToken) {
-      apiRequest<{ data: (Group & { isLeader?: boolean })[] }>("/groups/my", {
-        headers: { Authorization: `Bearer ${session.accessToken}` }
-      })
-        .then(res => {
-          const myLedGroups = res.data?.filter(g => g.isLeader) || [];
-          setGroups(myLedGroups);
-          // Auto-select group if preselectGroup is provided
-          if (preselectGroup) {
-            setIsTargeted(true);
-            setTargetGroupIds([preselectGroup]);
-          }
+      if (preselectGroup) {
+        setIsTargeted(true);
+        setTargetGroupIds([preselectGroup]);
+      } else {
+        // Fetch general groups for home screen posts
+        apiRequest<{ data: Group[] }>("/groups", {
+          headers: { Authorization: `Bearer ${session.accessToken}` }
         })
-        .catch(err => console.error("Failed to fetch groups", err));
+          .then(res => {
+            // Filter out clubs
+            let availableGroups = res.data?.filter(g => g.type !== 'club') || [];
+            
+            // Add peer coach pseudo-group
+            if (isPeerCoach) {
+              availableGroups.push({
+                id: "assigned_students",
+                name: "My Assigned Students",
+                type: "coach",
+                memberCount: 0
+              });
+            }
+            setGroups(availableGroups);
+          })
+          .catch(err => console.error("Failed to fetch groups", err));
+      }
     }
-  }, [session?.accessToken, preselectGroup]);
+  }, [session?.accessToken, preselectGroup, isPeerCoach]);
 
   const toggleGroup = (groupId: string) => {
     setTargetGroupIds(prev => 
@@ -210,7 +223,7 @@ export default function NewPostScreen() {
                     ))}
                     {groups.length === 0 && (
                       <Text style={{ color: "#6b7280", fontStyle: "italic", marginTop: 8 }}>
-                        You don&apos;t lead any clubs yet.
+                        No target groups available.
                       </Text>
                     )}
                   </View>
