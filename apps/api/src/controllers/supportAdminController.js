@@ -186,7 +186,7 @@ const getAdminUserProfile = asyncHandler(async (req, res) => {
     
     if (!userProfile) throw new AppError("User not found", 404);
     
-    if (userProfile.roles && userProfile.roles.includes('peer_coach')) {
+    if (userProfile.roles && (userProfile.roles.includes('peer_coach') || userProfile.roles.includes('peer_counsellor'))) {
       const assignedFreshers = await supportAdminRepository.getAssignedFreshersForCoach(id);
       userProfile.assigned_freshers = assignedFreshers.map(f => ({
         id: f.id,
