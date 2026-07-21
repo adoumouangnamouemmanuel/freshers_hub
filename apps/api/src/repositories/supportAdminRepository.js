@@ -12,8 +12,8 @@ class SupportAdminRepository {
         (SELECT COUNT(DISTINCT ca.fresher_id) FROM coach_assignments ca JOIN users u ON ca.fresher_id = u.id WHERE u.class_year = 2030) as assigned_freshers,
         (SELECT COUNT(*) FROM sessions s JOIN users u ON s.student_id = u.id WHERE s.with_type = 'peer_coach' AND s.status = 'completed' AND u.class_year = 2030) as completed_mandatory_sessions,
         (SELECT COUNT(DISTINCT ca.fresher_id) * 3 FROM coach_assignments ca JOIN users u ON ca.fresher_id = u.id WHERE u.class_year = 2030) as target_mandatory_sessions,
-        (SELECT COUNT(*) FROM sessions s WHERE s.with_type = 'peer_coach' AND s.status = 'scheduled' AND s.scheduled_at >= now()) as upcoming_sessions_count,
-        (SELECT COUNT(*) FROM sessions s WHERE s.with_type = 'peer_coach' AND s.status = 'scheduled' AND s.scheduled_at < now()) as overdue_sessions_count
+        (SELECT COUNT(*) FROM sessions s WHERE s.with_type = 'peer_coach' AND s.status = 'scheduled' AND s.scheduled_at + interval '1 hour' >= now()) as upcoming_sessions_count,
+        (SELECT COUNT(*) FROM sessions s WHERE s.with_type = 'peer_coach' AND s.status = 'scheduled' AND s.scheduled_at + interval '1 hour' < now()) as overdue_sessions_count
     `);
     return rows[0];
   }
@@ -340,7 +340,7 @@ class SupportAdminRepository {
     const { rows } = await pool.query(`
       SELECT 
         s.id, s.with_type as type, s.scheduled_at as date, s.status, s.location, s.description, s.is_mandatory,
-        s.student_id, s.provider_id,
+        s.student_id, s.provider_id, s.title,
         u1.full_name as student_name, u1.avatar_url as student_avatar,
         u2.full_name as provider_name, u2.avatar_url as provider_avatar,
         r.content as report_content
@@ -348,6 +348,7 @@ class SupportAdminRepository {
       JOIN users u1 ON s.student_id = u1.id
       JOIN users u2 ON s.provider_id = u2.id
       LEFT JOIN session_reports r ON s.id = r.session_id
+      WHERE s.with_type = 'peer_coach'
       ORDER BY s.scheduled_at DESC
     `);
     return rows;
