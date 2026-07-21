@@ -338,23 +338,25 @@ export default function FeedScreen() {
 
           {/* CONTINUING STUDENT CARDS (Clubs they are just a member of) */}
           {(isContinuingStudent || isFresher) && myGroups.filter(g => !g.isLeader).length > 0 && (
-            <View style={styles.cardsStack}>
-              <Text style={[styles.cardSectionTitle, { marginTop: 12 }]}>Your Clubs</Text>
-              {myGroups.filter(g => !g.isLeader).map(club => (
-                <Pressable key={club.id} style={styles.joinedClubCard} onPress={() => router.push("/(tabs)/clubs")}>
-                  <View style={styles.clubRow}>
-                    {club.image_url ? (
-                      <Image source={{uri: club.image_url}} style={styles.clubAvatarImage} />
-                    ) : (
-                      <View style={styles.clubAvatarMock}><Text style={styles.clubAvatarText}>{club.name.charAt(0)}</Text></View>
-                    )}
-                    <View style={styles.clubInfo}>
-                      <Text style={styles.clubName}>{club.name}</Text>
-                      <Text style={styles.clubUpdate}>{club.category}</Text>
+            <View style={{ marginTop: 12 }}>
+              <Text style={styles.cardSectionTitle}>Your Clubs</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 20 }}>
+                {myGroups.filter(g => !g.isLeader).map(club => (
+                  <Pressable key={club.id} style={[styles.joinedClubCard, { width: 280 }]} onPress={() => router.push("/(tabs)/clubs")}>
+                    <View style={styles.clubRow}>
+                      {club.image_url ? (
+                        <Image source={{uri: club.image_url}} style={styles.clubAvatarImage} />
+                      ) : (
+                        <View style={styles.clubAvatarMock}><Text style={styles.clubAvatarText}>{club.name.charAt(0)}</Text></View>
+                      )}
+                      <View style={styles.clubInfo}>
+                        <Text style={styles.clubName} numberOfLines={1}>{club.name}</Text>
+                        <Text style={styles.clubUpdate} numberOfLines={1}>{club.category}</Text>
+                      </View>
                     </View>
-                  </View>
-                </Pressable>
-              ))}
+                  </Pressable>
+                ))}
+              </ScrollView>
             </View>
           )}
 
