@@ -48,7 +48,7 @@ const getPostById = async (client, postId) => {
 const createPost = async (client, { userPayload, title, content, category, visibility, targetGroupIds }) => {
   try {
     // Role Authorization Check
-    const allowedRoles = ["staff", "faculty", "student_leader", "admin", "club_lead"];
+    const allowedRoles = ["staff", "faculty", "student_leader", "admin", "club_lead", "advisor", "counsellor", "coach_admin", "peer_coach", "peer_counsellor"];
     const hasAccess = userPayload.roles && userPayload.roles.some(r => allowedRoles.includes(r));
     
     if (!hasAccess) {
@@ -67,7 +67,7 @@ const createPost = async (client, { userPayload, title, content, category, visib
     });
 
     if (visibility === "targeted" && targetGroupIds && targetGroupIds.length > 0) {
-      await postRepository.insertPostTargets(client, post.id, targetGroupIds);
+      await postRepository.insertPostTargets(client, post.id, targetGroupIds, userPayload.sub);
       
       await postRepository.insertNotificationsForTargets(client, {
         title,
