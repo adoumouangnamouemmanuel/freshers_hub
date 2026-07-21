@@ -240,22 +240,36 @@ export default function FeedScreen() {
         );
       }
 
+      const processSessions = (d: Session[] | void) => {
+        const now = new Date();
+        const upcoming: Session[] = [];
+        const overdue: Session[] = [];
+        
+        (d || []).forEach(s => {
+          if (s.status === 'scheduled' || s.status === 'pending') {
+            const sessionDate = new Date(`${s.session_date}T${s.start_time || '00:00:00'}`);
+            if (sessionDate < now) {
+              overdue.push(s);
+            } else {
+              upcoming.push(s);
+            }
+          }
+        });
+        
+        setUpcomingSessions(upcoming);
+        setOverdueSessions(overdue);
+      };
+
       // For coach admin, fetch their own sessions (where they are the provider)
       if (isCoachAdmin) {
         promises.push(
-          apiRequest<Session[]>("/support/my-sessions", { headers }).then(d => {
-            const upcoming = (d || []).filter(s => s.status === 'scheduled' || s.status === 'pending');
-            setUpcomingSessions(upcoming);
-          }).catch(() => {})
+          apiRequest<Session[]>("/support/my-sessions", { headers }).then(processSessions).catch(() => {})
         );
       }
 
       if (isPeerCounsellor || isPeerCoach) {
         promises.push(
-           apiRequest<Session[]>("/support/sessions", { headers }).then(d => {
-             const upcoming = (d || []).filter(s => s.status === 'scheduled' || s.status === 'pending');
-             setUpcomingSessions(upcoming);
-           }).catch(() => {})
+           apiRequest<Session[]>("/support/sessions", { headers }).then(processSessions).catch(() => {})
         );
       }
 
