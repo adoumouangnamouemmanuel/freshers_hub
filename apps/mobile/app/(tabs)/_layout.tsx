@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuth } from '@/context/auth-context';
-import { isClubLead, isCoachAdmin, isCoach, isAdvisor } from '@/lib/permissions';
+import { isClubLead, isCoachAdmin, isCoach, isAdvisor, isCounsellor } from '@/lib/permissions';
 
 const ACTIVE_TINT   = '#A93C40';
 const INACTIVE_TINT = '#9CA3AF';
@@ -24,7 +24,9 @@ export default function TabLayout() {
   const showPeerCoach = session?.user?.roles ? isCoach(session.user.roles) : false;
   const showAdvisor = session?.user?.roles ? isAdvisor(session.user.roles) : false;
   
-  const elevatedRolesCount = [showClubAdmin, showPeerCoach, showAdvisor].filter(Boolean).length;
+  const showCounsellor = session?.user?.roles ? isCounsellor(session.user.roles) : false;
+  
+  const elevatedRolesCount = [showClubAdmin, showPeerCoach, showAdvisor, showCounsellor].filter(Boolean).length;
   const showMyRoles = elevatedRolesCount > 1;
 
   return (
@@ -170,6 +172,16 @@ export default function TabLayout() {
           href: showMyRoles ? null : (showAdvisor ? '/(tabs)/advising-dashboard' : null),
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="book.fill" color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="counselling-dashboard"
+        options={{
+          title: 'Counselling',
+          href: showMyRoles ? null : (showCounsellor ? '/(tabs)/counselling-dashboard' as any : null),
+          tabBarIcon: ({ color }) => (
+            <IconSymbol size={26} name="heart.fill" color={color} />
           ),
         }}
       />
