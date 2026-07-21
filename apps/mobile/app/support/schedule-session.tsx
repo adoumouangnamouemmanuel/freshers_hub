@@ -13,14 +13,16 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
 export default function ScheduleSessionScreen() {
   const router = useRouter();
-  const { userId, name, sessionId, editDate, editLocation, editDescription, editStudentId, editStudentName, asCoach } = useLocalSearchParams();
+  const { userId, name, sessionId, editDate, editLocation, editDescription, editStudentId, editStudentName, asCoach, asAdvisor, unitId } = useLocalSearchParams();
   const isEditMode = !!sessionId;
   const isAsCoach = asCoach === "true";
+  const isAsAdvisor = asAdvisor === "true";
   const { session } = useAuth();
   const token = session?.accessToken;
   const insets = useSafeAreaInsets();
   const isCoachAdmin = hasRole(session?.user.roles || [], "coach_admin") || hasRole(session?.user.roles || [], "admin");
-  // const isCoach = hasRole(session?.user.roles || [], "peer_coach");
+  const isAdvisorRole = hasRole(session?.user.roles || [], "advisor");
+  const canPickUser = isCoachAdmin || isAsAdvisor || isAdvisorRole;
 
   const [loading, setLoading] = useState(false);
   
@@ -51,7 +53,8 @@ export default function ScheduleSessionScreen() {
   const fetchUsers = async () => {
     setFetchingUsers(true);
     try {
-      const res = await fetch(`${API_URL}/support/admin/students`, {
+      const endpoint = (isAsAdvisor || isAdvisorRole) ? '/support/advising/students' : '/support/admin/students';
+      const res = await fetch(`${API_URL}${endpoint}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -68,6 +71,9 @@ export default function ScheduleSessionScreen() {
     if (users.length === 0) fetchUsers();
     setShowUserModal(true);
   };
+
+  // Determine the effective unit ID
+  const effectiveUnitId = (isAsAdvisor || isAdvisorRole) ? 3 : parseInt(unitId as string) || 1;
 
   const onDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
@@ -94,17 +100,26 @@ export default function ScheduleSessionScreen() {
     const scheduledAt = date.toISOString();
 
     try {
+      const isAdvisorBooking = isAsAdvisor || isAdvisorRole;
       const endpoint = isEditMode 
         ? `/support/sessions/${sessionId}`
-        : isCoachAdmin ? "/support/admin/sessions" : "/support/sessions";
+        : isAdvisorBooking ? "/support/advising/sessions"
+        : isCoachAdmin ? "/support/admin/sessions" 
+        : "/support/sessions";
       const method = isEditMode ? "PUT" : "POST";
       
       const payload = isEditMode ? {
         location: form.location,
         description: form.description,
         scheduledAt,
+      } : isAdvisorBooking ? {
+        academicYearId: 1,
+        studentId: form.targetUserId,
+        scheduledAt,
+        location: form.location,
+        description: form.description,
       } : isCoachAdmin || isAsCoach ? {
-        unitId: 1,
+        unitId: effectiveUnitId,
         academicYearId: 1,
         studentId: form.targetUserId,
         providerId: session?.user.id,
@@ -113,7 +128,7 @@ export default function ScheduleSessionScreen() {
         description: form.description,
         withType: "peer_coach"
       } : {
-        unitId: 1,
+        unitId: effectiveUnitId,
         academicYearId: 1,
         providerId: form.targetUserId, 
         scheduledAt,
@@ -165,18 +180,18 @@ export default function ScheduleSessionScreen() {
             <View style={styles.formGroup}>
               <Text style={styles.label}>Scheduling with</Text>
               {form.targetUserName ? (
-                <Pressable style={styles.selectedUserCard} onPress={isCoachAdmin ? openUserModal : undefined}>
+                <Pressable style={styles.selectedUserCard} onPress={canPickUser ? openUserModal : undefined}>
                   <View style={styles.avatarPlaceholder}>
                     <Text style={styles.avatarInitial}>{form.targetUserName.charAt(0).toUpperCase()}</Text>
                   </View>
                   <Text style={styles.selectedUserName}>{form.targetUserName}</Text>
-                  {isCoachAdmin && <IconSymbol name="checkmark.circle.fill" size={20} color="#10B981" />}
+                  {canPickUser && <IconSymbol name="checkmark.circle.fill" size={20} color="#10B981" />}
                 </Pressable>
               ) : (
-                isCoachAdmin ? (
+                canPickUser ? (
                   <Pressable style={styles.selectUserBtn} onPress={openUserModal}>
                     <IconSymbol name="person.fill" size={20} color="#A93C40" />
-                    <Text style={styles.selectUserText}>Select a user from Students</Text>
+                    <Text style={styles.selectUserText}>Select a student</Text>
                     <IconSymbol name="chevron.right" size={16} color="#9BA3AE" />
                   </Pressable>
                 ) : (
