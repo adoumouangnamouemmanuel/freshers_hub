@@ -17,6 +17,11 @@ const findPosts = async (client, { userId, page = 1, limit = 50, category, autho
         JOIN group_members gm ON gm.group_id = pt.target_id AND pt.target_type = 'group'
         WHERE pt.post_id = p.id AND gm.user_id = $${paramIndex}
       )
+      OR EXISTS (
+        SELECT 1 FROM post_targets pt
+        JOIN coach_assignments ca ON ca.peer_coach_id = pt.target_id AND pt.target_type = 'coach'
+        WHERE pt.post_id = p.id AND ca.fresher_id = $${paramIndex}
+      )
     )`);
     queryParams.push(userId);
     paramIndex++;
@@ -59,6 +64,17 @@ const findPosts = async (client, { userId, page = 1, limit = 50, category, autho
       e.location as "eventLocation", e.organizer as "eventOrganizer",
       e.capacity as "eventCapacity", e.rsvp_enabled as "rsvpEnabled", e.status as "eventStatus",
       (SELECT COUNT(*)::int FROM event_rsvps er WHERE er.event_id = e.id AND er.status = 'going') as "goingCount",
+      (
+        SELECT string_agg(
+          CASE 
+            WHEN pt.target_type = 'coach' THEN 'My Assigned Students' 
+            ELSE g.name 
+          END, ', '
+        ) 
+        FROM post_targets pt
+        LEFT JOIN groups g ON g.id = pt.target_id AND pt.target_type = 'group'
+        WHERE pt.post_id = p.id
+      ) as "targetGroupName",
       ${myRsvpSelect}
     FROM posts p
     JOIN users u ON u.id = p.author_id
@@ -101,31 +117,57 @@ const insertPost = async (client, { authorId, title, content, category, visibili
   return rows[0];
 };
 
-const insertPostTargets = async (client, postId, targetGroupIds) => {
+const insertPostTargets = async (client, postId, targetGroupIds, authorId) => {
   for (const groupId of targetGroupIds) {
-    await client.query(
-      `INSERT INTO post_targets (post_id, target_type, target_id)
-       VALUES ($1, 'group', $2) ON CONFLICT DO NOTHING`,
-      [postId, groupId]
-    );
+    if (groupId === "assigned_students") {
+      await client.query(
+        `INSERT INTO post_targets (post_id, target_type, target_id)
+         VALUES ($1, 'coach', $2) ON CONFLICT DO NOTHING`,
+        [postId, authorId]
+      );
+    } else {
+      await client.query(
+        `INSERT INTO post_targets (post_id, target_type, target_id)
+         VALUES ($1, 'group', $2) ON CONFLICT DO NOTHING`,
+        [postId, groupId]
+      );
+    }
   }
 };
 
 const insertNotificationsForTargets = async (client, { title, category, postId, targetGroupIds, authorId }) => {
-  await client.query(
-    `INSERT INTO notifications (user_id, category, title, body, related_entity)
-     SELECT DISTINCT gm.user_id, 'announcement', $1, $2, $3
-     FROM group_members gm
-     WHERE gm.group_id = ANY($4::uuid[])
-       AND gm.user_id != $5`,
-    [
-      `New: ${title}`,
-      `A new ${category} has been posted for your group. Tap to view.`,
-      `post:${postId}`,
-      targetGroupIds,
-      authorId,
-    ]
-  );
+  const actualGroupIds = targetGroupIds.filter(id => id !== "assigned_students");
+  if (actualGroupIds.length > 0) {
+    await client.query(
+      `INSERT INTO notifications (user_id, category, title, body, related_entity)
+       SELECT DISTINCT gm.user_id, 'announcement', $1, $2, $3
+       FROM group_members gm
+       WHERE gm.group_id = ANY($4::uuid[])
+         AND gm.user_id != $5`,
+      [
+        `New: ${title}`,
+        `A new ${category} has been posted for your group. Tap to view.`,
+        `post:${postId}`,
+        actualGroupIds,
+        authorId,
+      ]
+    );
+  }
+
+  if (targetGroupIds.includes("assigned_students")) {
+    await client.query(
+      `INSERT INTO notifications (user_id, category, title, body, related_entity)
+       SELECT DISTINCT ca.fresher_id, 'announcement', $1, $2, $3
+       FROM coach_assignments ca
+       WHERE ca.peer_coach_id = $4`,
+      [
+        `New: ${title}`,
+        `Your peer coach posted a new ${category}. Tap to view.`,
+        `post:${postId}`,
+        authorId,
+      ]
+    );
+  }
 };
 
 const updatePost = async (client, postId, { title, content, category }) => {
