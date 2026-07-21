@@ -9,12 +9,13 @@ import {
   RefreshControl,
   Platform,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../../context/auth-context";
 import { Ionicons } from "@expo/vector-icons";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import SessionDetailModal from "../../../components/features/sessions/SessionDetailModal";
+import { getUnitLabel, getProviderRoleLabel } from "../../../lib/session-utils";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -32,6 +33,7 @@ type Session = {
   provider_id: string;
   student_id: string;
   provider_avatar: string;
+  unit_id?: number;
 };
 
 type FilterStatus = "all" | "upcoming" | "overdue" | "completed";
@@ -55,8 +57,8 @@ export default function AdvisingMyBookingsScreen() {
       });
       if (res.ok) {
         const data = await res.json();
-        // Filter to advising sessions only (unit_id === 3 or type not peer_coach)
-        const advisingSessions = data.filter((s: any) => s.type !== "peer_coach");
+        // Filter to advising sessions only (unit_id === 3)
+        const advisingSessions = data.filter((s: any) => s.unit_id === 3);
         setSessions(advisingSessions || []);
       }
     } catch (err) {
@@ -174,7 +176,7 @@ export default function AdvisingMyBookingsScreen() {
                       <Text style={styles.timeText}>
                         {dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </Text>
-                      <Text style={styles.typeText}>ADVISING SESSION</Text>
+                      <Text style={styles.typeText}>{getUnitLabel(item.unit_id, item.type)} SESSION</Text>
                     </View>
                     <View
                       style={[
@@ -200,7 +202,7 @@ export default function AdvisingMyBookingsScreen() {
                         </Text>
                       </View>
                       <View>
-                        <Text style={styles.roleLabel}>Advisor</Text>
+                        <Text style={styles.roleLabel}>{getProviderRoleLabel(item.unit_id, item.type)}</Text>
                         <Text style={styles.nameText}>{item.provider_name || "Unknown"}</Text>
                       </View>
                     </View>
