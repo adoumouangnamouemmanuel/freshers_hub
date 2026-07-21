@@ -421,6 +421,11 @@ export const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  postAuthorAvatarImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+  },
   postAuthorInitial: {
     fontSize: 16,
     fontWeight: "700",
