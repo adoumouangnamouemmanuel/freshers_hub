@@ -6,6 +6,7 @@ import { useAuth } from "../../../context/auth-context";
 import { IconSymbol } from "../../../components/ui/icon-symbol";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import SessionDetailModal from "../../../components/features/sessions/SessionDetailModal";
+import { getUnitLabel, getProviderRoleLabel } from "../../../lib/session-utils";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -23,6 +24,7 @@ type Session = {
   provider_id: string;
   student_id: string;
   provider_avatar: string;
+  unit_id?: number;
 };
 
 type FilterStatus = "all" | "upcoming" | "overdue" | "completed";
@@ -48,7 +50,8 @@ export default function MyBookingsScreen() {
       });
       if (res.ok) {
         const data = await res.json();
-        setSessions(data || []);
+        const coachingSessions = (data || []).filter((s: any) => s.unit_id === 1);
+        setSessions(coachingSessions);
       }
     } catch (err) {
       console.error(err);
@@ -147,9 +150,7 @@ export default function MyBookingsScreen() {
                       <Text style={styles.timeText}>
                         {dateObj.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                       </Text>
-                      <Text style={styles.typeText}>
-                        {(item.type || "session").replace("_", " ").toUpperCase()}
-                      </Text>
+                      <Text style={styles.typeText}>{getUnitLabel(item.unit_id, item.type)} SESSION</Text>
                     </View>
                     <View style={[styles.statusBadge, { backgroundColor: `${getStatusColor(item.status)}15` }]}>
                       <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
@@ -166,7 +167,7 @@ export default function MyBookingsScreen() {
                         <Text style={styles.avatarFallbackText}>{item.provider_name?.charAt(0) || "C"}</Text>
                       </View>
                       <View>
-                        <Text style={styles.roleLabel}>Coach</Text>
+                        <Text style={styles.roleLabel}>{getProviderRoleLabel(item.unit_id, item.type)}</Text>
                         <Text style={styles.nameText}>{item.provider_name || "Unknown"}</Text>
                       </View>
                     </View>
