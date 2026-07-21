@@ -1,54 +1,146 @@
-import { useState, useEffect } from "react";
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ActivityIndicator, 
+import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
   Pressable,
-  ScrollView,
-  RefreshControl
-} from "react-native"; 
-import globalStyles from '../styles';
+  FlatList,
+  RefreshControl,
+  Animated,
+  Alert,
+} from "react-native";
 import { useRouter } from "expo-router";
-import { SafeAreaView } from "react-native-safe-area-context";
-
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/auth-context";
 import { apiRequest } from "@/lib/api";
 import { IconSymbol } from "@/components/ui/icon-symbol";
+import Animated2, { FadeInDown, SlideInRight } from "react-native-reanimated";
 
-type Notification = {
+type AppNotification = {
   id: string;
   category: string;
   title: string;
   body: string;
-  relatedEntity: string;
+  relatedEntity: string | null;
   readAt: string | null;
   createdAt: string;
 };
 
-export default function NotificationsScreen() {
-  const router = useRouter();
-  const { session } = useAuth();
-  
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+// ── Category config ────────────────────────────────────────────────────────────
+const CATEGORY_CONFIG: Record<string, { icon: string; color: string; bg: string }> = {
+  event:        { icon: "calendar",         color: "#6366F1", bg: "#EEF2FF" },
+  announcement: { icon: "megaphone.fill",   color: "#F59E0B", bg: "#FFFBEB" },
+  nudge:        { icon: "bell.badge.fill",  color: "#A93C40", bg: "#FEF2F2" },
+  session:      { icon: "clock.fill",       color: "#10B981", bg: "#ECFDF5" },
+  report:       { icon: "doc.text.fill",    color: "#3B82F6", bg: "#EFF6FF" },
+  reminder:     { icon: "alarm.fill",       color: "#EC4899", bg: "#FDF2F8" },
+};
 
-  const fetchNotifications = async () => {
+const getConfig = (category: string) =>
+  CATEGORY_CONFIG[category] ?? { icon: "bell.fill", color: "#6B7280", bg: "#F3F4F6" };
+
+function timeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins  = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days  = Math.floor(diff / 86400000);
+  if (mins  < 1)  return "just now";
+  if (mins  < 60) return `${mins}m ago`;
+  if (hours < 24) return `${hours}h ago`;
+  if (days  < 7)  return `${days}d ago`;
+  return new Date(dateStr).toLocaleDateString();
+}
+
+// ── Notification card ──────────────────────────────────────────────────────────
+function NotificationCard({
+  item,
+  index,
+  onPress,
+}: {
+  item: AppNotification;
+  index: number;
+  onPress: (item: AppNotification) => void;
+}) {
+  const { icon, color, bg } = getConfig(item.category);
+  const isUnread = !item.readAt;
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const onPressIn = () =>
+    Animated.spring(scale, { toValue: 0.97, useNativeDriver: true }).start();
+  const onPressOut = () =>
+    Animated.spring(scale, { toValue: 1, useNativeDriver: true }).start();
+
+  return (
+    <Animated2.View entering={FadeInDown.delay(index * 40).duration(350)}>
+      <Animated.View style={{ transform: [{ scale }] }}>
+        <Pressable
+          onPressIn={onPressIn}
+          onPressOut={onPressOut}
+          onPress={() => onPress(item)}
+          style={[styles.card, isUnread && styles.cardUnread]}
+        >
+          {/* Unread accent bar */}
+          {isUnread && <View style={[styles.accentBar, { backgroundColor: color }]} />}
+
+          {/* Icon */}
+          <View style={[styles.iconWrap, { backgroundColor: bg }]}>
+            <IconSymbol name={icon as any} size={22} color={color} />
+          </View>
+
+          {/* Content */}
+          <View style={styles.cardContent}>
+            <View style={styles.cardTopRow}>
+              <Text style={[styles.cardTitle, isUnread && styles.cardTitleUnread]} numberOfLines={1}>
+                {item.title}
+              </Text>
+              <Text style={styles.cardTime}>{timeAgo(item.createdAt)}</Text>
+            </View>
+            <Text style={styles.cardBody} numberOfLines={2}>{item.body}</Text>
+            <View style={styles.cardBadgeRow}>
+              <View style={[styles.categoryBadge, { backgroundColor: bg }]}>
+                <Text style={[styles.categoryBadgeText, { color }]}>
+                  {item.category.charAt(0).toUpperCase() + item.category.slice(1)}
+                </Text>
+              </View>
+              {isUnread && <View style={[styles.unreadDot, { backgroundColor: color }]} />}
+            </View>
+          </View>
+        </Pressable>
+      </Animated.View>
+    </Animated2.View>
+  );
+}
+
+// ── Main screen ────────────────────────────────────────────────────────────────
+export default function NotificationsScreen() {
+  const router  = useRouter();
+  const { session } = useAuth();
+  const insets  = useSafeAreaInsets();
+
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [isLoading,  setIsLoading]  = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [filter, setFilter] = useState<string>("all");
+
+  const headers = { Authorization: `Bearer ${session?.accessToken}` };
+
+  const fetchNotifications = useCallback(async () => {
     if (!session?.accessToken) return;
     try {
-      const data = await apiRequest<{ notifications: Notification[] }>("/notifications", {
-        headers: { Authorization: `Bearer ${session.accessToken}` }
-      });
+      const data = await apiRequest<{ notifications: AppNotification[] }>(
+        "/notifications?page=1&limit=50",
+        { headers }
+      );
       setNotifications(data.notifications || []);
     } catch (err) {
       console.error("Failed to fetch notifications:", err);
     }
-  };
+  }, [session?.accessToken]);
 
   useEffect(() => {
     fetchNotifications().finally(() => setIsLoading(false));
-  }, [session?.accessToken]);
+  }, [fetchNotifications]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -59,217 +151,202 @@ export default function NotificationsScreen() {
   const markAllRead = async () => {
     if (!session?.accessToken) return;
     try {
-      await apiRequest("/notifications/read-all", {
-        method: "PATCH",
-        headers: { Authorization: `Bearer ${session.accessToken}` }
-      });
-      await fetchNotifications();
-    } catch (err) {
-      console.error("Failed to mark all read:", err);
-    }
+      await apiRequest("/notifications/read-all", { method: "PATCH", headers });
+      setNotifications((prev) => prev.map((n) => ({ ...n, readAt: new Date().toISOString() })));
+    } catch {}
   };
 
-  const handlePressNotification = async (notification: Notification) => {
-    if (!notification.readAt && session?.accessToken) {
+  const handlePressNotification = async (notification: AppNotification) => {
+    if (!notification.readAt) {
       try {
-        await apiRequest(`/notifications/${notification.id}/read`, {
-          method: "PATCH",
-          headers: { Authorization: `Bearer ${session.accessToken}` }
-        });
-        setNotifications(prev => prev.map(n => 
-          n.id === notification.id ? { ...n, readAt: new Date().toISOString() } : n
-        ));
-      } catch (err) {
-        console.error("Failed to mark read:", err);
-      }
+        await apiRequest(`/notifications/${notification.id}/read`, { method: "PATCH", headers });
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n.id === notification.id ? { ...n, readAt: new Date().toISOString() } : n
+          )
+        );
+      } catch {}
     }
-
     if (notification.relatedEntity) {
       const [type, id] = notification.relatedEntity.split(":");
-      if (type === "post") {
-        router.push({ pathname: "/post/[id]", params: { id } } as any);
-      } else if (type === "event") {
-        router.push({ pathname: "/event/[id]", params: { id } } as any);
-      }
+      if (type === "post")  router.push({ pathname: "/post/[id]",  params: { id } } as any);
+      if (type === "event") router.push({ pathname: "/event/[id]", params: { id } } as any);
     }
   };
 
-  const getIconForCategory = (category: string) => {
-    switch (category) {
-      case "event": return "calendar";
-      case "announcement": return "megaphone.fill";
-      default: return "bell.fill";
-    }
-  };
+  const unreadCount = notifications.filter((n) => !n.readAt).length;
+  const categories  = ["all", ...Array.from(new Set(notifications.map((n) => n.category)))];
+  const filtered    = filter === "all" ? notifications : notifications.filter((n) => n.category === filter);
 
   return (
-    <SafeAreaView style={styles.screen} edges={["top"]}>
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
+      {/* ── Header ─────────────────────────────────────────────────────────── */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn}>
-            <IconSymbol name="chevron.left" size={24} color="#1A2B4A" />
-          </Pressable>
-          <Text style={styles.headerTitle}>Notifications</Text>
-        </View>
-        <Pressable onPress={markAllRead}>
-          <Text style={styles.markAllText}>Mark all read</Text>
+        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <IconSymbol name="chevron.left" size={22} color="#1A2B4A" />
         </Pressable>
+        <View>
+          <Text style={styles.headerTitle}>Notifications</Text>
+          {unreadCount > 0 && (
+            <Text style={styles.headerSub}>{unreadCount} unread</Text>
+          )}
+        </View>
+        {unreadCount > 0 ? (
+          <Pressable onPress={markAllRead} style={styles.markAllBtn}>
+            <Text style={styles.markAllText}>Mark all read</Text>
+          </Pressable>
+        ) : (
+          <View style={{ width: 90 }} />
+        )}
       </View>
 
+      {/* ── Filter pills ──────────────────────────────────────────────────── */}
+      {!isLoading && notifications.length > 0 && (
+        <View style={styles.filterRow}>
+          <FlatList
+            data={categories}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(c) => c}
+            contentContainerStyle={styles.filterContent}
+            renderItem={({ item: cat }) => (
+              <Pressable
+                style={[styles.filterPill, filter === cat && styles.filterPillActive]}
+                onPress={() => setFilter(cat)}
+              >
+                <Text style={[styles.filterPillText, filter === cat && styles.filterPillTextActive]}>
+                  {cat.charAt(0).toUpperCase() + cat.slice(1)}
+                </Text>
+              </Pressable>
+            )}
+          />
+        </View>
+      )}
+
+      {/* ── Body ──────────────────────────────────────────────────────────── */}
       {isLoading ? (
-        <View style={styles.centerContainer}>
+        <View style={styles.center}>
           <ActivityIndicator size="large" color="#A93C40" />
         </View>
-      ) : notifications.length === 0 ? (
-        <View style={styles.centerContainer}>
-          <IconSymbol name="bell.slash.fill" size={48} color="#D1D5DB" />
-          <Text style={styles.emptyTitle}>No notifications yet</Text>
-          <Text style={styles.emptyDesc}>We&apos;ll notify you when there&apos;s an update for your groups or events.</Text>
+      ) : filtered.length === 0 ? (
+        <View style={styles.center}>
+          <View style={styles.emptyIllustration}>
+            <IconSymbol name="bell.slash.fill" size={44} color="#CBD5E1" />
+          </View>
+          <Text style={styles.emptyTitle}>All caught up!</Text>
+          <Text style={styles.emptyBody}>
+            {filter === "all"
+              ? "You have no notifications yet. We'll let you know when something happens."
+              : `No "${filter}" notifications found.`}
+          </Text>
+          {filter !== "all" && (
+            <Pressable onPress={() => setFilter("all")} style={styles.clearFilterBtn}>
+              <Text style={styles.clearFilterText}>Show all</Text>
+            </Pressable>
+          )}
         </View>
       ) : (
-        <ScrollView 
-          style={styles.list}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#A93C40" />}
-        >
-          {notifications.map(notification => {
-            const isUnread = !notification.readAt;
-            return (
-              <Pressable 
-                key={notification.id} 
-                style={[styles.notificationCard, isUnread && styles.notificationCardUnread]}
-                onPress={() => handlePressNotification(notification)}
-              >
-                <View style={[styles.iconContainer, isUnread && styles.iconContainerUnread]}>
-                  <IconSymbol 
-                    name={getIconForCategory(notification.category) as any} 
-                    size={20} 
-                    color={isUnread ? "#A93C40" : "#6B7280"} 
-                  />
-                </View>
-                <View style={styles.content}>
-                  <Text style={[styles.title, isUnread && styles.titleUnread]}>{notification.title}</Text>
-                  <Text style={styles.body}>{notification.body}</Text>
-                  <Text style={styles.date}>{new Date(notification.createdAt).toLocaleString()}</Text>
-                </View>
-                {isUnread && <View style={styles.unreadDot} />}
-              </Pressable>
-            );
-          })}
-        </ScrollView>
+        <FlatList
+          data={filtered}
+          keyExtractor={(n) => n.id}
+          contentContainerStyle={styles.list}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#A93C40" />
+          }
+          renderItem={({ item, index }) => (
+            <NotificationCard item={item} index={index} onPress={handlePressNotification} />
+          )}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+        />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
+// ── Styles ─────────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-  ...globalStyles.layout,
-  ...globalStyles.typography,
-  ...globalStyles.components,
-  screen: {
-    flex: 1,
-    backgroundColor: "#F8F9FA",
-  },
+  screen: { flex: 1, backgroundColor: "#F0F4F8" },
+
+  /* Header */
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 14,
     backgroundColor: "#FFFFFF",
     borderBottomWidth: 1,
-    borderBottomColor: "#F0F2F5",
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
+    borderBottomColor: "#E8ECF0",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 6,
+    elevation: 2,
   },
   backBtn: {
-    padding: 8,
-    marginLeft: -8,
+    width: 38, height: 38, borderRadius: 19,
+    backgroundColor: "#F0F4F8",
+    alignItems: "center", justifyContent: "center",
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#1A2B4A",
+  headerTitle: { fontSize: 20, fontWeight: "800", color: "#1A2B4A" },
+  headerSub:   { fontSize: 12, color: "#A93C40", fontWeight: "600", marginTop: 2 },
+  markAllBtn:  { paddingHorizontal: 14, paddingVertical: 8, backgroundColor: "#FEF2F2", borderRadius: 20 },
+  markAllText: { fontSize: 13, color: "#A93C40", fontWeight: "700" },
+
+  /* Filters */
+  filterRow:     { backgroundColor: "#FFFFFF", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#E8ECF0" },
+  filterContent: { paddingHorizontal: 16, gap: 8 },
+  filterPill:    {
+    paddingHorizontal: 16, paddingVertical: 7, borderRadius: 20,
+    backgroundColor: "#F0F4F8", borderWidth: 1, borderColor: "transparent",
   },
-  markAllText: {
-    fontSize: 14,
-    color: "#A93C40",
-    fontWeight: "600",
-  },
-  centerContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 32,
-  },
-  emptyTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1A2B4A",
-    marginTop: 16,
-    marginBottom: 8,
-  },
-  emptyDesc: {
-    fontSize: 14,
-    color: "#6B7280",
-    textAlign: "center",
-    lineHeight: 20,
-  },
-  list: {
-    flex: 1,
-  },
-  notificationCard: {
+  filterPillActive: { backgroundColor: "#1A2B4A", borderColor: "#1A2B4A" },
+  filterPillText:   { fontSize: 13, fontWeight: "600", color: "#6B7280" },
+  filterPillTextActive: { color: "#FFFFFF" },
+
+  /* List */
+  list:      { paddingHorizontal: 16, paddingTop: 12, paddingBottom: 40 },
+  separator: { height: 8 },
+
+  /* Card */
+  card: {
     flexDirection: "row",
-    padding: 16,
+    alignItems: "flex-start",
     backgroundColor: "#FFFFFF",
-    borderBottomWidth: 1,
-    borderBottomColor: "#F0F2F5",
-    gap: 16,
+    borderRadius: 16,
+    padding: 14,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+    overflow: "hidden",
+    gap: 12,
   },
-  notificationCardUnread: {
-    backgroundColor: "#FEF2F2",
+  cardUnread: { backgroundColor: "#FAFAFA", shadowOpacity: 0.10 },
+  accentBar:  { position: "absolute", left: 0, top: 0, bottom: 0, width: 4, borderTopLeftRadius: 16, borderBottomLeftRadius: 16 },
+  iconWrap:   { width: 46, height: 46, borderRadius: 14, alignItems: "center", justifyContent: "center" },
+  cardContent: { flex: 1, gap: 4 },
+  cardTopRow:  { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  cardTitle:   { flex: 1, fontSize: 15, fontWeight: "600", color: "#374151", marginRight: 8 },
+  cardTitleUnread: { color: "#111827", fontWeight: "800" },
+  cardTime:    { fontSize: 11, color: "#9CA3AF", fontWeight: "500" },
+  cardBody:    { fontSize: 13, color: "#6B7280", lineHeight: 19 },
+  cardBadgeRow: { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 },
+  categoryBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
+  categoryBadgeText: { fontSize: 11, fontWeight: "700" },
+  unreadDot:   { width: 7, height: 7, borderRadius: 4 },
+
+  /* Empty state */
+  center:              { flex: 1, alignItems: "center", justifyContent: "center", padding: 40 },
+  emptyIllustration:   {
+    width: 88, height: 88, borderRadius: 44,
+    backgroundColor: "#F1F5F9",
+    alignItems: "center", justifyContent: "center",
+    marginBottom: 20,
   },
-  iconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#F0F2F5",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  iconContainerUnread: {
-    backgroundColor: "#FFFFFF",
-  },
-  content: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#4B5563",
-    marginBottom: 4,
-  },
-  titleUnread: {
-    color: "#1A2B4A",
-    fontWeight: "700",
-  },
-  body: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginBottom: 8,
-    lineHeight: 20,
-  },
-  date: {
-    fontSize: 12,
-    color: "#9BA3AE",
-  },
-  unreadDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: "#A93C40",
-    marginTop: 6,
-  },
+  emptyTitle:      { fontSize: 20, fontWeight: "800", color: "#1A2B4A", marginBottom: 8 },
+  emptyBody:       { fontSize: 14, color: "#6B7280", textAlign: "center", lineHeight: 22 },
+  clearFilterBtn:  { marginTop: 16, paddingHorizontal: 20, paddingVertical: 10, backgroundColor: "#1A2B4A", borderRadius: 20 },
+  clearFilterText: { color: "#FFFFFF", fontWeight: "700", fontSize: 14 },
 });
