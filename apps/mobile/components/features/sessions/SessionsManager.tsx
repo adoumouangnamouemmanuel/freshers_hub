@@ -21,6 +21,7 @@ import {
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
 import SessionDetailModal from "./SessionDetailModal";
+import { getUnitLabel, getProviderRoleLabel } from "@/lib/session-utils";
 
 type Session = {
   id: string;
@@ -36,6 +37,7 @@ type Session = {
   provider_id: string;
   student_id: string;
   provider_avatar: string;
+  unit_id?: number;
 };
 
 type FilterStatus = "all" | "upcoming" | "overdue" | "completed";
@@ -239,12 +241,7 @@ export default function SessionsManager({
                           })}
                         </Text>
                         <Text style={styles.typeText}>
-                          {item.type === "peer_coach" &&
-                          item.provider_name?.toLowerCase().includes("yvonne")
-                            ? "COACHING"
-                            : (item.type || "session")
-                                .replace("_", " ")
-                                .toUpperCase()}
+                          {getUnitLabel(item.unit_id, item.type)}
                         </Text>
                       </View>
                       <View
@@ -276,7 +273,7 @@ export default function SessionsManager({
                           </Text>
                         </View>
                         <View>
-                          <Text style={styles.roleLabel}>Coach</Text>
+                          <Text style={styles.roleLabel}>{getProviderRoleLabel(item.unit_id, item.type)}</Text>
                           <Text style={styles.nameText}>
                             {item.provider_name || "Unknown"}
                           </Text>
