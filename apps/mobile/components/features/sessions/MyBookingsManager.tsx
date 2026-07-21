@@ -34,6 +34,7 @@ type Session = {
   provider_id: string;
   student_id: string;
   provider_avatar: string;
+  student_avatar?: string;
   unit_id?: number;
 };
 
