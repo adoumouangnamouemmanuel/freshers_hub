@@ -85,48 +85,6 @@ const getAdvisingDashboard = asyncHandler(async (req, res) => {
   }
 });
 
-// ─── All Advising Sessions ──────────────────────────────────────────────────
-const getAdvisingSessions = asyncHandler(async (req, res) => {
-  const page = parseInt(req.query.page, 10) || 1;
-  const limit = parseInt(req.query.limit, 10) || 20;
-  const offset = (page - 1) * limit;
-
-  const client = await pool.connect();
-  try {
-    const unitId = await getAdvisingUnitId(client);
-
-    const { rows } = await client.query(`
-      SELECT 
-        COUNT(*) OVER() AS total_count,
-        s.id, s.unit_id, s.academic_year_id, s.student_id, s.provider_id,
-        s.with_type AS type, s.scheduled_at AS date, s.location, s.description, 
-        s.status, s.is_mandatory, s.title,
-        EXISTS (SELECT 1 FROM session_reports sr WHERE sr.session_id = s.id) AS has_report,
-        u1.full_name AS student_name, u1.avatar_url AS student_avatar,
-        u2.full_name AS provider_name, u2.avatar_url AS provider_avatar
-      FROM sessions s
-      JOIN users u1 ON s.student_id = u1.id
-      JOIN users u2 ON s.provider_id = u2.id
-      WHERE s.unit_id = $1 AND s.provider_id = $2
-      ORDER BY s.scheduled_at DESC
-      LIMIT $3 OFFSET $4
-    `, [unitId, req.user.id, limit, offset]);
-
-    const total = rows.length > 0 ? parseInt(rows[0].total_count, 10) : 0;
-    res.json({
-      data: rows,
-      meta: {
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit)
-      }
-    });
-  } finally {
-    client.release();
-  }
-});
-
 // ─── All Students (for booking) ─────────────────────────────────────────────
 const getAdvisingStudents = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
@@ -233,7 +191,6 @@ const advisorBookSession = asyncHandler(async (req, res) => {
 
 module.exports = {
   getAdvisingDashboard,
-  getAdvisingSessions,
   getAdvisingStudents,
   getAdvisingReports,
   advisorBookSession,
