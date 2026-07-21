@@ -63,36 +63,31 @@ export default function NewPostScreen() {
   const isEvent = category === "Event";
   const roles = session?.user.roles || [];
   const isPeerCoach = roles.some((r: any) => r.name === "peer_coach");
+  const isOnlyPeerCoach = isPeerCoach && roles.length === 1; // Or just check if they lack admin/advisor roles
+  const hasAdminRights = roles.some((r: any) => ["admin", "advisor", "counsellor", "coach_admin"].includes(r.name));
 
   useEffect(() => {
     if (session?.accessToken) {
       if (preselectGroup) {
         setIsTargeted(true);
         setTargetGroupIds([preselectGroup]);
+      } else if (isPeerCoach && !hasAdminRights) {
+        setIsTargeted(true);
+        setTargetGroupIds(["assigned_students"]);
       } else {
         // Fetch general groups for home screen posts
         apiRequest<{ data: Group[] }>("/groups", {
           headers: { Authorization: `Bearer ${session.accessToken}` }
         })
           .then(res => {
-            // Filter out clubs
+            // Only keep non-club prebuilt groups
             let availableGroups = res.data?.filter(g => g.type !== 'club') || [];
-            
-            // Add peer coach pseudo-group
-            if (isPeerCoach) {
-              availableGroups.push({
-                id: "assigned_students",
-                name: "My Assigned Students",
-                type: "coach",
-                memberCount: 0
-              });
-            }
             setGroups(availableGroups);
           })
           .catch(err => console.error("Failed to fetch groups", err));
       }
     }
-  }, [session?.accessToken, preselectGroup, isPeerCoach]);
+  }, [session?.accessToken, preselectGroup, isPeerCoach, hasAdminRights]);
 
   const toggleGroup = (groupId: string) => {
     setTargetGroupIds(prev => 
@@ -189,6 +184,13 @@ export default function NewPostScreen() {
               <IconSymbol name="person.2.fill" size={20} color="#4F46E5" />
               <Text style={styles.fixedTargetText}>
                 Posting to club members
+              </Text>
+            </View>
+          ) : (isPeerCoach && !hasAdminRights) ? (
+            <View style={styles.fixedTargetContainer}>
+              <IconSymbol name="person.2.fill" size={20} color="#4F46E5" />
+              <Text style={styles.fixedTargetText}>
+                Posting to assigned students
               </Text>
             </View>
           ) : (
