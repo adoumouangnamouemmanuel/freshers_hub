@@ -23,10 +23,12 @@ export default function StudentsScreen() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const isAdvisorUser = hasRole(session?.user?.roles || [], "advisor");
+  const isCounsellorUser = hasRole(session?.user?.roles || [], "counsellor");
+  const showClassYears = isAdvisorUser || isCounsellorUser;
 
   const fetchDirectory = async () => {
     try {
-      const endpoint = isAdvisorUser ? '/support/advising/students' : '/support/admin/students';
+      const endpoint = isCounsellorUser ? '/support/counselling/students' : (isAdvisorUser ? '/support/advising/students' : '/support/admin/students');
       const res = await fetch(`${API_URL}${endpoint}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -47,7 +49,7 @@ export default function StudentsScreen() {
 
   const filteredUsers = users.filter((u: any) => {
     let matchesTab = false;
-    if (isAdvisorUser) {
+    if (showClassYears) {
       matchesTab = activeTab === "all" || String(u.class_year) === activeTab;
     } else {
       matchesTab = 
@@ -62,8 +64,8 @@ export default function StudentsScreen() {
     return matchesTab && matchesSearch;
   });
 
-  // Extract unique class years for the advisor tabs
-  const classYears = isAdvisorUser 
+  // Extract unique class years for the advisor/counsellor tabs
+  const classYears = showClassYears 
     ? Array.from(new Set(users.map((u: any) => u.class_year).filter(Boolean))).sort()
     : [];
 
@@ -106,7 +108,7 @@ export default function StudentsScreen() {
             <Text style={[styles.tabText, activeTab === "all" && styles.activeTabText]}>All</Text>
           </TouchableOpacity>
           
-          {isAdvisorUser ? (
+          {showClassYears ? (
             classYears.map((year: any) => (
               <TouchableOpacity 
                 key={year}
