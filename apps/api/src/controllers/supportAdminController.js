@@ -241,11 +241,13 @@ const getAdminUserProfile = asyncHandler(async (req, res) => {
 
 // Get Admin Sessions
 const getAdminSessions = asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 20;
+  
   try {
-    const rows = await supportAdminRepository.getAdminSessions();
-    res.json(rows);
+    const data = await supportAdminRepository.getAdminSessions(page, limit);
+    res.json(data);
   } catch (err) {
-    
     throw new AppError("Internal server error", 500);
   }
 });
