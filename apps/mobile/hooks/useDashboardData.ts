@@ -57,6 +57,7 @@ export function useDashboardData() {
   const [assignedFreshers, setAssignedFreshers] = useState<AssignedFresher[]>([]);
   const [myGroups, setMyGroups] = useState<Group[]>([]);
   const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
+  const [overdueSessions, setOverdueSessions] = useState<Session[]>([]);
   const [adminStats, setAdminStats] = useState<AdminStats | null>(null);
 
   const currentYear = new Date().getFullYear();
@@ -108,6 +109,14 @@ export function useDashboardData() {
            apiRequest<Session[]>("/support/sessions", { headers }).then(d => {
              const upcoming = (d || []).filter(s => s.status === 'scheduled' || s.status === 'pending');
              setUpcomingSessions(upcoming);
+             
+             const now = new Date();
+             const overdue = (d || []).filter(s => {
+               if (s.status !== 'scheduled' && s.status !== 'pending') return false;
+               const sessionDate = new Date(s.session_date || (s as any).date);
+               return sessionDate < now;
+             });
+             setOverdueSessions(overdue);
            }).catch(() => {})
         );
       }
@@ -139,7 +148,7 @@ export function useDashboardData() {
   return {
     posts, unreadCount, isLoading, refreshing,
     assignedCoaches, assignedBuddy, assignedFreshers,
-    myGroups, upcomingSessions, adminStats,
+    myGroups, upcomingSessions, overdueSessions, adminStats,
     isFresher, isPeerCoach, isPeerCounsellor, isClubLead,
     isAdmin, isCoachAdmin, isStaff, isContinuingStudent,
     handleRefresh, fetchData
