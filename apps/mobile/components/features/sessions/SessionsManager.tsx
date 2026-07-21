@@ -416,7 +416,7 @@ const styles = StyleSheet.create({
   activeTabText: { color: "#1A2B4A", fontWeight: "700" },
 
   scroll: { flex: 1 },
-  content: { padding: 20, gap: 16, paddingBottom: 150 },
+  content: { padding: 20, gap: 16, paddingBottom: 200 },
 
   card: {
     backgroundColor: "#FFFFFF",
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
 
   fabContainer: {
     position: "absolute",
-    bottom: 100,
+    bottom: 80,
     right: 24,
   },
   fabPrimary: {
