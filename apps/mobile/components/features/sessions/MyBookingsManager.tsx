@@ -287,7 +287,7 @@ const styles = StyleSheet.create({
   filterChipText: { fontSize: 13, fontWeight: "600", color: "#6B7280" },
   filterChipTextActive: { color: "#FFFFFF" },
 
-  listContent: { padding: 20, gap: 16, paddingBottom: 100 },
+  listContent: { padding: 20, gap: 16, paddingBottom: 160 },
   card: {
     backgroundColor: "#FFFFFF",
     borderRadius: 24,
