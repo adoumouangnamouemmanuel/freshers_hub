@@ -7,7 +7,8 @@ import {
   Pressable, 
   ActivityIndicator,
   ScrollView,
-  Alert 
+  Alert,
+  Image
 } from "react-native"; 
 import globalStyles from '../../styles';
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -25,6 +26,7 @@ type Post = {
   createdAt: string;
   authorName: string;
   authorId: string;
+  authorAvatar?: string;
 };
 
 export default function PostScreen() {
@@ -99,9 +101,13 @@ export default function PostScreen() {
         <ScrollView contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom + 20, 100) }]}>
           <View style={[styles.card, isAlert && styles.alertCard]}>
             <View style={styles.postHeader}>
-              <View style={styles.postAuthorAvatar}>
-                <Text style={styles.postAuthorInitial}>{post.authorName.charAt(0).toUpperCase()}</Text>
-              </View>
+              {post.authorAvatar ? (
+                <Image source={{ uri: post.authorAvatar }} style={styles.postAuthorAvatarImage} />
+              ) : (
+                <View style={styles.postAuthorAvatar}>
+                  <Text style={styles.postAuthorInitial}>{post.authorName.charAt(0).toUpperCase()}</Text>
+                </View>
+              )}
               <View style={styles.postAuthorInfo}>
                 <Text style={styles.postAuthorName}>{post.authorName}</Text>
                 <Text style={styles.postDate}>
@@ -212,6 +218,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#F0F2F5",
     alignItems: "center",
     justifyContent: "center",
+  },
+  postAuthorAvatarImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
   },
   postAuthorInitial: {
     fontSize: 16,
