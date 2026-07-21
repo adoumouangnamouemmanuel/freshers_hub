@@ -194,10 +194,54 @@ const counsellorBookSession = asyncHandler(async (req, res) => {
   }
 });
 
+// ─── Get all Peer Counsellors ───────────────────────────────────────────────
+const getPeerCounsellors = asyncHandler(async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query(`
+      SELECT 
+        u.id, u.full_name AS name, u.email, u.phone, u.avatar_url, u.class_year, u.major,
+        'peer_counsellor' AS type
+      FROM users u
+      JOIN user_roles ur ON u.id = ur.user_id
+      JOIN roles r ON ur.role_id = r.id
+      WHERE r.name = 'peer_counsellor' AND u.is_active = true
+      ORDER BY u.full_name ASC
+    `);
+    res.json(rows);
+  } finally {
+    client.release();
+  }
+});
+
+// ─── Assign Student to Peer Counsellor ───────────────────────────────────────
+const assignStudentToPeer = asyncHandler(async (req, res) => {
+  const { studentId, peerCounsellorId, academicYearId } = req.body;
+  if (!studentId || !peerCounsellorId) {
+    throw new AppError("studentId and peerCounsellorId are required", 400);
+  }
+
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query(`
+      INSERT INTO counsellor_assignments (academic_year_id, student_id, peer_counsellor_id, assigned_by)
+      VALUES ($1, $2, $3, $4)
+      ON CONFLICT (academic_year_id, student_id, peer_counsellor_id) DO NOTHING
+      RETURNING *
+    `, [academicYearId || 1, studentId, peerCounsellorId, req.user.id]);
+    
+    res.status(201).json({ success: true, assignment: rows[0] });
+  } finally {
+    client.release();
+  }
+});
+
 module.exports = {
   getCounsellingDashboard,
   getCounsellingSessions,
   getCounsellingStudents,
   getCounsellingReports,
   counsellorBookSession,
+  getPeerCounsellors,
+  assignStudentToPeer
 };
