@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
   activeTabText: { color: "#1A2B4A", fontWeight: "700" },
   
   scroll: { flex: 1 },
-  content: { paddingHorizontal: 20, paddingBottom: 60, gap: 12 },
+  content: { paddingHorizontal: 20, paddingBottom: 150, gap: 12 },
   
   card: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", borderRadius: 20, padding: 16, ...Platform.select({ ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 12 }, android: { elevation: 3 } }) },
   avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#F3F4F6", marginRight: 16 },
