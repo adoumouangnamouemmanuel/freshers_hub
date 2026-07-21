@@ -129,10 +129,15 @@ const getCounsellingSessions = asyncHandler(async (req, res) => {
 
 // ─── All Students (for booking) ─────────────────────────────────────────────
 const getCounsellingStudents = asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 20;
+  const offset = (page - 1) * limit;
+
   const client = await pool.connect();
   try {
     const { rows } = await client.query(`
       SELECT 
+        COUNT(*) OVER() AS total_count,
         u.id, u.full_name AS name, u.email, u.phone, u.avatar_url, u.class_year, u.major,
         'student' AS type
       FROM users u
@@ -141,9 +146,19 @@ const getCounsellingStudents = asyncHandler(async (req, res) => {
       WHERE r.name = 'student' AND u.is_active = true
       GROUP BY u.id, u.full_name, u.email, u.phone, u.avatar_url, u.class_year, u.major
       ORDER BY u.full_name ASC
-    `);
+      LIMIT $1 OFFSET $2
+    `, [limit, offset]);
 
-    res.json(rows);
+    const total = rows.length > 0 ? parseInt(rows[0].total_count, 10) : 0;
+    res.json({
+      data: rows,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } finally {
     client.release();
   }
