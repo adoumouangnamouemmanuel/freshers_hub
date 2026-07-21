@@ -42,9 +42,10 @@ type FilterStatus = "all" | "upcoming" | "overdue" | "completed";
 
 type Props = {
   unitId?: number;
+  isCounsellorView?: boolean;
 };
 
-export default function MyBookingsManager({ unitId }: Props) {
+export default function MyBookingsManager({ unitId, isCounsellorView }: Props) {
   const { session } = useAuth();
   const token = session?.accessToken;
   const router = useRouter();
@@ -289,6 +290,7 @@ export default function MyBookingsManager({ unitId }: Props) {
         onRefresh={fetchMyBookings}
         currentUserId={session?.user?.id}
         accessToken={session?.accessToken}
+        isCounsellorView={isCounsellorView}
       />
     </SafeAreaView>
   );
