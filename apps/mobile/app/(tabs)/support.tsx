@@ -8,6 +8,7 @@ import { StatusBar } from "expo-status-bar";
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { useAuth } from "@/context/auth-context";
 import { apiRequest } from "@/lib/api";
+import Animated, { FadeInDown, SlideInDown } from "react-native-reanimated";
 
 import { isCoach, isAdvisor } from "@/lib/permissions";
 
@@ -22,6 +23,10 @@ export default function SupportScreen() {
   
   const isPeerCoach = session?.user?.roles ? isCoach(session.user.roles) : false;
   const isAdvisorUser = session?.user?.roles ? isAdvisor(session.user.roles) : false;
+  
+  const currentYear = new Date().getFullYear();
+  const userClassYear = Number(session?.user?.classYear || session?.user?.studentProfile?.graduationYear);
+  const isFresher = userClassYear === currentYear + 4;
 
   const [assignedCoach, setAssignedCoach] = useState<any>(null);
   const [buddy, setBuddy] = useState<any>(null);
@@ -87,13 +92,13 @@ export default function SupportScreen() {
   }
 
   // Calculate coaching sessions
-  const coachingSessions = sessions.filter(s => s.type === "peer_coaching");
+  const coachingSessions = sessions.filter(s => s.type === "peer_coach" || s.type === "peer_coaching");
   const completedSessions = coachingSessions.filter(s => s.status === "completed").length;
   const totalMandatory = coachingSessions.filter(s => s.is_mandatory).length || 3;
   const completionRate = Math.min((completedSessions / Math.max(totalMandatory, 1)) * 100, 100);
 
-  const renderStaffCard = (staff: any, roleLabel: string, bgColor: string) => (
-    <View key={staff.id} style={styles.staffCard}>
+  const renderStaffCard = (staff: any, roleLabel: string, bgColor: string, index: number = 0) => (
+    <Animated.View entering={FadeInDown.delay(index * 100).duration(400)} key={staff.id} style={styles.staffCard}>
       <View style={styles.staffHeader}>
         {staff.avatar_url ? (
           <Image source={{ uri: staff.avatar_url }} style={styles.staffAvatar} />
@@ -110,11 +115,11 @@ export default function SupportScreen() {
 
       <View style={styles.staffContactRow}>
         <View style={styles.contactItem}>
-          <Ionicons name="mail" size={16} color="#6B7280" />
+          <IconSymbol name="envelope.fill" size={14} color="#6B7280" />
           <Text style={styles.contactText} numberOfLines={1}>{staff.email || "No email"}</Text>
         </View>
         <View style={styles.contactItem}>
-          <Ionicons name="call" size={16} color="#6B7280" />
+          <IconSymbol name="phone.fill" size={14} color="#6B7280" />
           <Text style={styles.contactText}>{staff.phone || "No phone"}</Text>
         </View>
       </View>
@@ -122,16 +127,16 @@ export default function SupportScreen() {
       <View style={styles.staffActions}>
         <View style={styles.socialRow}>
           <TouchableOpacity 
-            style={[styles.socialBtn, { backgroundColor: "#E8FBF0" }]} 
+            style={[styles.socialBtn, { backgroundColor: "#DCFCE7" }]} 
             onPress={() => handleWhatsApp(staff.phone)}
           >
-            <FontAwesome name="whatsapp" size={22} color="#25D366" />
+            <FontAwesome name="whatsapp" size={20} color="#16A34A" />
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.socialBtn, { backgroundColor: "#F3F4F6" }]} 
             onPress={() => handleCall(staff.phone)}
           >
-            <Ionicons name="call" size={20} color="#4B5563" />
+            <IconSymbol name="phone.fill" size={18} color="#4B5563" />
           </TouchableOpacity>
         </View>
         <TouchableOpacity 
@@ -141,24 +146,24 @@ export default function SupportScreen() {
           <Text style={styles.bookBtnText}>Book Session</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </Animated.View>
   );
 
   return (
     <View style={styles.screen}>
       <StatusBar style="dark" />
-      <View style={styles.headerContainer}>
+      <Animated.View entering={FadeInDown.duration(400)} style={styles.headerContainer}>
         <SafeAreaView edges={["top"]} style={{ paddingBottom: 0 }} />
         <Text style={styles.greeting}>Support Hub</Text>
         <Text style={styles.header}>Welcome, {firstName}</Text>
-      </View>
+      </Animated.View>
 
       <ScrollView 
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#1A2B4A" />}
       >
-        {!isPeerCoach && (
+        {isFresher && !isPeerCoach && (
           <>
             {/* Peer Coaching */}
             <View style={styles.sectionHeader}>
@@ -218,7 +223,7 @@ export default function SupportScreen() {
 
             <TouchableOpacity 
               style={styles.yvonneBtn} 
-              onPress={() => router.push(`/support/schedule-session?userId=44444444-4444-4444-4444-444444444444&name=${encodeURIComponent('Yvonne Ansah')}` as any)}
+              onPress={() => router.push(`/support/schedule-session?userId=44444444-4444-4444-4444-444444444444&name=${encodeURIComponent('Coach Yvonne')}` as any)}
             >
               <View style={styles.yvonneBtnContent}>
                 <View style={styles.yvonneAvatar}>
@@ -226,7 +231,7 @@ export default function SupportScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.yvonneName}>Coach Yvonne</Text>
-                  <Text style={styles.yvonneRole}>Head Coach</Text>
+                  <Text style={styles.yvonneRole}>Senior Coach</Text>
                 </View>
                 <View style={styles.yvonneBookBtn}>
                   <Text style={styles.yvonneBookText}>Book</Text>
@@ -246,7 +251,7 @@ export default function SupportScreen() {
         <Text style={styles.sectionDesc}>Confidential & professional mental health support.</Text>
 
         <View style={styles.listSection}>
-          {counsellors.map(c => renderStaffCard(c, "University Counsellor", "#FEF3C7"))}
+          {counsellors.map((c, idx) => renderStaffCard(c, "University Counsellor", "#FEF3C7", idx))}
           {counsellors.length === 0 && (
              <View style={styles.emptyCard}>
                <Text style={styles.emptyCardDesc}>No counsellors available.</Text>
@@ -254,7 +259,7 @@ export default function SupportScreen() {
           )}
         </View>
 
-        <TouchableOpacity style={styles.crisisBox} onPress={() => handleCall("+233200000000")}>
+        {/* <TouchableOpacity style={styles.crisisBox} onPress={() => handleCall("+233200000000")}>
           <View style={styles.crisisIcon}>
             <Ionicons name="warning" size={24} color="#DC2626" />
           </View>
@@ -263,7 +268,7 @@ export default function SupportScreen() {
             <Text style={styles.crisisSub}>Tap to call emergency services</Text>
           </View>
           <Ionicons name="chevron-forward" size={20} color="#DC2626" />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         {/* Advising — hidden for advisors (they have their own dashboard) */}
         {!isAdvisorUser && (
@@ -277,7 +282,7 @@ export default function SupportScreen() {
             <Text style={styles.sectionDesc}>Expert guidance on your courses and university policies.</Text>
 
             <View style={styles.listSection}>
-              {advisors.map(a => renderStaffCard(a, "Academic Advisor", "#E0E7FF"))}
+              {advisors.map((a, idx) => renderStaffCard(a, "Academic Advisor", "#E0E7FF", idx))}
               {advisors.length === 0 && (
                  <View style={styles.emptyCard}>
                    <Text style={styles.emptyCardDesc}>No advisors available.</Text>
@@ -287,7 +292,7 @@ export default function SupportScreen() {
           </>
         )}
 
-        {!isPeerCoach && (
+        {isFresher && !isPeerCoach && (
           <>
             {/* Buddy Up */}
             <View style={styles.sectionHeader}>
@@ -332,14 +337,27 @@ export default function SupportScreen() {
         
       </ScrollView>
 
-      {/* Floating Action Button for View Sessions */}
-      <TouchableOpacity 
-        style={styles.fab} 
-        onPress={() => router.push("/support/sessions" as any)}
-      >
-        <Ionicons name="list" size={24} color="#FFFFFF" />
-        <Text style={styles.fabText}>View Sessions</Text>
-      </TouchableOpacity>
+      {/* Floating Action Buttons */}
+      <Animated.View entering={SlideInDown.delay(500).duration(500)} style={styles.fabContainer}>
+        
+        {/* SOS Button (Secondary style, but red) */}
+        <Pressable 
+          style={({ pressed }) => [styles.fabSecondary, pressed && styles.fabPressed]} 
+          onPress={() => handleCall("+233200000000")}
+        >
+          <Ionicons name="warning" size={24} color="#FFFFFF" />
+        </Pressable>
+
+        {/* View Sessions Button (Primary style) */}
+        <Pressable 
+          style={({ pressed }) => [styles.fabPrimary, pressed && styles.fabPressed]} 
+          onPress={() => router.push("/support/sessions" as any)}
+        >
+          <Ionicons name="list" size={20} color="#FFFFFF" />
+          <Text style={styles.fabTextPrimary}>View Sessions</Text>
+        </Pressable>
+
+      </Animated.View>
     </View>
   );
 }
@@ -374,14 +392,14 @@ const styles = StyleSheet.create({
   
   premiumCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 24,
+    borderRadius: 28,
     padding: 24,
     ...Platform.select({
-      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.06, shadowRadius: 20 },
-      android: { elevation: 3 }
+      ios: { shadowColor: "#4F46E5", shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.08, shadowRadius: 24 },
+      android: { elevation: 4 }
     }),
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.03)",
+    borderColor: "rgba(79,70,229,0.08)",
   },
   
   coachProfile: { flexDirection: "row", alignItems: "center", gap: 16, marginBottom: 20 },
@@ -422,14 +440,14 @@ const styles = StyleSheet.create({
   
   yvonneBtn: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 16,
+    borderRadius: 24,
+    padding: 20,
     ...Platform.select({
-      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 12 },
-      android: { elevation: 2 }
+      ios: { shadowColor: "#DB2777", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 16 },
+      android: { elevation: 3 }
     }),
     borderWidth: 1,
-    borderColor: "#F3F4F6",
+    borderColor: "rgba(219,39,119,0.1)",
   },
   yvonneBtnContent: { flexDirection: "row", alignItems: "center", gap: 16 },
   yvonneAvatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: "#FCE7F3", alignItems: "center", justifyContent: "center" },
@@ -442,14 +460,14 @@ const styles = StyleSheet.create({
   listSection: { gap: 16 },
   staffCard: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 24,
+    borderRadius: 28,
     padding: 20,
     ...Platform.select({
-      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.06, shadowRadius: 16 },
-      android: { elevation: 3 }
+      ios: { shadowColor: "#111827", shadowOffset: { width: 0, height: 12 }, shadowOpacity: 0.04, shadowRadius: 24 },
+      android: { elevation: 2 }
     }),
     borderWidth: 1,
-    borderColor: "rgba(0,0,0,0.02)",
+    borderColor: "rgba(0,0,0,0.03)",
   },
   staffHeader: { flexDirection: "row", alignItems: "center", gap: 16, marginBottom: 16 },
   staffAvatar: { width: 56, height: 56, borderRadius: 28 },
@@ -480,27 +498,39 @@ const styles = StyleSheet.create({
   crisisIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: "#FEE2E2", alignItems: "center", justifyContent: "center" },
   crisisTitle: { fontSize: 15, fontWeight: "800", color: "#B91C1C", marginBottom: 2 },
   crisisSub: { fontSize: 13, color: "#DC2626", fontWeight: "500" },
-  
-  fab: {
+  fabContainer: {
     position: "absolute",
-    bottom: 130,
-    right: 24,
+    bottom: 130, right: 24,
+    backgroundColor: "transparent",
+    flexDirection: "row",
+    gap: 12,
+  },
+  fabPrimary: {
     backgroundColor: "#A93C40",
-    borderRadius: 28,
-    height: 56,
-    paddingHorizontal: 20,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 8,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderRadius: 30,
+    gap: 10,
     ...Platform.select({
-      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.15, shadowRadius: 16 },
-      android: { elevation: 6 }
+      ios: { shadowColor: "#A93C40", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16 },
+      android: { elevation: 8 }
     }),
   },
-  fabText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "800",
-  }
+  fabSecondary: {
+    backgroundColor: "#DC2626", // Red for SOS
+    alignItems: "center",
+    justifyContent: "center",
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    ...Platform.select({
+      ios: { shadowColor: "#DC2626", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.3, shadowRadius: 16 },
+      android: { elevation: 8 }
+    }),
+  },
+  fabPressed: { transform: [{ scale: 0.96 }], opacity: 0.9 },
+  fabTextPrimary: { color: "#FFFFFF", fontSize: 16, fontWeight: "800" },
 });
