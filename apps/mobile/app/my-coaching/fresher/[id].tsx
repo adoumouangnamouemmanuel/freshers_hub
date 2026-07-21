@@ -29,7 +29,7 @@ export default function FresherDetailsScreen() {
       const foundFresher = (freshersRes || []).find(f => f.fresher_id === id);
       setFresher(foundFresher || null);
       
-      const fSessions = (sessionsRes || []).filter(s => s.student_id === id && s.type === 'peer_coaching');
+      const fSessions = (sessionsRes || []).filter(s => s.student_id === id && (s.type === 'peer_coach' || s.type === 'peer_coaching'));
       setSessions(fSessions);
     } catch (err) {
       console.error("Error fetching fresher details", err);
