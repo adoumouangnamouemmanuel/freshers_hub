@@ -13,7 +13,7 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
 export default function ScheduleSessionScreen() {
   const router = useRouter();
-  const { userId, name, sessionId, editDate, editLocation, editDescription, editStudentId, editStudentName, asCoach, asAdvisor, unitId, role } = useLocalSearchParams();
+  const { userId, name, sessionId, editDate, editTitle, editLocation, editDescription, editStudentId, editStudentName, asCoach, asAdvisor, unitId, role } = useLocalSearchParams();
   const isEditMode = !!sessionId;
   const isAsCoach = asCoach === "true";
   const isAsAdvisor = asAdvisor === "true";
@@ -39,6 +39,7 @@ export default function ScheduleSessionScreen() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const [form, setForm] = useState({
+    title: (editTitle as string) || "",
     location: (editLocation as string) || "",
     description: (editDescription as string) || "",
     targetUserId: (editStudentId as string) || (userId as string) || "",
@@ -140,22 +141,26 @@ export default function ScheduleSessionScreen() {
       const method = isEditMode ? "PUT" : "POST";
       
       const payload = isEditMode ? {
+        title: form.title,
         location: form.location,
         description: form.description,
         scheduledAt,
       } : isAdvisorBooking ? {
+        title: form.title,
         academicYearId: 1,
         studentId: form.targetUserId,
         scheduledAt,
         location: form.location,
         description: form.description,
       } : isCounsellorRole && canPickUser ? {
+        title: form.title,
         academicYearId: 1,
         studentId: form.targetUserId,
         scheduledAt,
         location: form.location,
         description: form.description,
       } : isCoachAdmin || isAsCoach ? {
+        title: form.title,
         unitId: effectiveUnitId,
         academicYearId: 1,
         studentId: form.targetUserId,
@@ -165,6 +170,7 @@ export default function ScheduleSessionScreen() {
         description: form.description,
         withType: "peer_coach"
       } : {
+        title: form.title,
         unitId: effectiveUnitId,
         academicYearId: 1,
         providerId: form.targetUserId, 
@@ -254,6 +260,22 @@ export default function ScheduleSessionScreen() {
               </View>
             </View>
           )}
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(75).duration(400)}>
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Session Title</Text>
+            <View style={styles.inputContainer}>
+              <IconSymbol name="pencil" size={18} color="#6B7280" style={styles.inputIcon} />
+              <TextInput 
+                style={styles.input} 
+                placeholder="e.g. Midterm Review, Catch-up" 
+                value={form.title} 
+                onChangeText={t => setForm({...form, title: t})}
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
+          </View>
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(100).duration(400)}>
