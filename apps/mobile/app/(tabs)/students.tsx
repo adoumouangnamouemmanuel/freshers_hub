@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, View, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, Platform, TextInput } from "react-native"; 
+import { StyleSheet, Text, View, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, Platform, TextInput, FlatList } from "react-native";
 import globalStyles from '../../styles';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -18,33 +18,60 @@ export default function StudentsScreen() {
   
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [users, setUsers] = useState([]);
+  const [users, setUsers] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("all"); // 'all', 'freshers', 'coaches'
   const [searchQuery, setSearchQuery] = useState("");
+
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   const isAdvisorUser = hasRole(session?.user?.roles || [], "advisor");
   const isCounsellorUser = hasRole(session?.user?.roles || [], "counsellor");
   const showClassYears = isAdvisorUser || isCounsellorUser;
 
-  const fetchDirectory = async () => {
+  const fetchDirectory = async (pageNum = 1) => {
     try {
       const endpoint = isCounsellorUser ? '/support/counselling/students' : (isAdvisorUser ? '/support/advising/students' : '/support/admin/students');
-      const res = await fetch(`${API_URL}${endpoint}`, {
+      const res = await fetch(`${API_URL}${endpoint}?page=${pageNum}&limit=20`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
-        setUsers(await res.json());
+        const responseData = await res.json();
+        const rawData = responseData.data || [];
+        
+        if (pageNum === 1) {
+          setUsers(rawData);
+        } else {
+          setUsers(prev => [...prev, ...rawData]);
+        }
+        
+        if (responseData.meta) {
+          setHasMore(pageNum < responseData.meta.totalPages);
+        } else {
+          setHasMore(rawData.length === 20);
+        }
+        setPage(pageNum);
       }
     } catch (err) {
       console.error(err);
+      setHasMore(false);
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (hasMore && !loadingMore && !loading) {
+      setLoadingMore(true);
+      fetchDirectory(page + 1);
     }
   };
 
   useEffect(() => {
-    if (token) fetchDirectory();
+    if (token) fetchDirectory(1);
   }, [token]);
 
   const filteredUsers = users.filter((u: any) => {
@@ -137,47 +164,54 @@ export default function StudentsScreen() {
         </ScrollView>
       </View>
 
-      <ScrollView 
+      <FlatList 
         style={styles.scroll} 
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchDirectory(); }} tintColor="#1A2B4A" />}
-      >
-        {filteredUsers.length === 0 ? (
+        data={filteredUsers}
+        keyExtractor={(item, index) => `${item.id}-${index}`}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchDirectory(1); }} tintColor="#1A2B4A" />}
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        ListEmptyComponent={
           <View style={styles.emptyState}>
             <IconSymbol name="person.crop.circle.badge.xmark" size={48} color="#D1D5DB" />
             <Text style={styles.emptyText}>No users found.</Text>
           </View>
-        ) : (
-          filteredUsers.map((item: any, index: number) => (
-            <Animated.View key={`${item.id}-${index}`} entering={FadeInDown.delay(index * 50).duration(400)}>
-              <TouchableOpacity 
-                style={styles.card} 
-                onPress={() => router.push(`/user/${item.id}` as any)}
-              >
-                {item.avatar_url ? (
-                  <Image source={{ uri: item.avatar_url }} style={styles.avatar} />
-                ) : (
-                  <View style={[styles.avatar, { alignItems: 'center', justifyContent: 'center', backgroundColor: '#1A2B4A' }]}>
-                    <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700' }}>
-                      {item.name ? item.name.charAt(0).toUpperCase() : '?'}
-                    </Text>
-                  </View>
-                )}
-                <View style={styles.info}>
-                  <Text style={styles.name}>{item.name}</Text>
-                  <Text style={styles.major}>{item.major || "Undeclared Major"}</Text>
-                </View>
-                <View style={[styles.roleBadge, { backgroundColor: item.type === "peer_coach" ? "#E0E7FF" : "#F3F4F6" }]}>
-                  <Text style={[styles.roleText, { color: item.type === "peer_coach" ? "#4338CA" : "#4B5563" }]}>
-                    {item.type === "peer_coach" ? "Coach" : "Fresher"}
+        }
+        ListFooterComponent={
+          loadingMore ? (
+            <ActivityIndicator size="small" color="#1A2B4A" style={{ marginVertical: 16 }} />
+          ) : null
+        }
+        renderItem={({ item, index }) => (
+          <Animated.View entering={FadeInDown.delay((index % 10) * 50).duration(400)}>
+            <TouchableOpacity 
+              style={styles.card} 
+              onPress={() => router.push(`/user/${item.id}` as any)}
+            >
+              {item.avatar_url ? (
+                <Image source={{ uri: item.avatar_url }} style={styles.avatar} />
+              ) : (
+                <View style={[styles.avatar, { alignItems: 'center', justifyContent: 'center', backgroundColor: '#1A2B4A' }]}>
+                  <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700' }}>
+                    {item.name ? item.name.charAt(0).toUpperCase() : '?'}
                   </Text>
                 </View>
-                <IconSymbol name="chevron.right" size={20} color="#D1D5DB" style={{ marginLeft: 8 }} />
-              </TouchableOpacity>
-            </Animated.View>
-          ))
+              )}
+              <View style={styles.info}>
+                <Text style={styles.name}>{item.name}</Text>
+                <Text style={styles.major}>{item.major || "Undeclared Major"}</Text>
+              </View>
+              <View style={[styles.roleBadge, { backgroundColor: item.type === "peer_coach" ? "#E0E7FF" : "#F3F4F6" }]}>
+                <Text style={[styles.roleText, { color: item.type === "peer_coach" ? "#4338CA" : "#4B5563" }]}>
+                  {item.type === "peer_coach" ? "Coach" : "Fresher"}
+                </Text>
+              </View>
+              <IconSymbol name="chevron.right" size={20} color="#D1D5DB" style={{ marginLeft: 8 }} />
+            </TouchableOpacity>
+          </Animated.View>
         )}
-      </ScrollView>
+      />
     </SafeAreaView>
   );
 }
