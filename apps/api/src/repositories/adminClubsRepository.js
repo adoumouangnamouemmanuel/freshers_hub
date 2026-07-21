@@ -127,7 +127,7 @@ class AdminClubsRepository {
     // If posts table historically used club_id, query below adjusts it, but might fail if column doesn't exist.
     // For now we assume a group_id column exists or will be targeted.
     const { rows } = await pool.query(
-      `SELECT p.id, p.title, p.content, p.category, p.created_at, u.full_name AS author_name
+      `SELECT p.id, p.title, p.content, p.category, p.created_at, u.full_name AS author_name, u.avatar_url AS author_avatar
        FROM posts p
        JOIN users u ON u.id = p.author_id
        JOIN post_targets pt ON pt.post_id = p.id
