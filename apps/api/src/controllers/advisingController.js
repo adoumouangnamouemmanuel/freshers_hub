@@ -124,6 +124,7 @@ const getAdvisingStudents = asyncHandler(async (req, res) => {
       JOIN user_roles ur ON u.id = ur.user_id
       JOIN roles r ON ur.role_id = r.id
       WHERE r.name = 'student' AND u.is_active = true
+      GROUP BY u.id, u.full_name, u.email, u.phone, u.avatar_url, u.class_year, u.major
       ORDER BY u.full_name ASC
     `);
 
