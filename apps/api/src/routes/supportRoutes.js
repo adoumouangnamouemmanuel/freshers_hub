@@ -7,6 +7,7 @@ const router = express.Router();
 
 router.use(requireAuth);
 
+router.get("/dashboard", supportController.getSupportDashboard);
 router.get("/sessions", supportController.getSessions);
 router.get("/sessions/:id", supportController.getSessionById);
 router.get("/my-sessions", supportController.getMySessions);
