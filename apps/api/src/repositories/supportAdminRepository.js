@@ -337,9 +337,10 @@ class SupportAdminRepository {
     return rows[0];
   }
 
-  async getAdminSessions(page = 1, limit = 20) {
+  async getAdminSessions(page = 1, limit = 20, filter = null) {
     const offset = (page - 1) * limit;
-    const { rows } = await pool.query(`
+    
+    let queryStr = `
       SELECT 
         COUNT(*) OVER() AS total_count,
         s.id, s.with_type as type, s.scheduled_at as date, s.status, s.location, s.description, s.is_mandatory,
@@ -352,9 +353,19 @@ class SupportAdminRepository {
       JOIN users u2 ON s.provider_id = u2.id
       LEFT JOIN session_reports r ON s.id = r.session_id
       WHERE s.with_type = 'peer_coach'
-      ORDER BY s.scheduled_at DESC
-      LIMIT $1 OFFSET $2
-    `, [limit, offset]);
+    `;
+    
+    if (filter === 'upcoming') {
+      queryStr += ` AND s.status = 'scheduled' AND s.scheduled_at > NOW()`;
+    } else if (filter === 'overdue') {
+      queryStr += ` AND s.status = 'scheduled' AND s.scheduled_at <= NOW()`;
+    } else if (filter === 'completed') {
+      queryStr += ` AND s.status = 'completed'`;
+    }
+    
+    queryStr += ` ORDER BY s.scheduled_at DESC LIMIT $1 OFFSET $2`;
+    
+    const { rows } = await pool.query(queryStr, [limit, offset]);
     
     const total = rows.length > 0 ? parseInt(rows[0].total_count, 10) : 0;
     return {
