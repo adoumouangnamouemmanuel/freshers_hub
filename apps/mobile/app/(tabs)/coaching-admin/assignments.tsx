@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator, Modal, FlatList, Alert } from "react-native";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../../context/auth-context";
@@ -12,72 +13,78 @@ export default function AssignmentsScreen() {
   const token = session?.accessToken;
   const router = useRouter();
   
-  const [loading, setLoading] = useState(true);
-  const [freshers, setFreshers] = useState<any[]>([]);
-  const [coaches, setCoaches] = useState<any[]>([]);
-  const [assigning, setAssigning] = useState(false);
+  const queryClient = useQueryClient();
   const [selectedFresher, setSelectedFresher] = useState<any>(null);
 
-  const fetchData = async () => {
-    try {
-      const [freshersRes, coachesRes] = await Promise.all([
-        fetch(`${API_URL}/support/admin/freshers`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${API_URL}/support/admin/coaches`, { headers: { Authorization: `Bearer ${token}` } })
-      ]);
-      
-      if (freshersRes.ok) setFreshers(await freshersRes.json());
-      if (coachesRes.ok) setCoaches(await coachesRes.json());
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: freshers = [], isLoading: loadingFreshers } = useQuery({
+    queryKey: ['admin-freshers'],
+    queryFn: async () => {
+      const res = await fetch(`${API_URL}/support/admin/freshers`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error("Failed to fetch freshers");
+      return res.json();
+    },
+    enabled: !!token,
+    staleTime: 1000 * 60 * 5,
+  });
 
-  useEffect(() => {
-    if (token) fetchData();
-  }, [token]);
+  const { data: coaches = [], isLoading: loadingCoaches } = useQuery({
+    queryKey: ['admin-coaches'],
+    queryFn: async () => {
+      const res = await fetch(`${API_URL}/support/admin/coaches`, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error("Failed to fetch coaches");
+      return res.json();
+    },
+    enabled: !!token,
+    staleTime: 1000 * 60 * 5,
+  });
 
-  const bulkAssign = async () => {
-    if (coaches.length === 0) return Alert.alert("Error", "No active coaches found.");
-    setAssigning(true);
-    try {
+  const loading = loadingFreshers || loadingCoaches;
+
+  const bulkAssignMutation = useMutation({
+    mutationFn: async () => {
       const res = await fetch(`${API_URL}/support/admin/assignments/bulk`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({})
       });
-      if (res.ok) {
-        const data = await res.json();
-        Alert.alert("Success", `Assigned ${data.assignedCount} freshers successfully.`);
-        fetchData();
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setAssigning(false);
-    }
+      if (!res.ok) throw new Error("Bulk assign failed");
+      return res.json();
+    },
+    onSuccess: (data) => {
+      Alert.alert("Success", `Assigned ${data.assignedCount} freshers successfully.`);
+      queryClient.invalidateQueries({ queryKey: ['admin-freshers'] });
+    },
+    onError: (err) => console.error(err),
+  });
+
+  const bulkAssign = () => {
+    if (coaches.length === 0) return Alert.alert("Error", "No active coaches found.");
+    bulkAssignMutation.mutate();
   };
 
-  const assignSingle = async (coachId: string) => {
-    setAssigning(true);
-    try {
+  const assignSingleMutation = useMutation({
+    mutationFn: async (coachId: string) => {
       const res = await fetch(`${API_URL}/support/admin/assignments`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ fresherId: selectedFresher.id, coachId })
       });
-      if (res.ok) {
-        Alert.alert("Success", "Fresher assigned successfully.");
-        setSelectedFresher(null);
-        fetchData();
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setAssigning(false);
-    }
+      if (!res.ok) throw new Error("Assign single failed");
+      return res.json();
+    },
+    onSuccess: () => {
+      Alert.alert("Success", "Fresher assigned successfully.");
+      setSelectedFresher(null);
+      queryClient.invalidateQueries({ queryKey: ['admin-freshers'] });
+    },
+    onError: (err) => console.error(err),
+  });
+
+  const assignSingle = (coachId: string) => {
+    assignSingleMutation.mutate(coachId);
   };
+
+  const assigning = bulkAssignMutation.isPending || assignSingleMutation.isPending;
 
   const unassignedFreshers = freshers.filter(f => !f.coach_name);
 
