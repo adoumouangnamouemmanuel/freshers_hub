@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Pressable, Alert } from "react-native";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import {  useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -44,59 +45,72 @@ export default function EventDetailScreen() {
   const { session } = useAuth();
   const insets = useSafeAreaInsets();
   
-  const [event, setEvent] = useState<Event | null>(null);
-  const [rsvps, setRsvps] = useState<Rsvp[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [isRsvping, setIsRsvping] = useState(false);
 
-  useEffect(() => {
-    if (session?.accessToken && id) {
-      Promise.all([
+  const { data, isLoading } = useQuery({
+    queryKey: ['event', id],
+    queryFn: async () => {
+      const [eventRes, rsvpsRes] = await Promise.all([
         apiRequest<{ event: Event }>(`/events/${id}`, {
-          headers: { Authorization: `Bearer ${session.accessToken}` },
+          headers: { Authorization: `Bearer ${session?.accessToken}` },
         }),
         apiRequest<{ rsvps: Rsvp[] }>(`/events/${id}/rsvps`, {
-          headers: { Authorization: `Bearer ${session.accessToken}` },
+          headers: { Authorization: `Bearer ${session?.accessToken}` },
         })
-      ])
-        .then(([eventRes, rsvpsRes]) => {
-          setEvent(eventRes.event);
-          setRsvps(rsvpsRes.rsvps || []);
-        })
-        .catch((err) => console.error("Failed to fetch event:", err))
-        .finally(() => setIsLoading(false));
-    }
-  }, [id, session?.accessToken]);
+      ]);
+      return { event: eventRes.event, rsvps: rsvpsRes.rsvps || [] };
+    },
+    enabled: !!session?.accessToken && !!id,
+    staleTime: 1000 * 60 * 5,
+  });
 
-  const handleRsvp = async (status: string) => {
-    if (!session || !event || isRsvping) return;
-    setIsRsvping(true);
-    try {
-      const res = await apiRequest<{ rsvp: any, counts: any }>(`/events/${event.id}/rsvp`, {
+  const event = data?.event || null;
+  const rsvps = data?.rsvps || [];
+
+  const rsvpMutation = useMutation({
+    mutationFn: async (status: string) => {
+      if (!event) throw new Error("Event not found");
+      return apiRequest<{ rsvp: any, counts: any }>(`/events/${event.id}/rsvp`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${session.accessToken}` },
+        headers: { Authorization: `Bearer ${session?.accessToken}` },
         body: JSON.stringify({ status }),
       });
-      
-      setEvent(prev => prev ? { 
-        ...prev, 
-        myRsvp: status,
-        goingCount: res.counts.goingCount,
-        maybeCount: res.counts.maybeCount,
-      } : null);
-
-      // Refresh RSVPs list
-      const rsvpsRes = await apiRequest<{ rsvps: Rsvp[] }>(`/events/${event.id}/rsvps`, {
-        headers: { Authorization: `Bearer ${session.accessToken}` },
-      });
-      setRsvps(rsvpsRes.rsvps || []);
-
-    } catch (err) {
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['event', id] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+    },
+    onError: (err) => {
       console.error("Failed to RSVP:", err);
-    } finally {
+    },
+    onSettled: () => {
       setIsRsvping(false);
     }
+  });
+
+  const handleRsvp = (status: string) => {
+    if (!session || !event || isRsvping) return;
+    setIsRsvping(true);
+    rsvpMutation.mutate(status);
   };
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest(`/posts/${event?.postId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${session?.accessToken}` }
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      router.back();
+    },
+    onError: () => {
+      Alert.alert("Error", "Failed to delete event.");
+    }
+  });
 
   const handleDelete = () => {
     Alert.alert("Delete Event", "Are you sure you want to delete this event? This action cannot be undone.", [
@@ -104,17 +118,7 @@ export default function EventDetailScreen() {
       { 
         text: "Delete", 
         style: "destructive",
-        onPress: async () => {
-          try {
-            await apiRequest(`/posts/${event?.postId}`, {
-              method: "DELETE",
-              headers: { Authorization: `Bearer ${session?.accessToken}` }
-            });
-            router.back();
-          } catch (err) {
-            Alert.alert("Error", "Failed to delete event.");
-          }
-        }
+        onPress: () => deleteMutation.mutate()
       }
     ]);
   };
