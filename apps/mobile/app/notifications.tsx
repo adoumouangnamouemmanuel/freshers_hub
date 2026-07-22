@@ -291,6 +291,7 @@ export default function NotificationsScreen() {
           currentUserId={session?.user?.id}
           accessToken={session?.accessToken}
           isCounsellorView={session?.user?.roles?.some(r => r.name === "peer_counsellor" || r.name === "peer_coach")}
+          currentUserRoles={session?.user?.roles}
         />
       )}
     </View>
