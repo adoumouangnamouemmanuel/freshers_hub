@@ -108,6 +108,35 @@ const getMySessions = asyncHandler(async (req, res) => {
   }
 });
 
+// Get session by ID
+const getSessionById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query(`
+      SELECT 
+        s.id, s.unit_id, s.academic_year_id, s.student_id, s.provider_id, 
+        s.with_type as type, s.scheduled_at as date, s.location, s.description, s.status, s.is_mandatory, s.title,
+        EXISTS (SELECT 1 FROM session_reports sr WHERE sr.session_id = s.id) AS has_report,
+        u1.full_name AS student_name, u1.avatar_url AS student_avatar,
+        u2.full_name AS provider_name, u2.avatar_url AS provider_avatar
+      FROM sessions s
+      JOIN users u1 ON s.student_id = u1.id
+      JOIN users u2 ON s.provider_id = u2.id
+      WHERE s.id = $1
+    `, [id]);
+
+    if (rows.length === 0) {
+      throw new AppError("Session not found", 404);
+    }
+    
+    res.json(rows[0]);
+  } finally {
+    client.release();
+  }
+});
+
 // Book a new session
 const bookSession = asyncHandler(async (req, res) => {
   const { unitId, academicYearId, studentId, providerId, withType, scheduledAt, location, description, isMandatory, title } = req.body;
@@ -402,6 +431,7 @@ const submitSessionReport = asyncHandler(async (req, res) => {
 module.exports = {
   getSessions,
   getMySessions,
+  getSessionById,
   bookSession,
   updateSessionStatus,
   updateSession,
