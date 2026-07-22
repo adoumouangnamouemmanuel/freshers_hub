@@ -37,13 +37,19 @@ type Props = {
   targetUserName: string;
   accessToken: string;
   defaultCategory?: string;
+  senderType?: "coach" | "counsellor" | "advisor" | "admin";
 };
 
-const QUICK_MESSAGES = [
-  { label: "Session Reminder", title: "Upcoming Session", body: "You have a session coming up soon. Don't forget to show up!" },
-  { label: "Nudge", title: "Stay on Track 💪", body: "Just checking in! Remember to complete your coaching sessions." },
-  { label: "Check-in", title: "How are you doing?", body: "Your coach wants to check in. Reply or book a session when you're ready." },
-];
+const getQuickMessages = (senderType?: string) => {
+  const roleName = senderType === 'counsellor' ? 'counsellor' : 
+                   senderType === 'advisor' ? 'advisor' : 
+                   'coach';
+  return [
+    { label: "Session Reminder", title: "Upcoming Session", body: "You have a session coming up soon. Don't forget to show up!" },
+    { label: "Nudge", title: "Stay on Track 💪", body: `Just checking in! Remember to complete your ${roleName} sessions.` },
+    { label: "Check-in", title: "How are you doing?", body: `Your ${roleName} wants to check in. Reply or book a session when you're ready.` },
+  ];
+};
 
 export default function SendNotificationModal({
   visible,
@@ -52,6 +58,7 @@ export default function SendNotificationModal({
   targetUserName,
   accessToken,
   defaultCategory = "nudge",
+  senderType,
 }: Props) {
   const [title, setTitle]         = useState("");
   const [body, setBody]           = useState("");
@@ -69,7 +76,7 @@ export default function SendNotificationModal({
     setScheduleTime("");
   };
 
-  const applyQuick = (q: typeof QUICK_MESSAGES[0]) => {
+  const applyQuick = (q: any) => {
     setTitle(q.title);
     setBody(q.body);
   };
@@ -150,7 +157,7 @@ export default function SendNotificationModal({
             {/* Quick templates */}
             <Text style={styles.sectionLabel}>Quick Templates</Text>
             <View style={styles.quickRow}>
-              {QUICK_MESSAGES.map((q) => (
+              {getQuickMessages(senderType).map((q) => (
                 <Pressable key={q.label} style={styles.quickPill} onPress={() => applyQuick(q)}>
                   <Text style={styles.quickPillText}>{q.label}</Text>
                 </Pressable>
