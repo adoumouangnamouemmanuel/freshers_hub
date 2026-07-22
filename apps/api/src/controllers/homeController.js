@@ -133,11 +133,13 @@ const getHomeDashboard = asyncHandler(async (req, res) => {
 
     // 6. Admin Dashboard Stats (Coach Admin)
     if (isCoachAdmin) {
+      const currentYear = new Date().getFullYear();
+      const fresherYear = currentYear + 4;
       promises.push(
         client.query(`
           SELECT 
-            (SELECT COUNT(*) FROM users WHERE roles @> ARRAY['fresher'] AND id NOT IN (SELECT fresher_id FROM coach_assignments)) as unassigned_freshers,
-            (SELECT COUNT(*) FROM users WHERE roles @> ARRAY['fresher']) as total_freshers,
+            (SELECT COUNT(*) FROM users u JOIN user_roles ur ON u.id = ur.user_id JOIN roles r ON ur.role_id = r.id WHERE r.name = 'student' AND u.class_year = ${fresherYear} AND u.id NOT IN (SELECT fresher_id FROM coach_assignments)) as unassigned_freshers,
+            (SELECT COUNT(*) FROM users u JOIN user_roles ur ON u.id = ur.user_id JOIN roles r ON ur.role_id = r.id WHERE r.name = 'student' AND u.class_year = ${fresherYear}) as total_freshers,
             (SELECT COUNT(*) FROM sessions WHERE status = 'scheduled' AND scheduled_at > NOW() AND unit_id = (SELECT id FROM units WHERE name = 'coaching' LIMIT 1)) as upcoming_sessions_count,
             (SELECT COUNT(*) FROM sessions WHERE status = 'scheduled' AND scheduled_at <= NOW() AND unit_id = (SELECT id FROM units WHERE name = 'coaching' LIMIT 1)) as overdue_sessions_count,
             (SELECT COUNT(*) FROM sessions WHERE status = 'completed' AND is_mandatory = true AND unit_id = (SELECT id FROM units WHERE name = 'coaching' LIMIT 1)) as completed_mandatory_sessions,
