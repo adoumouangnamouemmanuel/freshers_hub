@@ -10,6 +10,7 @@ const supportRoutes = require("./src/routes/supportRoutes");
 const searchRoutes = require("./src/routes/searchRoutes");
 const locationRoutes = require("./src/routes/locationRoutes");
 const adminRoutes = require("./src/routes/adminRoutes");
+const homeRoutes = require("./src/routes/homeRoutes");
 const logger = require("./src/utils/logger");
 const errorHandler = require("./src/middleware/errorHandler");
 const config = require("./src/config");
@@ -73,6 +74,7 @@ app.use("/support", supportRoutes);
 app.use("/search", searchRoutes);
 app.use("/locations", locationRoutes);
 app.use("/admin", adminRoutes);
+app.use("/home", homeRoutes);
 
 app.use((req, res) => {
   res.status(404).json({
