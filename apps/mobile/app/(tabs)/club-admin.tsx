@@ -319,7 +319,7 @@ export default function ClubAdminScreen() {
       </ScrollView>
 
       {/* Floating Action Button (FAB) */}
-      <Animated.View entering={FadeInUp.delay(500).duration(500)} style={[styles.fabContainer, { bottom: insets.bottom + 84 }]}>
+      <Animated.View entering={FadeInUp.delay(500).duration(500)} style={[styles.fabContainer, { bottom: insets.bottom -24 }]}>
         <TouchableOpacity 
           style={styles.fab}
           onPress={() => router.push(`/club-feed/${club.id}` as any)}
