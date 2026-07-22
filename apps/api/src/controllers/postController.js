@@ -35,7 +35,8 @@ const handleGetPosts = asyncHandler(async (req, res) => {
       page: req.query.page,
       limit: req.query.limit,
       category: req.query.category,
-      authorId
+      authorId,
+      q: req.query.q
     });
     res.json(result);
   } finally {
