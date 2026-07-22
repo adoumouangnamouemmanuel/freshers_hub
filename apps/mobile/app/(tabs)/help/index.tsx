@@ -149,7 +149,7 @@ export default function HelpScreen() {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
 
         {query.trim().length > 0 ? (
           <View style={styles.searchResultsWrapper}>
