@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
   },
   fabContainer: {
     position: 'absolute',
-    bottom: 120, // using hardcoded 120 because we don't have insets accessible in styles directly
+    bottom: 24, // using hardcoded 120 because we don't have insets accessible in styles directly
     right: 24,
     zIndex: 999,
   },
