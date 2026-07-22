@@ -64,4 +64,26 @@ function requirePlatformAdmin(req, res, next) {
   next();
 }
 
-module.exports = { requireAuth, requireRoles, requirePlatformAdmin };
+/**
+ * Express middleware that verifies JWT if present.
+ * Does not fail if missing or invalid, just leaves req.user undefined.
+ */
+function optionalAuth(req, res, next) {
+  const authHeader = req.headers.authorization || "";
+  const token = authHeader.replace(/^Bearer\s+/i, "");
+
+  if (token) {
+    const payload = verifyJwt(token);
+    if (payload) {
+      req.user = {
+        id: payload.sub,
+        email: payload.email,
+        roles: payload.roles || [],
+      };
+    }
+  }
+
+  next();
+}
+
+module.exports = { requireAuth, requireRoles, requirePlatformAdmin, optionalAuth };
