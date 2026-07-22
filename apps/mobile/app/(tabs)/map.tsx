@@ -538,7 +538,6 @@ const styles = StyleSheet.create({
   bottomSheet: {
     position: "absolute",
     bottom: 0,
-    marginBottom: 80,
     left: 0,
     right: 0,
     backgroundColor: "#FFFFFF",
