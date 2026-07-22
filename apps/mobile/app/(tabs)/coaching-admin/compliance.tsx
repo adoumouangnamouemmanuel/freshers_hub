@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, Alert, ScrollView } from "react-native";
+import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, Alert, ScrollView, Image } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../../context/auth-context";
 import { IconSymbol } from "../../../components/ui/icon-symbol";
 import SendNotificationModal from "../../../components/features/notifications/SendNotificationModal";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -36,27 +37,14 @@ export default function ComplianceScreen() {
 
   const filteredFreshers = freshers.filter(f => {
     const sessions = parseInt(f.completed_sessions || 0);
+    const adminSessions = parseInt(f.admin_sessions_completed || 0);
+    const totalSessions = sessions + adminSessions;
     if (filterType === "All") return true;
-    if (filterType === "Non-Compliant") return sessions === 0;
+    if (filterType === "Non-Compliant") return totalSessions === 0;
     if (filterType === "At Risk") return sessions > 0 && sessions < 3;
-    if (filterType === "Compliant") return sessions >= 3;
+    if (filterType === "Compliant") return sessions >= 3 && adminSessions >= 1;
     return true;
   });
-
-  const logFollowUp = async (fresherId: string) => {
-    try {
-      const res = await fetch(`${API_URL}/support/admin/compliance/followup`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ fresherId, notes: "Nudged via dashboard" })
-      });
-      if (res.ok) {
-        Alert.alert("Success", "Follow up logged successfully.");
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
@@ -95,28 +83,67 @@ export default function ComplianceScreen() {
                 <Text style={styles.emptyText}>No freshers match this filter.</Text>
               </View>
             )}
-            renderItem={({ item }) => {
+            renderItem={({ item, index }) => {
               const sessions = parseInt(item.completed_sessions || 0);
-              const progressPct = Math.min((sessions / 3) * 100, 100);
+              const adminSessions = parseInt(item.admin_sessions_completed || 0);
+              
+              const coachProgressPct = Math.min((sessions / 3) * 100, 100);
+              const adminProgressPct = Math.min((adminSessions / 1) * 100, 100);
+              
+              const isCoachCompliant = sessions >= 3;
+              const isAdminCompliant = adminSessions >= 1;
               
               return (
-                <View style={styles.card}>
-                  <View style={styles.cardInfo}>
-                    <Text style={styles.name}>{item.full_name}</Text>
-                    <Text style={styles.sub}>Coach: {item.coach_name || "None"}</Text>
-                    
-                    <View style={styles.progressContainer}>
-                      <View style={styles.progressBarBg}>
-                        <View style={[styles.progressBarFill, { width: `${progressPct}%`, backgroundColor: sessions === 0 ? '#EF4444' : sessions < 3 ? '#F59E0B' : '#10B981' }]} />
+                <Animated.View entering={FadeInDown.delay(index * 50).duration(400)} style={styles.card}>
+                  <View style={styles.cardHeader}>
+                    <View style={styles.avatarWrapper}>
+                      <Image 
+                        source={{ uri: item.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(item.full_name)}&background=1A2B4A&color=fff` }} 
+                        style={styles.avatar} 
+                      />
+                      {(isCoachCompliant && isAdminCompliant) && (
+                        <View style={styles.verifiedBadge}>
+                          <IconSymbol name="checkmark.seal.fill" size={14} color="#10B981" />
+                        </View>
+                      )}
+                    </View>
+                    <View style={styles.cardInfo}>
+                      <Text style={styles.name}>{item.full_name}</Text>
+                      <View style={styles.coachRow}>
+                        <IconSymbol name="person.2.fill" size={12} color="#6B7280" />
+                        <Text style={styles.sub}>{item.coach_name || "Unassigned"}</Text>
                       </View>
-                      <Text style={styles.progressText}>{sessions} / 3 Sessions</Text>
+                    </View>
+                    <TouchableOpacity style={styles.actionBtn} onPress={() => setNotifyTarget({ id: item.id, name: item.full_name })}>
+                      <IconSymbol name="bell.badge.fill" size={16} color="#FFFFFF" />
+                      <Text style={styles.actionText}>Nudge</Text>
+                    </TouchableOpacity>
+                  </View>
+                  
+                  <View style={styles.divider} />
+                  
+                  <View style={styles.progressSection}>
+                    <View style={styles.progressItem}>
+                      <View style={styles.progressLabelRow}>
+                        <Text style={styles.progressLabel}>Peer Coach</Text>
+                        <Text style={styles.progressValue}>{sessions}/3</Text>
+                      </View>
+                      <View style={styles.progressBarBg}>
+                        <View style={[styles.progressBarFill, { width: `${coachProgressPct}%`, backgroundColor: sessions === 0 ? '#EF4444' : sessions < 3 ? '#F59E0B' : '#10B981' }]} />
+                      </View>
+                    </View>
+                    
+                    <View style={styles.progressItem}>
+                      <View style={styles.progressLabelRow}>
+                        <Text style={styles.progressLabel}>Senior Coach</Text>
+                        <Text style={styles.progressValue}>{adminSessions}/1</Text>
+                      </View>
+                      <View style={styles.progressBarBg}>
+                        <View style={[styles.progressBarFill, { width: `${adminProgressPct}%`, backgroundColor: adminSessions === 0 ? '#EF4444' : '#10B981' }]} />
+                      </View>
                     </View>
                   </View>
-                  <TouchableOpacity style={styles.actionBtn} onPress={() => setNotifyTarget({ id: item.id, name: item.full_name })}>
-                    <IconSymbol name="bell.badge.fill" size={14} color="#FFFFFF" />
-                    <Text style={styles.actionText}>Notify</Text>
-                  </TouchableOpacity>
-                </View>
+                </Animated.View>
               );
             }}
           />
@@ -138,31 +165,41 @@ export default function ComplianceScreen() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#F8F9FA" },
+  screen: { flex: 1, backgroundColor: "#F9FAFB" },
   headerRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingHorizontal: 20, paddingVertical: 12 },
-  backBtn: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
-  headerTitle: { fontSize: 20, fontWeight: "800", color: "#1A2B4A" },
-  placeholder: { width: 40 },
+  backBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#FFFFFF", alignItems: "center", justifyContent: "center", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
+  headerTitle: { fontSize: 22, fontWeight: "800", color: "#1A2B4A" },
+  placeholder: { width: 44 },
   
-  listContent: { padding: 20, gap: 12, paddingBottom: 150 },
-  card: { backgroundColor: "#FFFFFF", padding: 16, borderRadius: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2, flexDirection: "row", alignItems: "center" },
-  cardInfo: { flex: 1, paddingRight: 16 },
-  name: { fontSize: 16, fontWeight: "700", color: "#1A2B4A", marginBottom: 2 },
-  sub: { fontSize: 13, color: "#6B7280" },
+  listContent: { padding: 20, gap: 16, paddingBottom: 150 },
+  card: { backgroundColor: "#FFFFFF", borderRadius: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.04, shadowRadius: 16, elevation: 3, padding: 16 },
+  cardHeader: { flexDirection: "row", alignItems: "center" },
+  avatarWrapper: { position: "relative", marginRight: 14 },
+  avatar: { width: 50, height: 50, borderRadius: 25, backgroundColor: "#F3F4F6" },
+  verifiedBadge: { position: "absolute", bottom: -2, right: -2, backgroundColor: "#FFFFFF", borderRadius: 10, padding: 2 },
+  cardInfo: { flex: 1 },
+  name: { fontSize: 17, fontWeight: "700", color: "#111827", marginBottom: 4 },
+  coachRow: { flexDirection: "row", alignItems: "center", gap: 4 },
+  sub: { fontSize: 13, color: "#6B7280", fontWeight: "500" },
   
-  filterContainer: { paddingVertical: 12, backgroundColor: "#F8F9FA" },
-  filterScroll: { paddingHorizontal: 20, gap: 8 },
-  filterPill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: "#E5E7EB" },
-  filterPillActive: { backgroundColor: "#1A2B4A" },
-  filterText: { fontSize: 13, fontWeight: "600", color: "#4B5563" },
+  divider: { height: 1, backgroundColor: "#F3F4F6", marginVertical: 16 },
+  
+  progressSection: { gap: 12 },
+  progressItem: { flex: 1 },
+  progressLabelRow: { flexDirection: "row", justifyContent: "space-between", marginBottom: 6 },
+  progressLabel: { fontSize: 13, fontWeight: "600", color: "#4B5563" },
+  progressValue: { fontSize: 13, fontWeight: "700", color: "#1A2B4A" },
+  progressBarBg: { height: 8, backgroundColor: "#F3F4F6", borderRadius: 4, overflow: "hidden" },
+  progressBarFill: { height: "100%", borderRadius: 4 },
+  
+  filterContainer: { paddingVertical: 12, backgroundColor: "#F9FAFB" },
+  filterScroll: { paddingHorizontal: 20, gap: 10 },
+  filterPill: { paddingHorizontal: 18, paddingVertical: 10, borderRadius: 20, backgroundColor: "#FFFFFF", shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 4, elevation: 1, borderWidth: 1, borderColor: "#E5E7EB" },
+  filterPillActive: { backgroundColor: "#1A2B4A", borderColor: "#1A2B4A" },
+  filterText: { fontSize: 14, fontWeight: "600", color: "#4B5563" },
   filterTextActive: { color: "#FFFFFF" },
-
-  progressContainer: { marginTop: 12 },
-  progressBarBg: { height: 6, backgroundColor: "#F3F4F6", borderRadius: 3, overflow: "hidden", marginBottom: 6 },
-  progressBarFill: { height: "100%", borderRadius: 3 },
-  progressText: { fontSize: 12, fontWeight: "600", color: "#6B7280" },
   
-  actionBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#1A2B4A", paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12 },
+  actionBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#1A2B4A", paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14 },
   actionText: { color: "#FFFFFF", fontSize: 13, fontWeight: "700" },
   
   emptyBox: { alignItems: "center", padding: 40, gap: 12 },
