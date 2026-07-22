@@ -10,15 +10,17 @@ const getOfficeById = async (id) => {
   const office = offices[0];
   if (!office) return null;
 
-  const [staffRes, linksRes, docsRes] = await Promise.all([
+  const [staffRes, linksRes, docsRes, faqsRes] = await Promise.all([
     pool.query(`SELECT * FROM office_staff WHERE office_id = $1`, [id]),
     pool.query(`SELECT * FROM office_links WHERE office_id = $1`, [id]),
     pool.query(`SELECT * FROM office_documents WHERE office_id = $1`, [id]),
+    pool.query(`SELECT id, category, question, answer, created_at, updated_at FROM faq_items WHERE category = $1`, [office.short_name]),
   ]);
 
   office.staff = staffRes.rows;
   office.links = linksRes.rows;
   office.documents = docsRes.rows;
+  office.faqs = faqsRes.rows;
 
   return office;
 };
