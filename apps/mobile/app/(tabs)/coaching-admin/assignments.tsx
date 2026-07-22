@@ -86,7 +86,7 @@ export default function AssignmentsScreen() {
 
   const assigning = bulkAssignMutation.isPending || assignSingleMutation.isPending;
 
-  const unassignedFreshers = freshers.filter(f => !f.coach_name);
+  const unassignedFreshers = freshers.filter((f: any) => !f.coach_name);
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
@@ -119,7 +119,7 @@ export default function AssignmentsScreen() {
               )}
             </View>
             <View style={styles.column}>
-              {unassignedFreshers.map(f => (
+              {unassignedFreshers.map((f: any) => (
                 <View key={f.id} style={styles.card}>
                   <View style={{ flex: 1, paddingRight: 12 }}>
                     <Text style={styles.cardName}>{f.full_name}</Text>
