@@ -67,6 +67,9 @@ export default function SearchScreen() {
   const [locations, setLocations] = useState<Location[]>([]);
   const [users, setUsers] = useState<UserResult[]>([]);
   
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const categories = ["All", "People", "Map", "Clubs", "FAQs", "Posts"];
+
   const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
@@ -126,6 +129,20 @@ export default function SearchScreen() {
         </View>
       </View>
 
+      <View style={styles.categoriesContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoriesList}>
+          {categories.map((cat) => (
+            <Pressable 
+              key={cat} 
+              style={[styles.categoryPill, selectedCategory === cat && styles.categoryPillActive]}
+              onPress={() => setSelectedCategory(cat)}
+            >
+              <Text style={[styles.categoryPillText, selectedCategory === cat && styles.categoryPillTextActive]}>{cat}</Text>
+            </Pressable>
+          ))}
+        </ScrollView>
+      </View>
+
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {!q ? (
           <View style={styles.emptyState}>
@@ -141,7 +158,7 @@ export default function SearchScreen() {
         ) : (
           <View style={styles.resultsList}>
             
-            {users.length > 0 && (
+            {(selectedCategory === "All" || selectedCategory === "People") && users.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>People Directory</Text>
                 {users.slice(0, 3).map(user => (
@@ -162,7 +179,7 @@ export default function SearchScreen() {
               </View>
             )}
 
-            {locations.length > 0 && (
+            {(selectedCategory === "All" || selectedCategory === "Map") && locations.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Map Locations</Text>
                 {locations.slice(0, 3).map(loc => (
@@ -180,7 +197,7 @@ export default function SearchScreen() {
               </View>
             )}
 
-            {groups.length > 0 && (
+            {(selectedCategory === "All" || selectedCategory === "Clubs") && groups.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Clubs & Societies</Text>
                 {groups.slice(0, 3).map(group => (
@@ -198,7 +215,7 @@ export default function SearchScreen() {
               </View>
             )}
 
-            {faqs.length > 0 && (
+            {(selectedCategory === "All" || selectedCategory === "FAQs") && faqs.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>FAQs</Text>
                 {faqs.map(faq => (
@@ -211,7 +228,7 @@ export default function SearchScreen() {
               </View>
             )}
 
-            {posts.length > 0 && (
+            {(selectedCategory === "All" || selectedCategory === "Posts") && posts.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Posts & Events</Text>
                 {posts.slice(0, 5).map(post => {
@@ -289,4 +306,10 @@ const styles = StyleSheet.create({
   resultTitle: { fontSize: 16, fontWeight: "700", color: "#1A2B4A", marginBottom: 4 },
   resultSub: { fontSize: 12, color: "#6B7280", fontWeight: "600", marginBottom: 4, textTransform: "capitalize" },
   resultContent: { fontSize: 14, color: "#4B5563", lineHeight: 20 },
+  categoriesContainer: { backgroundColor: "#FFFFFF", paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: "#F0F2F5" },
+  categoriesList: { paddingHorizontal: 16, gap: 8 },
+  categoryPill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, backgroundColor: "#F3F4F6" },
+  categoryPillActive: { backgroundColor: "#A93C40" },
+  categoryPillText: { fontSize: 14, fontWeight: "600", color: "#6B7280" },
+  categoryPillTextActive: { color: "#FFFFFF" },
 });
