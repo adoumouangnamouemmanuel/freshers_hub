@@ -133,12 +133,14 @@ export default function FeedScreen() {
         );
       }
 
-      const processSessions = (d: any[] | void) => {
+      const processSessions = (data: any) => {
+        if (!data) return;
+        const sessionsList = Array.isArray(data) ? data : (data.data || data.sessions || []);
         const now = new Date();
         const upcoming: any[] = [];
         const overdue: any[] = [];
         
-        (d || []).forEach(s => {
+        (sessionsList || []).forEach((s: any) => {
           if (s.status === 'scheduled') {
             let sessionDate;
             if (s.date) {
