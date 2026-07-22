@@ -8,6 +8,7 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Animated, { FadeIn, FadeInDown, SlideInDown } from "react-native-reanimated";
 import SessionDetailModal from "@/components/features/sessions/SessionDetailModal";
+import SendNotificationModal from "@/components/features/notifications/SendNotificationModal";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -22,6 +23,8 @@ export default function UserProfileScreen() {
   const [profile, setProfile] = useState<any>(null);
   const [notifying, setNotifying] = useState(false);
   const [selectedSession, setSelectedSession] = useState<any>(null);
+  const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
+  const [showNotificationModal, setShowNotificationModal] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -42,11 +45,7 @@ export default function UserProfileScreen() {
   }, [id, token]);
 
   const handleNotify = () => {
-    setNotifying(true);
-    setTimeout(() => {
-      Alert.alert("Success", `A nudge has been sent to ${profile?.full_name}.`);
-      setNotifying(false);
-    }, 800);
+    setShowNotificationModal(true);
   };
 
   const openApp = (type: "phone" | "email" | "whatsapp") => {
@@ -266,22 +265,46 @@ export default function UserProfileScreen() {
           <Text style={styles.cardTitle}>Recent Sessions</Text>
           {filteredSessions.map((session: any, idx: number) => {
             const isCompleted = session.status === 'completed';
+            const isExpanded = expandedSessionId === session.id;
             return (
-              <TouchableOpacity key={session.id} onPress={() => setSelectedSession(session)}>
-                <View style={styles.infoRow}>
-                  <View style={[styles.infoIconBox, { backgroundColor: isCompleted ? 'rgba(5, 150, 105, 0.1)' : 'rgba(79, 70, 229, 0.1)' }]}>
-                    <IconSymbol name={isCompleted ? "checkmark.circle.fill" : "calendar"} size={16} color={isCompleted ? "#059669" : "#4F46E5"} />
+              <View key={session.id}>
+                <TouchableOpacity onPress={() => setExpandedSessionId(isExpanded ? null : session.id)}>
+                  <View style={styles.infoRow}>
+                    <View style={[styles.infoIconBox, { backgroundColor: isCompleted ? 'rgba(5, 150, 105, 0.1)' : 'rgba(79, 70, 229, 0.1)' }]}>
+                      <IconSymbol name={isCompleted ? "checkmark.circle.fill" : "calendar"} size={16} color={isCompleted ? "#059669" : "#4F46E5"} />
+                    </View>
+                    <View style={styles.infoTextContainer}>
+                      <Text style={styles.infoLabel}>{session.type}</Text>
+                      <Text style={styles.infoValue}>{session.date}</Text>
+                    </View>
+                    <View style={styles.statusBadge}>
+                      <Text style={styles.statusText}>{session.status}</Text>
+                    </View>
                   </View>
-                  <View style={styles.infoTextContainer}>
-                    <Text style={styles.infoLabel}>{session.type}</Text>
-                    <Text style={styles.infoValue}>{session.date}</Text>
+                </TouchableOpacity>
+
+                {isExpanded && (
+                  <View style={styles.expandedSessionContent}>
+                    <Text style={styles.sessionDetailText}><Text style={{fontWeight: '700'}}>Title:</Text> {session.title || "No Title"}</Text>
+                    <Text style={styles.sessionDetailText}><Text style={{fontWeight: '700'}}>With:</Text> {session.with || "Unknown"}</Text>
+                    <Text style={styles.sessionDetailText}><Text style={{fontWeight: '700'}}>Location:</Text> {session.location || "TBD"}</Text>
+                    
+                    {session.has_report && session.report && (
+                      <View style={styles.sessionReportBox}>
+                        <Text style={styles.sessionReportTitle}>Session Notes</Text>
+                        <Text style={styles.sessionReportText}><Text style={{fontWeight: '600'}}>Topic:</Text> {session.report.topic}</Text>
+                        <Text style={styles.sessionReportText}><Text style={{fontWeight: '600'}}>Mood:</Text> {session.report.mood}</Text>
+                        <Text style={styles.sessionReportText}><Text style={{fontWeight: '600'}}>Actions:</Text> {session.report.actions}</Text>
+                      </View>
+                    )}
+                    
+                    <TouchableOpacity style={styles.submitReportBtn} onPress={() => setSelectedSession(session)}>
+                      <Text style={styles.submitReportBtnText}>View Full Details</Text>
+                    </TouchableOpacity>
                   </View>
-                  <View style={styles.statusBadge}>
-                    <Text style={styles.statusText}>{session.status}</Text>
-                  </View>
-                </View>
+                )}
                 {idx < filteredSessions.length - 1 && <View style={styles.divider} />}
-              </TouchableOpacity>
+              </View>
             );
           })}
           {filteredSessions.length === 0 && (
@@ -393,7 +416,7 @@ export default function UserProfileScreen() {
       <Animated.View entering={SlideInDown.delay(500).duration(500)} style={[styles.fabContainer, { paddingBottom: insets.bottom || 24 }]}>
         <Pressable 
           style={({ pressed }) => [styles.fabSecondary, pressed && styles.fabPressed]} 
-          onPress={handleNotify}
+          onPress={() => setShowNotificationModal(true)}
           disabled={notifying}
         >
           {notifying ? (
@@ -413,6 +436,15 @@ export default function UserProfileScreen() {
           <Text style={styles.fabTextPrimary}>Schedule Session</Text>
         </Pressable>
       </Animated.View>
+
+      <SendNotificationModal
+        visible={showNotificationModal}
+        onClose={() => setShowNotificationModal(false)}
+        targetUserId={profile.id}
+        targetUserName={profile.full_name}
+        accessToken={token || ""}
+        senderType={session?.user?.roles?.some((r: any) => r.name === 'coach_admin' || r.name === 'admin') ? 'admin' : session?.user?.roles?.some((r: any) => r.name === 'counsellor' || r.name === 'peer_counsellor') ? 'counsellor' : session?.user?.roles?.some((r: any) => r.name === 'advisor') ? 'advisor' : 'coach'}
+      />
     </View>
   );
 }
