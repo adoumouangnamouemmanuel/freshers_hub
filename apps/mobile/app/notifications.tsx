@@ -9,6 +9,7 @@ import {
   RefreshControl,
   Animated,
   Alert,
+  TextInput,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -16,6 +17,7 @@ import { useAuth } from "@/context/auth-context";
 import { apiRequest } from "@/lib/api";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import Animated2, { FadeInDown, SlideInRight } from "react-native-reanimated";
+import SessionDetailModal from "@/components/features/sessions/SessionDetailModal";
 
 type AppNotification = {
   id: string;
@@ -122,6 +124,10 @@ export default function NotificationsScreen() {
   const [isLoading,  setIsLoading]  = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<string>("all");
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const [selectedSession, setSelectedSession] = useState<any>(null);
+  const [sessionModalVisible, setSessionModalVisible] = useState(false);
 
   const headers = { Authorization: `Bearer ${session?.accessToken}` };
 
@@ -171,12 +177,23 @@ export default function NotificationsScreen() {
       const [type, id] = notification.relatedEntity.split(":");
       if (type === "post")  router.push({ pathname: "/post/[id]",  params: { id } } as any);
       if (type === "event") router.push({ pathname: "/event/[id]", params: { id } } as any);
+      if (type === "session") {
+        try {
+          const sessionData = await apiRequest(`/support/sessions/${id}`, { headers });
+          setSelectedSession(sessionData);
+          setSessionModalVisible(true);
+        } catch (err) {
+          Alert.alert("Error", "Could not fetch session details. It may have been deleted.");
+        }
+      }
     }
   };
 
   const unreadCount = notifications.filter((n) => !n.readAt).length;
   const categories  = ["all", ...Array.from(new Set(notifications.map((n) => n.category)))];
-  const filtered    = filter === "all" ? notifications : notifications.filter((n) => n.category === filter);
+  
+  const filtered = (filter === "all" ? notifications : notifications.filter((n) => n.category === filter))
+    .filter(n => !searchQuery || n.title.toLowerCase().includes(searchQuery.toLowerCase()) || n.body.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
     <View style={[styles.screen, { paddingTop: insets.top }]}>
@@ -185,11 +202,16 @@ export default function NotificationsScreen() {
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <IconSymbol name="chevron.left" size={22} color="#1A2B4A" />
         </Pressable>
-        <View>
-          <Text style={styles.headerTitle}>Notifications</Text>
-          {unreadCount > 0 && (
-            <Text style={styles.headerSub}>{unreadCount} unread</Text>
-          )}
+        
+        <View style={styles.searchContainer}>
+          <IconSymbol name="magnifyingglass" size={16} color="#9CA3AF" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search notifications..."
+            placeholderTextColor="#9CA3AF"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
         </View>
         {unreadCount > 0 ? (
           <Pressable onPress={markAllRead} style={styles.markAllBtn}>
@@ -259,6 +281,18 @@ export default function NotificationsScreen() {
           ItemSeparatorComponent={() => <View style={styles.separator} />}
         />
       )}
+
+      {selectedSession && (
+        <SessionDetailModal
+          session={selectedSession}
+          visible={sessionModalVisible}
+          onClose={() => setSessionModalVisible(false)}
+          onRefresh={fetchNotifications}
+          currentUserId={session?.user?.id}
+          accessToken={session?.accessToken}
+          isCounsellorView={session?.user?.roles?.some(r => r.name === "peer_counsellor" || r.name === "peer_coach")}
+        />
+      )}
     </View>
   );
 }
@@ -292,6 +326,26 @@ const styles = StyleSheet.create({
   headerSub:   { fontSize: 12, color: "#A93C40", fontWeight: "600", marginTop: 2 },
   markAllBtn:  { paddingHorizontal: 14, paddingVertical: 8, backgroundColor: "#FEF2F2", borderRadius: 20 },
   markAllText: { fontSize: 13, color: "#A93C40", fontWeight: "700" },
+
+  searchContainer: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginHorizontal: 12,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 15,
+    color: "#1F2937",
+    padding: 0,
+  },
 
   /* Filters */
   filterRow:     { backgroundColor: "#FFFFFF", paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: "#E8ECF0" },
