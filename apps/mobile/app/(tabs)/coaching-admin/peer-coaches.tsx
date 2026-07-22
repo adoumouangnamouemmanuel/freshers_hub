@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, Image, TextInput } from "react-native";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../../context/auth-context";
@@ -12,53 +13,49 @@ export default function PeerCoachesScreen() {
   const token = session?.accessToken;
   const router = useRouter();
   
-  const [loading, setLoading] = useState(true);
-  const [coaches, setCoaches] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500);
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const fetchCoaches = async (pageNum = 1, search = "") => {
-    if (!token) return;
-    if (pageNum === 1) setLoading(true);
-    else setLoadingMore(true);
-
-    try {
-      const res = await fetch(`${API_URL}/support/admin/coaches?page=${pageNum}&limit=20&search=${encodeURIComponent(search)}`, {
+  // TODO: Review and potentially increase this staleTime duration (currently 5 minutes)
+  const {
+    data,
+    isLoading: loading,
+    isFetchingNextPage: loadingMore,
+    hasNextPage: hasMore,
+    fetchNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['admin', 'coaches', debouncedSearch],
+    initialPageParam: 1,
+    queryFn: async ({ pageParam = 1 }) => {
+      const res = await fetch(`${API_URL}/support/admin/coaches?page=${pageParam}&limit=20&search=${encodeURIComponent(debouncedSearch)}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (res.ok) {
-        const json = await res.json();
-        if (pageNum === 1) {
-          setCoaches(json.data || []);
-        } else {
-          setCoaches(prev => [...prev, ...(json.data || [])]);
-        }
-        setHasMore(json.meta ? pageNum < json.meta.totalPages : false);
-        setPage(pageNum);
+      if (!res.ok) throw new Error("Failed to fetch coaches");
+      return res.json();
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      if (lastPage.meta && allPages.length < lastPage.meta.totalPages) {
+        return allPages.length + 1;
       }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  };
+      if (!lastPage.meta && lastPage.data?.length === 20) {
+        return allPages.length + 1;
+      }
+      return undefined;
+    },
+    enabled: !!token,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
-  useEffect(() => {
-    fetchCoaches(1, debouncedSearch);
-  }, [token, debouncedSearch]);
+  const coaches = React.useMemo(() => data?.pages.flatMap(page => page.data || []) || [], [data]);
 
   const loadMore = () => {
     if (!loadingMore && hasMore) {
-      fetchCoaches(page + 1, debouncedSearch);
+      fetchNextPage();
     }
   };
 
