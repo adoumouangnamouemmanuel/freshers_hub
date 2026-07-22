@@ -93,7 +93,7 @@ class SupportAdminRepository {
     const { rows } = await pool.query(`
       SELECT 
         f.id, f.full_name as name,
-        (SELECT COUNT(*) FROM sessions WHERE student_id = f.id AND status = 'completed') as sessions_completed,
+        (SELECT COUNT(*) FROM sessions WHERE student_id = f.id AND status = 'completed' AND provider_id = $1) as sessions_completed,
         3 as total_assigned
       FROM coach_assignments ca
       JOIN users f ON ca.fresher_id = f.id
@@ -101,7 +101,7 @@ class SupportAdminRepository {
       UNION
       SELECT 
         f.id, f.full_name as name,
-        (SELECT COUNT(*) FROM sessions WHERE student_id = f.id AND status = 'completed') as sessions_completed,
+        (SELECT COUNT(*) FROM sessions WHERE student_id = f.id AND status = 'completed' AND provider_id = $1) as sessions_completed,
         3 as total_assigned
       FROM counsellor_assignments ca
       JOIN users f ON ca.student_id = f.id
