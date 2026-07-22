@@ -383,6 +383,7 @@ export default function SessionsManager({
         currentUserId={authSession?.user?.id}
         accessToken={authSession?.accessToken}
         isCounsellorView={isCounsellorView}
+        currentUserRoles={authSession?.user?.roles}
       />
 
       {/* Floating Action Button */}
