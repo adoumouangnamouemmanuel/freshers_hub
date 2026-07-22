@@ -13,17 +13,17 @@ const searchController = {
       const userId = req.user?.id;
       const userRoles = req.user?.roles || [];
 
-      // Determine if user can search other users
+      // Determine if user can search other users (and consequently, not search campus entities)
       const staffRoles = ['coach_admin', 'advisor', 'counsellor', 'staff', 'faculty', 'oipcc_admin'];
-      const canSearchUsers = userRoles.some(r => staffRoles.includes(r));
+      const isStaffOrAdmin = userRoles.some(r => staffRoles.includes(r));
 
       // Execute all searches concurrently
       const [posts, groups, faqs, locations, users] = await Promise.all([
         searchRepository.searchPosts(q, userId, limit),
-        searchRepository.searchGroups(q, userId, limit),
-        searchRepository.searchFaqs(q, limit),
-        searchRepository.searchLocations(q, limit),
-        canSearchUsers ? searchRepository.searchUsers(q, limit) : Promise.resolve([])
+        isStaffOrAdmin ? Promise.resolve([]) : searchRepository.searchGroups(q, userId, limit),
+        isStaffOrAdmin ? Promise.resolve([]) : searchRepository.searchFaqs(q, limit),
+        isStaffOrAdmin ? Promise.resolve([]) : searchRepository.searchLocations(q, limit),
+        isStaffOrAdmin ? searchRepository.searchUsers(q, limit) : Promise.resolve([])
       ]);
 
       res.json({
