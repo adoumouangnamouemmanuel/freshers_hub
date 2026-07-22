@@ -12,6 +12,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AuthProvider, useAuth } from "@/context/auth-context";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 function AppNavigator() {
   const { isReady, session } = useAuth();
@@ -36,6 +37,14 @@ function AppNavigator() {
       router.replace("/(auth)/login");
     }
   }, [isReady, router, segments, session]);
+
+  // Handle push notification registration once a session is active
+  const { enablePush } = usePushNotifications(session?.accessToken);
+  useEffect(() => {
+    if (isReady && session?.accessToken) {
+      enablePush();
+    }
+  }, [isReady, session?.accessToken, enablePush]);
 
   // Show loading screen while checking session
   if (!isReady) {
