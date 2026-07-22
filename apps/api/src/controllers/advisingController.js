@@ -88,10 +88,29 @@ const getAdvisingDashboard = asyncHandler(async (req, res) => {
 const getAdvisingStudents = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
   const limit = parseInt(req.query.limit, 10) || 20;
+  const search = req.query.search || "";
+  const tab = req.query.tab || "all";
   const offset = (page - 1) * limit;
 
   const client = await pool.connect();
   try {
+    let baseWhere = `r.name = 'student' AND u.is_active = true`;
+    const queryParams = [limit, offset];
+    
+    if (tab !== "all" && tab !== "freshers" && tab !== "coaches") {
+      const yearNum = parseInt(tab, 10);
+      if (!isNaN(yearNum)) {
+        queryParams.push(yearNum);
+        baseWhere += ` AND u.class_year = $${queryParams.length}`;
+      }
+    }
+
+    if (search) {
+      queryParams.push(`%${search}%`);
+      const searchIndex = queryParams.length;
+      baseWhere += ` AND (u.full_name ILIKE $${searchIndex} OR u.major ILIKE $${searchIndex})`;
+    }
+
     const { rows } = await client.query(`
       SELECT 
         COUNT(*) OVER() AS total_count,
@@ -100,11 +119,11 @@ const getAdvisingStudents = asyncHandler(async (req, res) => {
       FROM users u
       JOIN user_roles ur ON u.id = ur.user_id
       JOIN roles r ON ur.role_id = r.id
-      WHERE r.name = 'student' AND u.is_active = true
+      WHERE ${baseWhere}
       GROUP BY u.id, u.full_name, u.email, u.phone, u.avatar_url, u.class_year, u.major
       ORDER BY u.full_name ASC
       LIMIT $1 OFFSET $2
-    `, [limit, offset]);
+    `, queryParams);
 
     const total = rows.length > 0 ? parseInt(rows[0].total_count, 10) : 0;
     res.json({
