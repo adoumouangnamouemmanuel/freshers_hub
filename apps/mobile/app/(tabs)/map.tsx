@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   StyleSheet,
   Text,
@@ -64,13 +65,21 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 export default function MapScreen() {
   const { focusId } = useLocalSearchParams<{ focusId?: string }>();
-  const [locations, setLocations] = useState<LocationItem[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string>("All");
   const [selectedItem, setSelectedItem] = useState<LocationItem | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [userCoords, setUserCoords] = useState<Location.LocationObjectCoords | null>(null);
+
+  const { data: locations = [], isLoading } = useQuery({
+    queryKey: ['locations'],
+    queryFn: async () => {
+      const res = await apiRequest<{ locations: LocationItem[] }>("/locations");
+      return res.locations || [];
+    },
+    // TODO: Review and potentially increase this staleTime duration (currently 7 days)
+    staleTime: 1000 * 60 * 60 * 24 * 7, // 7 days stale time
+  });
   
   const mapRef = useRef<MapView>(null);
   const markerRefs = useRef<Record<string, any>>({});
@@ -91,7 +100,6 @@ export default function MapScreen() {
 
 
   useEffect(() => {
-    fetchLocations();
     (async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
@@ -162,17 +170,7 @@ export default function MapScreen() {
     }
   }, [focusId, locations]);
 
-  const fetchLocations = async () => {
-    try {
-      setIsLoading(true);
-      const res = await apiRequest<{ locations: LocationItem[] }>("/locations");
-      setLocations(res.locations);
-    } catch (e) {
-      console.error("Failed to fetch locations", e);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+
 
   const categories = useMemo(() => {
     const cats = new Set(locations.map(l => l.category));
