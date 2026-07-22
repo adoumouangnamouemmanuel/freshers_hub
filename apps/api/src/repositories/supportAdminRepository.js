@@ -50,12 +50,13 @@ class SupportAdminRepository {
 
   async getAdminFreshers() {
     const { rows } = await pool.query(`
-      SELECT DISTINCT
-        u.id, u.full_name, u.avatar_url, u.country, u.major,
-        c.full_name as coach_name,
-        (SELECT COUNT(*) FROM sessions WHERE student_id = u.id AND status = 'completed') as completed_sessions
-      FROM user_roles ur
-      JOIN users u ON ur.user_id = u.id
+        SELECT DISTINCT
+          u.id, u.full_name, u.avatar_url, u.country, u.major,
+          c.full_name as coach_name,
+          (SELECT COUNT(*) FROM sessions WHERE student_id = u.id AND status = 'completed' AND provider_id = ca.peer_coach_id) as completed_sessions,
+          (SELECT COUNT(*) FROM sessions s2 JOIN user_roles ur3 ON s2.provider_id = ur3.user_id JOIN roles r3 ON ur3.role_id = r3.id WHERE s2.student_id = u.id AND s2.status = 'completed' AND r3.name = 'coach_admin') as admin_sessions_completed
+        FROM user_roles ur
+        JOIN users u ON ur.user_id = u.id
       JOIN roles r ON ur.role_id = r.id
       LEFT JOIN coach_assignments ca ON u.id = ca.fresher_id
       LEFT JOIN users c ON ca.peer_coach_id = c.id
