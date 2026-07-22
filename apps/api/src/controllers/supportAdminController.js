@@ -215,7 +215,13 @@ const getAdminUserProfile = asyncHandler(async (req, res) => {
     const recentSessions = await supportAdminRepository.getRecentSessions(id, sessionFilter, params);
 
     // Fetch exact count of completed sessions with the viewer to be accurate for progress bars
-    if (req.user.roles.includes("peer_coach") || req.user.roles.includes("counsellor") || req.user.roles.includes("advisor")) {
+    if (req.user.roles.includes("coach_admin")) {
+      const viewerCompletedCount = await pool.query(
+        `SELECT COUNT(*) FROM sessions WHERE student_id = $1 AND with_type = 'peer_coach' AND status = 'completed'`,
+        [id]
+      );
+      userProfile.completed_sessions_with_viewer = parseInt(viewerCompletedCount.rows[0].count);
+    } else if (req.user.roles.includes("peer_coach") || req.user.roles.includes("counsellor") || req.user.roles.includes("advisor")) {
       const viewerCompletedCount = await pool.query(
         `SELECT COUNT(*) FROM sessions WHERE student_id = $1 AND provider_id = $2 AND status = 'completed'`,
         [id, req.user.id]
