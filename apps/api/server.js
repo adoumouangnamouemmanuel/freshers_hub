@@ -14,9 +14,33 @@ const homeRoutes = require("./src/routes/homeRoutes");
 const logger = require("./src/utils/logger");
 const errorHandler = require("./src/middleware/errorHandler");
 const config = require("./src/config");
+const metricsMiddleware = require("./src/middleware/metricsMiddleware");
+const { initMetricsSyncer } = require("./src/utils/metricsSyncer");
+
+// TODO: Uncomment when ready to deploy Sentry or GlitchTip for error tracking
+// const Sentry = require("@sentry/node");
+// const { nodeProfilingIntegration } = require("@sentry/profiling-node");
+// Sentry.init({
+//   dsn: process.env.SENTRY_DSN || "YOUR_SENTRY_DSN_HERE",
+//   integrations: [
+//     nodeProfilingIntegration(),
+//   ],
+//   tracesSampleRate: 1.0, 
+//   profilesSampleRate: 1.0,
+// });
 
 const app = express();
 const port = config.port;
+
+// Start the background process to sync Redis metrics to Postgres (runs every hour)
+initMetricsSyncer();
+
+// TODO: Uncomment Sentry request handler when Sentry is enabled
+// app.use(Sentry.Handlers.requestHandler());
+// app.use(Sentry.Handlers.tracingHandler());
+
+// Track all API traffic metrics in Redis
+app.use(metricsMiddleware);
 
 // Logging middleware
 app.use((req, res, next) => {
@@ -75,6 +99,7 @@ app.use("/search", searchRoutes);
 app.use("/locations", locationRoutes);
 app.use("/admin", adminRoutes);
 app.use("/home", homeRoutes);
+app.use("/system", require("./src/routes/systemRoutes"));
 
 app.use((req, res) => {
   res.status(404).json({
@@ -103,6 +128,8 @@ app.use((req, res) => {
 });
 
 // Global error handler
+// TODO: Uncomment Sentry error handler when Sentry is enabled
+// app.use(Sentry.Handlers.errorHandler());
 app.use(errorHandler);
 
 app.listen(port, () => {
