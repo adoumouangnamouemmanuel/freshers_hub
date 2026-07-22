@@ -1,5 +1,6 @@
 import { useRouter } from "expo-router";
 import React, { useRef, useState, useEffect } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Pressable,
   StyleSheet,
@@ -99,49 +100,39 @@ export default function HelpScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState<FAQ[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const [allOffices, setAllOffices] = useState<any[]>([]);
-  const [featuredOffices, setFeaturedOffices] = useState<any[]>([]);
-  const [isLoadingOffices, setIsLoadingOffices] = useState(true);
+  const { data: allOffices = [], isLoading: isLoadingOffices } = useQuery({
+    queryKey: ['offices'],
+    queryFn: async () => {
+      const res = await apiRequest<{data: any[]}>("/help/offices");
+      return res.data || [];
+    },
+    // TODO: Review and potentially increase this staleTime duration (currently 24 hours)
+    staleTime: 1000 * 60 * 60 * 24, // 24 hours
+  });
 
-  useEffect(() => {
-    apiRequest<{data: any[]}>("/help/offices")
-      .then(res => {
-        setAllOffices(res.data);
-        // Fallback featuring logic based on icons we know are featured
-        setFeaturedOffices(res.data.filter(o => 
-          o.icon === "cross.case.fill" || 
-          o.icon === "questionmark.circle.fill" || 
-          o.icon === "briefcase.fill"
-        ));
-      })
-      .catch(console.error)
-      .finally(() => setIsLoadingOffices(false));
-  }, []);
+  const featuredOffices = allOffices.filter(o => 
+    o.icon === "cross.case.fill" || 
+    o.icon === "questionmark.circle.fill" || 
+    o.icon === "briefcase.fill"
+  );
 
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   useEffect(() => {
-    if (!query.trim()) {
-      setResults([]);
-      return;
-    }
-    
-    const timeoutId = setTimeout(async () => {
-      setIsLoading(true);
-      try {
-        const res = await apiRequest<{data: FAQ[]}>(`/faqs/search?q=${encodeURIComponent(query.trim())}`);
-        setResults(res.data || []);
-      } catch (e) {
-        console.error("Search failed:", e);
-        setResults([]);
-      } finally {
-        setIsLoading(false);
-      }
-    }, 400); // debounce
-    
-    return () => clearTimeout(timeoutId);
+    const timer = setTimeout(() => setDebouncedQuery(query), 400);
+    return () => clearTimeout(timer);
   }, [query]);
+
+  const { data: results = [], isLoading } = useQuery({
+    queryKey: ['faqs', 'search', debouncedQuery],
+    queryFn: async () => {
+      if (!debouncedQuery.trim()) return [];
+      const res = await apiRequest<{data: FAQ[]}>(`/faqs/search?q=${encodeURIComponent(debouncedQuery.trim())}`);
+      return res.data || [];
+    },
+    enabled: debouncedQuery.trim().length > 0,
+    // TODO: Review and potentially increase this staleTime duration (currently 5 minutes)
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
   return (
     <View style={styles.screen}>
