@@ -7,6 +7,7 @@ const groupRoutes = require("./src/routes/groupRoutes");
 const eventRoutes = require("./src/routes/eventRoutes");
 const notificationRoutes = require("./src/routes/notificationRoutes");
 const supportRoutes = require("./src/routes/supportRoutes");
+const searchRoutes = require("./src/routes/searchRoutes");
 const adminRoutes = require("./src/routes/adminRoutes");
 const logger = require("./src/utils/logger");
 const errorHandler = require("./src/middleware/errorHandler");
@@ -68,6 +69,7 @@ app.use("/groups", groupRoutes);
 app.use("/events", eventRoutes);
 app.use("/notifications", notificationRoutes);
 app.use("/support", supportRoutes);
+app.use("/search", searchRoutes);
 app.use("/admin", adminRoutes);
 
 app.use((req, res) => {
