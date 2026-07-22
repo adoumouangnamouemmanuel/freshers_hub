@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { StyleSheet, Text, View, ScrollView, Pressable, TextInput, ActivityIndicator, Platform, Alert, Modal, TouchableOpacity, FlatList } from "react-native";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams, Stack } from "expo-router";
 import { useAuth } from "../../context/auth-context";
@@ -34,8 +35,6 @@ export default function ScheduleSessionScreen() {
   
   // User Selection state
   const [showUserModal, setShowUserModal] = useState(false);
-  const [users, setUsers] = useState<any[]>([]);
-  const [fetchingUsers, setFetchingUsers] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
 
@@ -60,67 +59,51 @@ export default function ScheduleSessionScreen() {
     }
   }, [editDate]);
 
-  const [userPage, setUserPage] = useState(1);
-  const [hasMoreUsers, setHasMoreUsers] = useState(true);
-  const [loadingMoreUsers, setLoadingMoreUsers] = useState(false);
+  const endpoint = (isAsAdvisor || isAdvisorRole) ? '/support/advising/students' 
+                 : isCounsellorRole ? '/support/counselling/students'
+                 : '/support/admin/students';
 
-  useEffect(() => {
-    if (showUserModal) {
-      setHasMoreUsers(true);
-      fetchUsers(1);
-    }
-  }, [debouncedSearchQuery]);
-
-  const fetchUsers = async (pageNum = 1) => {
-    setFetchingUsers(pageNum === 1);
-    try {
-      const endpoint = (isAsAdvisor || isAdvisorRole) ? '/support/advising/students' 
-                     : isCounsellorRole ? '/support/counselling/students'
-                     : '/support/admin/students';
-      
-      let url = `${API_URL}${endpoint}?page=${pageNum}&limit=20`;
+  // TODO: Review and potentially increase this staleTime duration (currently 5 minutes)
+  const {
+    data,
+    isLoading: fetchingUsers,
+    isFetchingNextPage: loadingMoreUsers,
+    hasNextPage: hasMoreUsers,
+    fetchNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['users-picker', endpoint, debouncedSearchQuery],
+    initialPageParam: 1,
+    queryFn: async ({ pageParam = 1 }) => {
+      let url = `${API_URL}${endpoint}?page=${pageParam}&limit=20`;
       if (debouncedSearchQuery) {
         url += `&search=${encodeURIComponent(debouncedSearchQuery)}`;
       }
-
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const responseData = await res.json();
-        const rawData = responseData.data || [];
-        
-        if (pageNum === 1) {
-          setUsers(rawData);
-        } else {
-          setUsers(prev => [...prev, ...rawData]);
-        }
-        
-        if (responseData.meta) {
-          setHasMoreUsers(pageNum < responseData.meta.totalPages);
-        } else {
-          setHasMoreUsers(rawData.length === 20);
-        }
-        setUserPage(pageNum);
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error("Failed to fetch users");
+      return res.json();
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      if (lastPage.meta && allPages.length < lastPage.meta.totalPages) {
+        return allPages.length + 1;
       }
-    } catch (err) {
-      console.error("Failed to fetch users:", err);
-      setHasMoreUsers(false);
-    } finally {
-      setFetchingUsers(false);
-      setLoadingMoreUsers(false);
-    }
-  };
+      if (!lastPage.meta && lastPage.data?.length === 20) {
+        return allPages.length + 1;
+      }
+      return undefined;
+    },
+    enabled: !!token && showUserModal, // Only fetch when modal is open
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  const users = React.useMemo(() => data?.pages.flatMap(page => page.data || []) || [], [data]);
 
   const handleLoadMoreUsers = () => {
     if (hasMoreUsers && !loadingMoreUsers && !fetchingUsers) {
-      setLoadingMoreUsers(true);
-      fetchUsers(userPage + 1);
+      fetchNextPage();
     }
   };
 
   const openUserModal = () => {
-    if (users.length === 0) fetchUsers();
     setShowUserModal(true);
   };
 
