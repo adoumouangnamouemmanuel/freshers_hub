@@ -75,15 +75,20 @@ function AppNavigator() {
   );
 }
 
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
+import { queryClient, persistOptions } from '@/lib/queryClient';
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
     <SafeAreaProvider>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <AuthProvider>
-          <AppNavigator />
-        </AuthProvider>
+        <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
+          <AuthProvider>
+            <AppNavigator />
+          </AuthProvider>
+        </PersistQueryClientProvider>
         <StatusBar style="dark" />
       </ThemeProvider>
     </SafeAreaProvider>
