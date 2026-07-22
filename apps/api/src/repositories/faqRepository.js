@@ -13,7 +13,8 @@ const getFaqs = async (filters, page, limit) => {
 
   if (filters.q) {
     values.push(filters.q);
-    conditions.push(`search_vector @@ websearch_to_tsquery('english', $${values.length})`);
+    const searchIdx = values.length;
+    conditions.push(`(search_vector @@ websearch_to_tsquery('english', $${searchIdx}) OR question ILIKE '%' || $${searchIdx} || '%' OR answer ILIKE '%' || $${searchIdx} || '%')`);
   }
 
   if (conditions.length > 0) {
