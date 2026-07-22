@@ -12,15 +12,22 @@ const getFaqs = async (filters, page, limit) => {
   }
 
   if (filters.q) {
-    values.push(`%${filters.q}%`);
-    conditions.push(`(question ILIKE $${values.length} OR answer ILIKE $${values.length})`);
+    values.push(filters.q);
+    conditions.push(`search_vector @@ websearch_to_tsquery('english', $${values.length})`);
   }
 
   if (conditions.length > 0) {
     query += ` WHERE ` + conditions.join(" AND ");
   }
 
-  query += ` ORDER BY created_at DESC LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
+  if (filters.q) {
+    // Order by rank if searching
+    query += ` ORDER BY ts_rank(search_vector, websearch_to_tsquery('english', $${values.length})) DESC, created_at DESC`;
+  } else {
+    query += ` ORDER BY created_at DESC`;
+  }
+  
+  query += ` LIMIT $${values.length + 1} OFFSET $${values.length + 2}`;
   
   const countQuery = `SELECT COUNT(*) FROM faq_items` + (conditions.length > 0 ? ` WHERE ` + conditions.join(" AND ") : "");
 
