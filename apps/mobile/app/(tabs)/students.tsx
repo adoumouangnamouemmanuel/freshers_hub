@@ -84,9 +84,8 @@ export default function StudentsScreen() {
       // Jan - May: 4 active classes
       classYears = [currentYear, currentYear + 1, currentYear + 2, currentYear + 3];
     } else if (currentMonth < 8) {
-      // TODO: Remove `currentYear + 4` before deploying.
-      // Jun - Aug: Seniors graduated, new Freshmen haven't arrived yet (temporarily adding Class of 2030 for testing)
-      classYears = [currentYear + 1, currentYear + 2, currentYear + 3, currentYear + 4];
+      // Jun - Aug: Seniors graduated, new Freshmen haven't arrived yet.
+      classYears = [currentYear + 1, currentYear + 2, currentYear + 3];
     } else {
       // Sep - Dec: New Freshmen arrived
       classYears = [currentYear + 1, currentYear + 2, currentYear + 3, currentYear + 4];
