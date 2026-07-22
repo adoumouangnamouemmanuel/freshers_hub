@@ -353,7 +353,7 @@ const styles = StyleSheet.create({
   header: { fontSize: 34, fontWeight: "900", color: "#111827", letterSpacing: -1 },
 
   scroll: { flex: 1 },
-  content: { padding: 20, gap: 24, paddingBottom: 150, paddingTop: 28 },
+  content: { padding: 20, gap: 24,  paddingTop: 28 },
 
   // Quick Actions
   quickActions: { gap: 12 },
