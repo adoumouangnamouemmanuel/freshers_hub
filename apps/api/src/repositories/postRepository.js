@@ -1,6 +1,6 @@
 const { pool } = require("../services/db");
 
-const findPosts = async (client, { userId, page = 1, limit = 50, category, authorId }) => {
+const findPosts = async (client, { userId, page = 1, limit = 50, category, authorId, q }) => {
   const offset = (page - 1) * limit;
   let queryParams = [];
   let paramIndex = 1;
@@ -27,6 +27,12 @@ const findPosts = async (client, { userId, page = 1, limit = 50, category, autho
     paramIndex++;
   } else {
     whereClauses.push(`p.visibility = 'public'`);
+  }
+
+  if (q) {
+    whereClauses.push(`(p.title ILIKE $${paramIndex} OR p.content ILIKE $${paramIndex})`);
+    queryParams.push(`%${q}%`);
+    paramIndex++;
   }
 
   if (category) {
