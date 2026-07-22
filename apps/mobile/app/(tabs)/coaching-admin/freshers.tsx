@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, Image, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -15,22 +15,52 @@ export default function FreshersScreen() {
   const [loading, setLoading] = useState(true);
   const [freshers, setFreshers] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
   useEffect(() => {
-    const fetchFreshers = async () => {
-      try {
-        const res = await fetch(`${API_URL}/support/admin/freshers`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) setFreshers(await res.json());
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const fetchFreshers = async (pageNum = 1, search = "") => {
+    if (!token) return;
+    if (pageNum === 1) setLoading(true);
+    else setLoadingMore(true);
+
+    try {
+      const res = await fetch(`${API_URL}/support/admin/freshers?page=${pageNum}&limit=20&search=${encodeURIComponent(search)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (pageNum === 1) {
+          setFreshers(json.data || []);
+        } else {
+          setFreshers(prev => [...prev, ...(json.data || [])]);
+        }
+        setHasMore(json.meta ? pageNum < json.meta.totalPages : false);
+        setPage(pageNum);
       }
-    };
-    if (token) fetchFreshers();
-  }, [token]);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchFreshers(1, debouncedSearch);
+  }, [token, debouncedSearch]);
+
+  const loadMore = () => {
+    if (!loadingMore && hasMore) {
+      fetchFreshers(page + 1, debouncedSearch);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
@@ -57,9 +87,12 @@ export default function FreshersScreen() {
         <ActivityIndicator size="large" color="#1A2B4A" style={{ marginTop: 40 }} />
       ) : (
         <FlatList
-          data={freshers.filter(f => f.full_name.toLowerCase().includes(searchQuery.toLowerCase()))}
+          data={freshers}
           keyExtractor={f => f.id}
           contentContainerStyle={styles.listContent}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={loadingMore ? <ActivityIndicator size="small" color="#1A2B4A" style={{ margin: 20 }} /> : null}
           renderItem={({ item }) => (
             <TouchableOpacity 
               style={styles.fresherCard} 
