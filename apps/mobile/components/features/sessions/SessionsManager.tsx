@@ -85,7 +85,8 @@ export default function SessionsManager({
     if (!authSession?.accessToken) return;
     try {
       const sep = endpoint.includes("?") ? "&" : "?";
-      const paginatedEndpoint = `${endpoint}${sep}page=${pageNum}&limit=20`;
+      const filterParam = activeFilter !== "all" ? `&filter=${activeFilter}` : "";
+      const paginatedEndpoint = `${endpoint}${sep}page=${pageNum}&limit=20${filterParam}`;
       
       const res = await apiRequest<{ data: Session[], meta: any }>(paginatedEndpoint, {
         headers: { Authorization: `Bearer ${authSession.accessToken}` },
@@ -116,7 +117,7 @@ export default function SessionsManager({
 
   useEffect(() => {
     fetchSessions(1);
-  }, [authSession?.accessToken, endpoint]);
+  }, [authSession?.accessToken, endpoint, activeFilter]);
 
   const onRefresh = () => {
     setRefreshing(true);
