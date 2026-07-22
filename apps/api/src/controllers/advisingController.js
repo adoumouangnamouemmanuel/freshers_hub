@@ -31,15 +31,14 @@ const getAdvisingDashboard = asyncHandler(async (req, res) => {
     // Get stats in a single query batch
     const statsQuery = `
       SELECT
-        (SELECT COUNT(*) FROM sessions WHERE unit_id = $1 AND provider_id = $2 AND status = 'scheduled' AND scheduled_at > NOW()) AS upcoming_sessions,
-        (SELECT COUNT(*) FROM sessions WHERE unit_id = $1 AND provider_id = $2 AND status = 'scheduled' AND scheduled_at <= NOW()) AS overdue_sessions,
-        (SELECT COUNT(*) FROM sessions WHERE unit_id = $1 AND provider_id = $2 AND status = 'completed') AS completed_sessions,
+        COUNT(CASE WHEN status = 'scheduled' AND scheduled_at > NOW() THEN 1 END) AS upcoming_sessions,
+        COUNT(CASE WHEN status = 'scheduled' AND scheduled_at <= NOW() THEN 1 END) AS overdue_sessions,
+        COUNT(CASE WHEN status = 'completed' THEN 1 END) AS completed_sessions,
         (SELECT COUNT(*) FROM users u JOIN user_roles ur ON u.id = ur.user_id JOIN roles r ON ur.role_id = r.id WHERE r.name = 'student' AND u.is_active = true) AS total_students_seen,
-        (SELECT COUNT(*) FROM sessions WHERE unit_id = $1 AND provider_id = $2 
-          AND scheduled_at >= date_trunc('week', NOW()) 
-          AND scheduled_at < date_trunc('week', NOW()) + interval '7 days') AS this_week_sessions,
-        (SELECT COUNT(*) FROM sessions WHERE unit_id = $1 AND provider_id = $2 
-          AND scheduled_at::date = CURRENT_DATE AND status = 'scheduled') AS today_sessions
+        COUNT(CASE WHEN scheduled_at >= date_trunc('week', NOW()) AND scheduled_at < date_trunc('week', NOW()) + interval '7 days' THEN 1 END) AS this_week_sessions,
+        COUNT(CASE WHEN scheduled_at::date = CURRENT_DATE AND status = 'scheduled' THEN 1 END) AS today_sessions
+      FROM sessions
+      WHERE unit_id = $1 AND provider_id = $2
     `;
     const { rows: [stats] } = await client.query(statsQuery, [unitId, advisorId]);
 
@@ -175,7 +174,7 @@ const advisorBookSession = asyncHandler(async (req, res) => {
       INSERT INTO sessions 
         (title, unit_id, academic_year_id, student_id, provider_id, with_type, scheduled_at, location, description, is_mandatory, status, created_by)
       VALUES 
-        ($1, $2, $3, $4, $5, NULL, $6, $7, $8, false, 'scheduled', $9)
+        ($1, $2, $3, $4, $5, 'advisor', $6, $7, $8, false, 'scheduled', $9)
       RETURNING *
     `, [finalTitle, unitId, academicYearId || 1, studentId, req.user.id, scheduledAt, location, description, req.user.id]);
 
