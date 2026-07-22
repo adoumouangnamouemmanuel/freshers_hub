@@ -243,11 +243,12 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
                 )}
                 <Text style={styles.label}>Title</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, !isOwner && { backgroundColor: '#E5E7EB', color: '#6B7280' }]}
                   value={editTitle}
                   onChangeText={setEditTitle}
                   placeholder="e.g. Initial Consultation"
                   placeholderTextColor="#9CA3AF"
+                  editable={isOwner}
                 />
 
                 <Text style={styles.label}>Location</Text>
@@ -260,11 +261,12 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
 
                 <Text style={styles.label}>Description / Notes</Text>
                 <TextInput 
-                  style={[styles.input, { height: 100, textAlignVertical: 'top' }]} 
+                  style={[styles.input, { height: 100, textAlignVertical: 'top' }, !isOwner && { backgroundColor: '#E5E7EB', color: '#6B7280' }]} 
                   value={editDescription} 
                   onChangeText={setEditDescription}
                   placeholder="Any additional notes..."
                   multiline
+                  editable={isOwner}
                 />
               </View>
             ) : isAssigning ? (
