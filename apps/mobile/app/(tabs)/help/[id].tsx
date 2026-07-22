@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Pressable,
   StyleSheet,
@@ -45,16 +46,17 @@ export default function OfficeDetailScreen() {
   const [showAllStaff, setShowAllStaff] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
   
-  const [office, setOffice] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  React.useEffect(() => {
-    if (!id) return;
-    apiRequest<{data: any}>(`/help/offices/${id}`)
-      .then(res => setOffice(res.data))
-      .catch(console.error)
-      .finally(() => setIsLoading(false));
-  }, [id]);
+  const { data: office, isLoading } = useQuery({
+    queryKey: ['offices', id],
+    queryFn: async () => {
+      if (!id) return null;
+      const res = await apiRequest<{data: any}>(`/help/offices/${id}`);
+      return res.data;
+    },
+    enabled: !!id,
+    // TODO: Review and potentially increase this staleTime duration (currently 24 hours)
+    staleTime: 1000 * 60 * 60 * 24, // 24 hours stale time for offices
+  });
 
   if (isLoading) {
     return (
