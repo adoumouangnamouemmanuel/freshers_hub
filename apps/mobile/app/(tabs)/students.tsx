@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { StyleSheet, Text, View, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, Platform, TextInput, FlatList } from "react-native";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import globalStyles from '../../styles';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -16,76 +17,81 @@ export default function StudentsScreen() {
   const token = session?.accessToken;
   const router = useRouter();
   
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [users, setUsers] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("all"); // 'all', 'freshers', 'coaches'
   const [searchQuery, setSearchQuery] = useState("");
-
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const isAdvisorUser = hasRole(session?.user?.roles || [], "advisor");
   const isCounsellorUser = hasRole(session?.user?.roles || [], "counsellor");
   const showClassYears = isAdvisorUser || isCounsellorUser;
 
-  const fetchDirectory = async (pageNum = 1, currentSearch = searchQuery, currentTab = activeTab) => {
-    try {
-      const endpoint = isCounsellorUser ? '/support/counselling/students' : (isAdvisorUser ? '/support/advising/students' : '/support/admin/students');
-      const url = `${API_URL}${endpoint}?page=${pageNum}&limit=20&search=${encodeURIComponent(currentSearch)}&tab=${encodeURIComponent(currentTab)}`;
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const responseData = await res.json();
-        const rawData = responseData.data || [];
-        
-        if (pageNum === 1) {
-          setUsers(rawData);
-        } else {
-          setUsers(prev => [...prev, ...rawData]);
-        }
-        
-        if (responseData.meta) {
-          setHasMore(pageNum < responseData.meta.totalPages);
-        } else {
-          setHasMore(rawData.length === 20);
-        }
-        setPage(pageNum);
-      }
-    } catch (err) {
-      console.error(err);
-      setHasMore(false);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-      setLoadingMore(false);
-    }
-  };
-
-  const handleLoadMore = () => {
-    if (hasMore && !loadingMore && !loading) {
-      setLoadingMore(true);
-      fetchDirectory(page + 1, searchQuery, activeTab);
-    }
-  };
-
   useEffect(() => {
-    if (!token) return;
     const delayDebounceFn = setTimeout(() => {
-      fetchDirectory(1, searchQuery, activeTab);
+      setDebouncedSearch(searchQuery);
     }, 300);
     return () => clearTimeout(delayDebounceFn);
-  }, [token, searchQuery, activeTab]);
+  }, [searchQuery]);
 
-  const filteredUsers = users; // Filtering is now handled on the backend
+  const endpoint = isCounsellorUser ? '/support/counselling/students' : (isAdvisorUser ? '/support/advising/students' : '/support/admin/students');
 
-  const currentYear = new Date().getFullYear();
-  // Generate the next 4 class years dynamically
-  const classYears = showClassYears 
-    ? [currentYear, currentYear + 1, currentYear + 2, currentYear + 3, currentYear + 4]
-    : [];
+  // TODO: Review and potentially increase this staleTime duration (currently 5 minutes)
+  const {
+    data,
+    isLoading: loading,
+    isFetchingNextPage: loadingMore,
+    hasNextPage: hasMore,
+    fetchNextPage,
+    refetch,
+    isRefetching
+  } = useInfiniteQuery({
+    queryKey: ['students', endpoint, activeTab, debouncedSearch],
+    queryFn: async ({ pageParam = 1 }) => {
+      const url = `${API_URL}${endpoint}?page=${pageParam}&limit=20&search=${encodeURIComponent(debouncedSearch)}&tab=${encodeURIComponent(activeTab)}`;
+      const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error("Failed to fetch students");
+      return res.json();
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, allPages) => {
+      if (lastPage.meta && allPages.length < lastPage.meta.totalPages) {
+        return allPages.length + 1;
+      }
+      if (!lastPage.meta && lastPage.data?.length === 20) {
+        return allPages.length + 1;
+      }
+      return undefined;
+    },
+    enabled: !!token,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
+
+  const handleLoadMore = () => {
+    if (hasMore && !loadingMore) {
+      fetchNextPage();
+    }
+  };
+
+  const refreshing = isRefetching && !loadingMore;
+  const filteredUsers = React.useMemo(() => data?.pages.flatMap(page => page.data || []) || [], [data]);
+
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear();
+  const currentMonth = currentDate.getMonth(); // 0-indexed, 5 is June, 8 is September
+  
+  let classYears: number[] = [];
+  if (showClassYears) {
+    if (currentMonth < 5) {
+      // Jan - May: 4 active classes
+      classYears = [currentYear, currentYear + 1, currentYear + 2, currentYear + 3];
+    } else if (currentMonth < 8) {
+      // TODO: Remove `currentYear + 4` before deploying.
+      // Jun - Aug: Seniors graduated, new Freshmen haven't arrived yet (temporarily adding Class of 2030 for testing)
+      classYears = [currentYear + 1, currentYear + 2, currentYear + 3, currentYear + 4];
+    } else {
+      // Sep - Dec: New Freshmen arrived
+      classYears = [currentYear + 1, currentYear + 2, currentYear + 3, currentYear + 4];
+    }
+  }
 
   if (loading) {
     return (
@@ -160,7 +166,7 @@ export default function StudentsScreen() {
         contentContainerStyle={styles.content}
         data={filteredUsers}
         keyExtractor={(item, index) => `${item.id}-${index}`}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchDirectory(1); }} tintColor="#1A2B4A" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { refetch(); }} tintColor="#1A2B4A" />}
         onEndReached={handleLoadMore}
         onEndReachedThreshold={0.5}
         ListEmptyComponent={
