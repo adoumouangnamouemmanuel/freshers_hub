@@ -86,6 +86,9 @@ app.use(
 );
 app.use(express.json());
 
+const path = require("path");
+app.use("/assets", express.static(path.join(__dirname, "public/assets")));
+
 app.get("/health", (req, res) => {
   res.json({ ok: true, service: "fresher-hub-api" });
 });
@@ -101,6 +104,7 @@ app.use("/search", searchRoutes);
 app.use("/locations", locationRoutes);
 app.use("/admin", adminRoutes);
 app.use("/home", homeRoutes);
+app.use("/help", require("./src/routes/helpRoutes"));
 app.use("/system", require("./src/routes/systemRoutes"));
 
 app.use((req, res) => {
