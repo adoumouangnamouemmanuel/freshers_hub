@@ -153,7 +153,7 @@ const bookSession = asyncHandler(async (req, res) => {
         category: "session",
         title: "New Session Booked",
         body: `A new ${typeStr} session "${finalTitle}" has been scheduled for ${new Date(scheduledAt).toLocaleString()}.`,
-        relatedEntity: { type: "session", id: rows[0].id }
+        relatedEntity: `session:${rows[0].id}`
       }).catch(err => console.error("Failed to send session booking notification:", err));
     }
 
@@ -201,7 +201,7 @@ const updateSessionStatus = asyncHandler(async (req, res) => {
         category: "session",
         title: "Session Status Updated",
         body: `Your session "${sessionData.title}" has been marked as ${status}.`,
-        relatedEntity: { type: "session", id: sessionData.id }
+        relatedEntity: `session:${sessionData.id}`
       }).catch(err => console.error("Failed to send session status notification:", err));
     }
 
@@ -243,7 +243,7 @@ const updateSession = asyncHandler(async (req, res) => {
         category: "session",
         title: "Session Details Updated",
         body: `Details for your session "${sessionData.title}" have been updated.`,
-        relatedEntity: { type: "session", id: sessionData.id }
+        relatedEntity: `session:${sessionData.id}`
       }).catch(err => console.error("Failed to send session details notification:", err));
     }
 
