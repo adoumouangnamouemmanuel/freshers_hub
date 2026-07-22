@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 20, fontWeight: "800", color: "#312E81" },
   placeholder: { width: 40 },
 
-  listContent: { padding: 20, gap: 16, paddingBottom: 100 },
+  listContent: { padding: 20, gap: 16 },
 
   reportCard: {
     backgroundColor: "#FFFFFF",
