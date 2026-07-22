@@ -9,6 +9,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Animated, { FadeIn, FadeInDown, SlideInDown } from "react-native-reanimated";
 import SessionDetailModal from "@/components/features/sessions/SessionDetailModal";
 import SendNotificationModal from "@/components/features/notifications/SendNotificationModal";
+import { useQuery } from "@tanstack/react-query";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -19,30 +20,23 @@ export default function UserProfileScreen() {
   const token = session?.accessToken;
   const insets = useSafeAreaInsets();
 
-  const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<any>(null);
   const [notifying, setNotifying] = useState(false);
   const [selectedSession, setSelectedSession] = useState<any>(null);
   const [expandedSessionId, setExpandedSessionId] = useState<string | null>(null);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
 
-  useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const res = await fetch(`${API_URL}/support/admin/users/${id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          setProfile(await res.json());
-        }
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (id && token) fetchProfile();
-  }, [id, token]);
+  const { data: profile, isLoading: loading } = useQuery({
+    queryKey: ['admin-user-profile', id],
+    queryFn: async () => {
+      const res = await fetch(`${API_URL}/support/admin/users/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error("Failed to fetch user");
+      return res.json();
+    },
+    enabled: !!id && !!token,
+    staleTime: 1000 * 60 * 5,
+  });
 
   const handleNotify = () => {
     setShowNotificationModal(true);
