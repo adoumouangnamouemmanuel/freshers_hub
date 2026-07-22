@@ -20,6 +20,7 @@ import {
   Settings,
   ChevronLeft,
   GraduationCapIcon,
+  Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
@@ -65,6 +66,7 @@ const navGroups = [
   {
     label: "System",
     items: [
+      { href: "/dashboard/system-health", label: "System Health", icon: Activity },
       { href: "/dashboard/notifications", label: "Notifications", icon: Bell },
       { href: "/dashboard/audit-log", label: "Audit Log", icon: FileText },
       { href: "/dashboard/settings", label: "Settings", icon: Settings },
