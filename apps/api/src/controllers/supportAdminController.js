@@ -273,9 +273,11 @@ const getAdminSessions = asyncHandler(async (req, res) => {
 const getAdminStudents = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
   const limit = parseInt(req.query.limit, 10) || 20;
+  const search = req.query.search || "";
+  const tab = req.query.tab || "all";
 
   try {
-    const data = await supportAdminRepository.getAdminStudents(page, limit);
+    const data = await supportAdminRepository.getAdminStudents(page, limit, search, tab);
     res.json(data);
   } catch (err) {
     throw new AppError("Internal server error", 500);
