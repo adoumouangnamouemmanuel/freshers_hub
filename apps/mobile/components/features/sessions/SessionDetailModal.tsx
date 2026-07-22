@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator, Modal, TextInput, Alert, Platform, KeyboardAvoidingView, Pressable } from "react-native";
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from "expo-router";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { apiRequest } from "@/lib/api";
@@ -20,6 +21,7 @@ type SessionDetailModalProps = {
 };
 
 export default function SessionDetailModal({ session, visible, onClose, onRefresh, currentUserId, accessToken, isCounsellorView, currentUserRoles = [] }: SessionDetailModalProps) {
+  const router = useRouter();
   const [isEditMode, setIsEditMode] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -174,15 +176,16 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
   if (!session) return null;
 
   const isParticipant = currentUserId ? (currentUserId === session.student_id || currentUserId === session.provider_id) : false;
+  const isProvider = currentUserId ? (currentUserId === session.provider_id) : false;
   const isOwner = currentUserId && session.created_by ? currentUserId === session.created_by : false;
 
-  const hasRole = (roleName: string) => currentUserRoles.some(r => r.name === roleName || r === roleName);
+  const hasRole = (roleName: string) => currentUserRoles.some(r => r?.name === roleName || r === roleName);
   const isCoachAdmin = hasRole('coach_admin');
   const isAdvisor = hasRole('advisor');
   const isCounsellor = hasRole('counsellor');
   const isPeerCoach = hasRole('peer_coach');
 
-  const canMarkComplete = isOwner || (isParticipant && (isCoachAdmin || isAdvisor || isCounsellor || isPeerCoach));
+  const canMarkComplete = isOwner || (isParticipant && (isCoachAdmin || isAdvisor || isCounsellor)) || (isProvider && isPeerCoach);
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -393,6 +396,19 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
                   >
                     <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />
                     <Text style={styles.modalBtnPrimaryText}>Mark Complete</Text>
+                  </TouchableOpacity>
+                )}
+
+                {session.status === 'completed' && !session.has_report && isParticipant && currentUserId === session.provider_id && (
+                  <TouchableOpacity 
+                    style={styles.modalBtnPrimary}
+                    onPress={() => {
+                      onClose();
+                      router.push(`/my-coaching/report?sessionId=${session.id}&fresherName=${encodeURIComponent(session.student_name || 'Fresher')}` as any);
+                    }}
+                  >
+                    <Ionicons name="document-text" size={20} color="#FFFFFF" />
+                    <Text style={styles.modalBtnPrimaryText}>Submit Report</Text>
                   </TouchableOpacity>
                 )}
                 
