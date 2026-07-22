@@ -291,6 +291,7 @@ export default function MyBookingsManager({ unitId, isCounsellorView }: Props) {
         currentUserId={session?.user?.id}
         accessToken={session?.accessToken}
         isCounsellorView={isCounsellorView}
+        currentUserRoles={session?.user?.roles}
       />
     </SafeAreaView>
   );
