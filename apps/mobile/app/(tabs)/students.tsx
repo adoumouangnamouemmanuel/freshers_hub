@@ -30,10 +30,11 @@ export default function StudentsScreen() {
   const isCounsellorUser = hasRole(session?.user?.roles || [], "counsellor");
   const showClassYears = isAdvisorUser || isCounsellorUser;
 
-  const fetchDirectory = async (pageNum = 1) => {
+  const fetchDirectory = async (pageNum = 1, currentSearch = searchQuery, currentTab = activeTab) => {
     try {
       const endpoint = isCounsellorUser ? '/support/counselling/students' : (isAdvisorUser ? '/support/advising/students' : '/support/admin/students');
-      const res = await fetch(`${API_URL}${endpoint}?page=${pageNum}&limit=20`, {
+      const url = `${API_URL}${endpoint}?page=${pageNum}&limit=20&search=${encodeURIComponent(currentSearch)}&tab=${encodeURIComponent(currentTab)}`;
+      const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -66,34 +67,24 @@ export default function StudentsScreen() {
   const handleLoadMore = () => {
     if (hasMore && !loadingMore && !loading) {
       setLoadingMore(true);
-      fetchDirectory(page + 1);
+      fetchDirectory(page + 1, searchQuery, activeTab);
     }
   };
 
   useEffect(() => {
-    if (token) fetchDirectory(1);
-  }, [token]);
+    if (!token) return;
+    const delayDebounceFn = setTimeout(() => {
+      fetchDirectory(1, searchQuery, activeTab);
+    }, 300);
+    return () => clearTimeout(delayDebounceFn);
+  }, [token, searchQuery, activeTab]);
 
-  const filteredUsers = users.filter((u: any) => {
-    let matchesTab = false;
-    if (showClassYears) {
-      matchesTab = activeTab === "all" || String(u.class_year) === activeTab;
-    } else {
-      matchesTab = 
-        activeTab === "all" || 
-        (activeTab === "freshers" && u.type === "student") || 
-        (activeTab === "coaches" && u.type === "peer_coach");
-    }
-    
-    const matchesSearch = u.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          u.major?.toLowerCase().includes(searchQuery.toLowerCase());
-                          
-    return matchesTab && matchesSearch;
-  });
+  const filteredUsers = users; // Filtering is now handled on the backend
 
-  // Extract unique class years for the advisor/counsellor tabs
+  const currentYear = new Date().getFullYear();
+  // Generate the next 4 class years dynamically
   const classYears = showClassYears 
-    ? Array.from(new Set(users.map((u: any) => u.class_year).filter(Boolean))).sort()
+    ? [currentYear, currentYear + 1, currentYear + 2, currentYear + 3, currentYear + 4]
     : [];
 
   if (loading) {
