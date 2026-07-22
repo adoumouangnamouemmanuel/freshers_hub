@@ -6,7 +6,8 @@ import {
   Pressable, 
   TextInput, 
   ScrollView,
-  ActivityIndicator 
+  ActivityIndicator,
+  Image
 } from "react-native"; 
 import globalStyles from '../styles';
 import { useRouter } from "expo-router";
@@ -14,20 +15,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useAuth } from "@/context/auth-context";
 import { apiRequest } from "@/lib/api";
-import { DIRECTORY } from "@/lib/mock-data";
 
 type Post = {
   id: string;
   title: string;
   content: string;
   category: string;
-  createdAt: string;
-  authorName: string;
-  authorId: string;
+  created_at: string;
+  author_name: string;
   eventId?: string;
-  eventDate?: string;
-  eventTime?: string;
-  eventLocation?: string;
 };
 
 type Group = {
@@ -44,6 +40,22 @@ type FAQ = {
   answer: string;
 };
 
+type Location = {
+  id: string;
+  name: string;
+  short_name: string;
+  category: string;
+  building: string;
+};
+
+type UserResult = {
+  id: string;
+  name: string;
+  avatar_url: string;
+  major: string;
+  roles: string[];
+};
+
 export default function SearchScreen() {
   const router = useRouter();
   const { session } = useAuth();
@@ -52,61 +64,43 @@ export default function SearchScreen() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [faqs, setFaqs] = useState<FAQ[]>([]);
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [users, setUsers] = useState<UserResult[]>([]);
   
-  const [isLoading, setIsLoading] = useState(false);
-  const [isFaqLoading, setIsFaqLoading] = useState(false);
-
-  useEffect(() => {
-    async function fetchInitialData() {
-      setIsLoading(true);
-      try {
-        const headers = session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : undefined;
-        const [postsRes, groupsRes] = await Promise.all([
-          apiRequest<{ posts: Post[] }>("/posts", { headers }),
-          apiRequest<{ groups: Group[] }>("/groups", { headers })
-        ]);
-        setPosts(postsRes.posts || []);
-        setGroups(groupsRes.groups || []);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    fetchInitialData();
-  }, []);
+  const [isSearching, setIsSearching] = useState(false);
 
   useEffect(() => {
     if (!searchQuery.trim()) {
+      setPosts([]);
+      setGroups([]);
       setFaqs([]);
+      setLocations([]);
+      setUsers([]);
+      setIsSearching(false);
       return;
     }
+
     const timeoutId = setTimeout(async () => {
-      setIsFaqLoading(true);
+      setIsSearching(true);
       try {
-        const data = await apiRequest<{results: FAQ[]}>(`/faqs/search?q=${encodeURIComponent(searchQuery.trim())}`);
-        setFaqs(data.results || []);
+        const headers = session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : undefined;
+        const data = await apiRequest<{ results: any }>(`/search?q=${encodeURIComponent(searchQuery.trim())}`, { headers });
+        setPosts(data.results.posts || []);
+        setGroups(data.results.groups || []);
+        setFaqs(data.results.faqs || []);
+        setLocations(data.results.locations || []);
+        setUsers(data.results.users || []);
       } catch (e) {
-        console.error(e);
+        console.error("Search error:", e);
       } finally {
-        setIsFaqLoading(false);
+        setIsSearching(false);
       }
-    }, 400);
+    }, 300); // 300ms debounce
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
-  const q = searchQuery.toLowerCase().trim();
-  
-  const filteredPosts = q ? posts.filter(p => p.title?.toLowerCase().includes(q) || p.content?.toLowerCase().includes(q)) : [];
-  const filteredGroups = q ? groups.filter(g => g.name?.toLowerCase().includes(q) || g.description?.toLowerCase().includes(q)) : [];
-  const filteredLocations = q ? DIRECTORY.filter(d => 
-    d.name?.toLowerCase().includes(q) || 
-    d.shortName?.toLowerCase().includes(q) || 
-    d.category?.toLowerCase().includes(q) ||
-    d.building?.toLowerCase().includes(q)
-  ) : [];
-
-  const hasResults = filteredPosts.length > 0 || filteredGroups.length > 0 || filteredLocations.length > 0 || faqs.length > 0;
+  const q = searchQuery.trim();
+  const hasResults = posts.length > 0 || groups.length > 0 || faqs.length > 0 || locations.length > 0 || users.length > 0;
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
@@ -133,15 +127,13 @@ export default function SearchScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {isLoading ? (
-          <ActivityIndicator size="large" color="#A93C40" style={{ marginTop: 40 }} />
-        ) : !q ? (
+        {!q ? (
           <View style={styles.emptyState}>
             <IconSymbol name="magnifyingglass" size={48} color="#E5E7EB" />
             <Text style={styles.emptyStateTitle}>Global Search</Text>
             <Text style={styles.emptyStateDesc}>Search across campus updates, map locations, clubs, and FAQs.</Text>
           </View>
-        ) : !hasResults && !isFaqLoading ? (
+        ) : !hasResults && !isSearching ? (
           <View style={styles.emptyState}>
             <Text style={styles.emptyStateTitle}>No results found</Text>
             <Text style={styles.emptyStateDesc}>We couldn&apos;t find anything matching &quot;{searchQuery}&quot;</Text>
@@ -149,10 +141,31 @@ export default function SearchScreen() {
         ) : (
           <View style={styles.resultsList}>
             
-            {filteredLocations.length > 0 && (
+            {users.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>People Directory</Text>
+                {users.slice(0, 3).map(user => (
+                  <Pressable key={user.id} style={styles.resultCard} onPress={() => router.push({ pathname: "/user/[id]", params: { id: user.id } } as any)}>
+                    <View style={styles.row}>
+                      <Image 
+                        source={{ uri: user.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(user.name)}&background=1A2B4A&color=fff` }} 
+                        style={styles.avatar} 
+                      />
+                      <View style={styles.flex1}>
+                        <Text style={styles.resultTitle}>{user.name}</Text>
+                        <Text style={styles.resultSub}>{user.roles.includes('student') ? user.major : user.roles.join(', ').replace('_', ' ')}</Text>
+                      </View>
+                      <IconSymbol name="chevron.right" size={16} color="#C4C8D0" />
+                    </View>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+
+            {locations.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Map Locations</Text>
-                {filteredLocations.slice(0, 3).map(loc => (
+                {locations.slice(0, 3).map(loc => (
                   <Pressable key={loc.id} style={styles.resultCard} onPress={() => router.push({ pathname: "/(tabs)/map", params: { focusId: loc.id } })}>
                     <View style={styles.row}>
                       <IconSymbol name="map.fill" size={20} color="#A93C40" />
@@ -167,16 +180,16 @@ export default function SearchScreen() {
               </View>
             )}
 
-            {filteredGroups.length > 0 && (
+            {groups.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Clubs & Societies</Text>
-                {filteredGroups.slice(0, 3).map(club => (
-                  <Pressable key={club.id} style={styles.resultCard} onPress={() => router.push("/(tabs)/clubs")}>
+                {groups.slice(0, 3).map(group => (
+                  <Pressable key={group.id} style={styles.resultCard} onPress={() => router.push("/(tabs)/clubs")}>
                     <View style={styles.row}>
                       <IconSymbol name="person.3.fill" size={20} color="#4338CA" />
                       <View style={styles.flex1}>
-                        <Text style={styles.resultTitle}>{club.name}</Text>
-                        <Text style={styles.resultSub}>{club.category} • Club</Text>
+                        <Text style={styles.resultTitle}>{group.name}</Text>
+                        <Text style={styles.resultSub}>{group.category} • Club</Text>
                       </View>
                       <IconSymbol name="chevron.right" size={16} color="#C4C8D0" />
                     </View>
@@ -198,10 +211,10 @@ export default function SearchScreen() {
               </View>
             )}
 
-            {filteredPosts.length > 0 && (
+            {posts.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Posts & Events</Text>
-                {filteredPosts.slice(0, 5).map(post => {
+                {posts.slice(0, 5).map(post => {
                   const isEvent = post.category?.toLowerCase() === "event" && post.eventId;
                   const isAlert = post.category?.toLowerCase() === "alert";
                   return (
@@ -218,7 +231,7 @@ export default function SearchScreen() {
                     >
                       <View style={styles.resultHeader}>
                         <Text style={[styles.resultCategory, isAlert && { color: "#DC2626" }]}>{post.category}</Text>
-                        <Text style={styles.resultDate}>{new Date(post.createdAt).toLocaleDateString()}</Text>
+                        <Text style={styles.resultDate}>{new Date(post.created_at).toLocaleDateString()}</Text>
                       </View>
                       <Text style={styles.resultTitle}>{post.title}</Text>
                       <Text style={styles.resultContent} numberOfLines={2}>{post.content}</Text>
@@ -228,7 +241,7 @@ export default function SearchScreen() {
               </View>
             )}
 
-            {isFaqLoading && (
+            {isSearching && (
               <ActivityIndicator size="small" color="#A93C40" />
             )}
 
@@ -269,10 +282,11 @@ const styles = StyleSheet.create({
   alertCard: { backgroundColor: "#FEF2F2", borderColor: "#FCA5A5" },
   row: { flexDirection: "row", alignItems: "center", gap: 12 },
   flex1: { flex: 1 },
+  avatar: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#E5E7EB" },
   resultHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 8 },
   resultCategory: { fontSize: 12, fontWeight: "700", color: "#A93C40", textTransform: "uppercase" },
   resultDate: { fontSize: 12, color: "#9BA3AE" },
   resultTitle: { fontSize: 16, fontWeight: "700", color: "#1A2B4A", marginBottom: 4 },
-  resultSub: { fontSize: 12, color: "#6B7280", fontWeight: "600", marginBottom: 4 },
+  resultSub: { fontSize: 12, color: "#6B7280", fontWeight: "600", marginBottom: 4, textTransform: "capitalize" },
   resultContent: { fontSize: 14, color: "#4B5563", lineHeight: 20 },
 });
