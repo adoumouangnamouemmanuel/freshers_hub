@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, Platform } from "react-native";
+import React, { useEffect, useState, useCallback } from "react";
+import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, Platform, TextInput } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../../context/auth-context";
@@ -19,23 +19,53 @@ export default function ReportsManager({ endpoint }: Props) {
 
   const [loading, setLoading] = useState(true);
   const [reports, setReports] = useState<any[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
 
-  const fetchReports = async () => {
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const fetchReports = async (pageNum = 1, search = "") => {
+    if (!token) return;
+    if (pageNum === 1) setLoading(true);
+    else setLoadingMore(true);
+
     try {
-      const res = await fetch(`${API_URL}${endpoint}`, {
+      const res = await fetch(`${API_URL}${endpoint}?page=${pageNum}&limit=20&search=${encodeURIComponent(search)}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) setReports(await res.json());
+      if (res.ok) {
+        const json = await res.json();
+        if (pageNum === 1) {
+          setReports(json.data || []);
+        } else {
+          setReports(prev => [...prev, ...(json.data || [])]);
+        }
+        setHasMore(json.meta ? pageNum < json.meta.totalPages : false);
+        setPage(pageNum);
+      }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
   useEffect(() => {
-    if (token) fetchReports();
-  }, [token, endpoint]);
+    fetchReports(1, debouncedSearch);
+  }, [token, endpoint, debouncedSearch]);
+
+  const loadMore = () => {
+    if (!loadingMore && hasMore) {
+      fetchReports(page + 1, debouncedSearch);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
@@ -47,6 +77,17 @@ export default function ReportsManager({ endpoint }: Props) {
         <View style={styles.placeholder} />
       </View>
 
+      <View style={styles.searchContainer}>
+        <IconSymbol name="magnifyingglass" size={20} color="#6B7280" />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search reports..."
+          placeholderTextColor="#6B7280"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
+
       {loading ? (
         <ActivityIndicator size="large" color="#4F46E5" style={{ marginTop: 40 }} />
       ) : (
@@ -54,6 +95,9 @@ export default function ReportsManager({ endpoint }: Props) {
           data={reports}
           keyExtractor={(r) => r.id}
           contentContainerStyle={styles.listContent}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={loadingMore ? <ActivityIndicator size="small" color="#4F46E5" style={{ margin: 20 }} /> : null}
           ListEmptyComponent={() => (
             <View style={styles.emptyBox}>
               <Ionicons name="document-text-outline" size={40} color="#D1D5DB" />
@@ -134,6 +178,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 12,
   },
+  searchContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#E5E7EB", marginHorizontal: 20, borderRadius: 12, paddingHorizontal: 16, height: 44, marginBottom: 12 },
+  searchInput: { flex: 1, marginLeft: 8, fontSize: 16, color: "#1A2B4A" },
   backBtn: {
     width: 40,
     height: 40,
