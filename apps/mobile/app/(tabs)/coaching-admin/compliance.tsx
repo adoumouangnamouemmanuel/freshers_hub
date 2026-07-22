@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 22, fontWeight: "800", color: "#1A2B4A" },
   placeholder: { width: 44 },
   
-  listContent: { padding: 20, gap: 16, paddingBottom: 150 },
+  listContent: { padding: 20, gap: 16 },
   card: { backgroundColor: "#FFFFFF", borderRadius: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.04, shadowRadius: 16, elevation: 3, padding: 16 },
   cardHeader: { flexDirection: "row", alignItems: "center" },
   avatarWrapper: { position: "relative", marginRight: 14 },
