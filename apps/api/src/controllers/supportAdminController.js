@@ -43,8 +43,11 @@ const getAdminDashboardStats = asyncHandler(async (req, res) => {
 // Get Peer Coaches
 const getAdminCoaches = asyncHandler(async (req, res) => {
   try {
-    const rows = await supportAdminRepository.getAdminCoaches();
-    res.json(rows);
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const search = req.query.search || "";
+    const result = await supportAdminRepository.getAdminCoaches(page, limit, search);
+    res.json(result);
   } catch (err) {
     throw new AppError("Server error", 500);
   }
@@ -53,8 +56,11 @@ const getAdminCoaches = asyncHandler(async (req, res) => {
 // Get Freshers
 const getAdminFreshers = asyncHandler(async (req, res) => {
   try {
-    const rows = await supportAdminRepository.getAdminFreshers();
-    res.json(rows);
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const search = req.query.search || "";
+    const result = await supportAdminRepository.getAdminFreshers(page, limit, search);
+    res.json(result);
   } catch (err) {
     throw new AppError("Server error", 500);
   }
@@ -104,8 +110,11 @@ const promoteToCoach = asyncHandler(async (req, res) => {
 // Get Announcements
 const getAnnouncements = asyncHandler(async (req, res) => {
   try {
-    const rows = await supportAdminRepository.getAnnouncements();
-    res.json(rows);
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const search = req.query.search || "";
+    const result = await supportAdminRepository.getAnnouncements(page, limit, search);
+    res.json(result);
   } catch (err) {
     throw new AppError("Server error", 500);
   }
@@ -161,8 +170,11 @@ const flagReport = asyncHandler(async (req, res) => {
 // Get Reports
 const getAdminReports = asyncHandler(async (req, res) => {
   try {
-    const rows = await supportAdminRepository.getAdminReports();
-    res.json(rows);
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const search = req.query.search || "";
+    const result = await supportAdminRepository.getAdminReports(page, limit, search);
+    res.json(result);
   } catch (err) {
     throw new AppError("Server error", 500);
   }
