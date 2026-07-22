@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, ActivityIndicator } from "react-native";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../context/auth-context";
 import { IconSymbol } from "../../components/ui/icon-symbol";
 
@@ -8,26 +9,18 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 export default function CounsellingScreen() {
   const { session } = useAuth();
   const token = session?.accessToken;
-  const [loading, setLoading] = useState(true);
-  const [sessions, setSessions] = useState<any[]>([]);
-
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const headers = { Authorization: `Bearer ${token}` };
-        const res = await fetch(`${API_URL}/support/sessions`, { headers });
-        if (res.ok) {
-          const data = await res.json();
-          setSessions(data.filter((s: any) => s.unit_id === 2)); // Assuming unit_id 2 is Counselling
-        }
-      } catch (err) {
-        console.error("Failed to fetch counselling sessions", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    if (token) fetchData();
-  }, [token]);
+  const { data: sessions = [], isLoading: loading } = useQuery({
+    queryKey: ['counselling-sessions'],
+    queryFn: async () => {
+      const headers = { Authorization: `Bearer ${token}` };
+      const res = await fetch(`${API_URL}/support/sessions`, { headers });
+      if (!res.ok) throw new Error("Failed to fetch counselling sessions");
+      const data = await res.json();
+      return data.filter((s: any) => s.unit_id === 2); // Assuming unit_id 2 is Counselling
+    },
+    enabled: !!token,
+    staleTime: 1000 * 60 * 5,
+  });
 
   if (loading) {
     return (
