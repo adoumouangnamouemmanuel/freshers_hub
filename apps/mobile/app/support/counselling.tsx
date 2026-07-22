@@ -4,19 +4,28 @@ import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../context/auth-context";
 import { IconSymbol } from "../../components/ui/icon-symbol";
 
+interface SupportSession {
+  id: string | number;
+  title?: string;
+  location?: string;
+  status: string;
+  scheduled_at: string;
+  unit_id?: number;
+}
+
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
 export default function CounsellingScreen() {
   const { session } = useAuth();
   const token = session?.accessToken;
-  const { data: sessions = [], isLoading: loading } = useQuery({
+  const { data: sessions = [], isLoading: loading } = useQuery<SupportSession[]>({
     queryKey: ['counselling-sessions'],
     queryFn: async () => {
       const headers = { Authorization: `Bearer ${token}` };
       const res = await fetch(`${API_URL}/support/sessions`, { headers });
       if (!res.ok) throw new Error("Failed to fetch counselling sessions");
       const data = await res.json();
-      return data.filter((s: any) => s.unit_id === 2); // Assuming unit_id 2 is Counselling
+      return data.filter((s: SupportSession) => s.unit_id === 2); // Assuming unit_id 2 is Counselling
     },
     enabled: !!token,
     staleTime: 1000 * 60 * 5,
