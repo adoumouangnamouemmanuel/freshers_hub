@@ -8,6 +8,7 @@ const router = express.Router();
 router.use(requireAuth);
 
 router.get("/sessions", supportController.getSessions);
+router.get("/sessions/:id", supportController.getSessionById);
 router.get("/my-sessions", supportController.getMySessions);
 router.post("/sessions", supportController.bookSession);
 router.put("/sessions/:id/status", supportController.updateSessionStatus);
