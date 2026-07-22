@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { 
   View, 
   Text, 
@@ -12,6 +12,7 @@ import {
 } from "react-native"; 
 import globalStyles from '../../styles';
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useAuth } from "@/context/auth-context";
@@ -35,23 +36,39 @@ export default function PostScreen() {
   const { session } = useAuth();
   const insets = useSafeAreaInsets();
   
-  const [post, setPost] = useState<Post | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [isDeleting, setIsDeleting] = useState(false);
 
-  useEffect(() => {
-    async function fetchPost() {
-      try {
-        const data = await apiRequest<{ post: Post }>(`/posts/${id}`);
-        setPost(data.post);
-      } catch (err) {
-        console.error("Failed to fetch post", err);
-      } finally {
-        setIsLoading(false);
-      }
+  const { data: post, isLoading } = useQuery({
+    queryKey: ['post', id],
+    queryFn: async () => {
+      const data = await apiRequest<{ post: Post }>(`/posts/${id}`);
+      return data.post;
+    },
+    enabled: !!id,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest(`/posts/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${session?.accessToken}`
+        }
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      router.replace("/");
+    },
+    onError: () => {
+      Alert.alert("Error", "Failed to delete post");
+    },
+    onSettled: () => {
+      setIsDeleting(false);
     }
-    fetchPost();
-  }, [id]);
+  });
 
   const handleDelete = () => {
     Alert.alert("Delete Post", "Are you sure you want to delete this post? This cannot be undone.", [
@@ -59,20 +76,9 @@ export default function PostScreen() {
       { 
         text: "Delete", 
         style: "destructive", 
-        onPress: async () => {
+        onPress: () => {
           setIsDeleting(true);
-          try {
-            await apiRequest(`/posts/${id}`, {
-              method: "DELETE",
-              headers: {
-                Authorization: `Bearer ${session?.accessToken}`
-              }
-            });
-            router.replace("/");
-          } catch (error) {
-            Alert.alert("Error", "Failed to delete post");
-            setIsDeleting(false);
-          }
+          deleteMutation.mutate();
         } 
       }
     ]);
