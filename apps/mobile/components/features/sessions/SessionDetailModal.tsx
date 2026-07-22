@@ -16,9 +16,10 @@ type SessionDetailModalProps = {
   currentUserId?: string;
   accessToken?: string;
   isCounsellorView?: boolean;
+  currentUserRoles?: any[];
 };
 
-export default function SessionDetailModal({ session, visible, onClose, onRefresh, currentUserId, accessToken, isCounsellorView }: SessionDetailModalProps) {
+export default function SessionDetailModal({ session, visible, onClose, onRefresh, currentUserId, accessToken, isCounsellorView, currentUserRoles = [] }: SessionDetailModalProps) {
   const [isEditMode, setIsEditMode] = useState(false);
   const [isAssigning, setIsAssigning] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -173,6 +174,15 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
   if (!session) return null;
 
   const isParticipant = currentUserId ? (currentUserId === session.student_id || currentUserId === session.provider_id) : false;
+  const isOwner = currentUserId && session.created_by ? currentUserId === session.created_by : false;
+
+  const hasRole = (roleName: string) => currentUserRoles.some(r => r.name === roleName || r === roleName);
+  const isCoachAdmin = hasRole('coach_admin');
+  const isAdvisor = hasRole('advisor');
+  const isCounsellor = hasRole('counsellor');
+  const isPeerCoach = hasRole('peer_coach');
+
+  const canMarkComplete = isOwner || (isParticipant && (isCoachAdmin || isAdvisor || isCounsellor || isPeerCoach));
 
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
@@ -375,7 +385,7 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
                   </View>
                 )}
 
-                {isParticipant && (session.status === 'scheduled' || session.status === 'overdue') && (
+                {canMarkComplete && (session.status === 'scheduled' || session.status === 'overdue') && (
                   <TouchableOpacity 
                     style={styles.modalBtnSuccess} 
                     onPress={() => handleUpdateStatus('completed')}
@@ -386,7 +396,7 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
                   </TouchableOpacity>
                 )}
                 
-                {isParticipant && (
+                {isOwner && (
                   <View style={styles.actionRow}>
                     <TouchableOpacity style={styles.modalBtnSecondary} onPress={() => setIsEditMode(true)}>
                       <Ionicons name="pencil" size={20} color="#4B5563" />
