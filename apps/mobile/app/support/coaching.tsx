@@ -3,6 +3,7 @@ import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, ScrollView
 import { useAuth } from "../../context/auth-context";
 import { IconSymbol } from "../../components/ui/icon-symbol";
 import { router } from "expo-router";
+import SessionDetailModal from "../../components/features/sessions/SessionDetailModal";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -13,6 +14,7 @@ export default function CoachingScreen() {
   const [loading, setLoading] = useState(true);
   const [coaches, setCoaches] = useState<any[]>([]);
   const [sessions, setSessions] = useState<any[]>([]);
+  const [selectedSession, setSelectedSession] = useState<any>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -108,7 +110,7 @@ export default function CoachingScreen() {
       <View style={styles.sessionsList}>
         {sessions.filter(s => s.status === 'scheduled').length > 0 ? (
           sessions.filter(s => s.status === 'scheduled').map((session) => (
-            <View key={session.id} style={styles.sessionCard}>
+            <TouchableOpacity key={session.id} style={styles.sessionCard} onPress={() => setSelectedSession(session)}>
               <View style={styles.sessionDateBadge}>
                 <Text style={styles.sessionDateBadgeMonth}>
                   {new Date(session.scheduled_at).toLocaleDateString(undefined, { month: 'short' }).toUpperCase()}
@@ -131,7 +133,7 @@ export default function CoachingScreen() {
                   <Text style={styles.sessionStatus}>SCHEDULED</Text>
                 </View>
               </View>
-            </View>
+            </TouchableOpacity>
           ))
         ) : (
           <View style={styles.noSessionsBox}>
@@ -140,6 +142,23 @@ export default function CoachingScreen() {
           </View>
         )}
       </View>
+      
+      <SessionDetailModal
+        session={selectedSession}
+        visible={!!selectedSession}
+        onClose={() => setSelectedSession(null)}
+        onRefresh={() => {
+          if (token) {
+            fetch(`${API_URL}/support/sessions`, { headers: { Authorization: `Bearer ${token}` } })
+              .then(res => res.json())
+              .then(data => setSessions(data))
+              .catch(err => console.error(err));
+          }
+        }}
+        currentUserId={session?.user?.id}
+        accessToken={session?.accessToken}
+        currentUserRoles={session?.user?.roles}
+      />
     </ScrollView>
   );
 }
