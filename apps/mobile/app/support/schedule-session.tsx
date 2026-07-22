@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { StyleSheet, Text, View, ScrollView, Pressable, TextInput, ActivityIndicator, Platform, Alert, Modal, TouchableOpacity, FlatList } from "react-native";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter, useLocalSearchParams, Stack } from "expo-router";
 import { useAuth } from "../../context/auth-context";
@@ -120,70 +120,11 @@ export default function ScheduleSessionScreen() {
     if (selectedDate) setDate(selectedDate);
   };
 
-  const handleSubmit = async () => {
-    if (!form.location) {
-      Alert.alert("Missing Fields", "Please enter a location or meeting link.");
-      return;
-    }
+  const queryClient = useQueryClient();
 
-    if (!form.targetUserId) {
-      Alert.alert("Missing User", "Please select a user to schedule with.");
-      return;
-    }
-
-    setLoading(true);
-    const scheduledAt = date.toISOString();
-
-    try {
-      const isAdvisorBooking = isAsAdvisor || isAdvisorRole;
-      const endpoint = isEditMode 
-        ? `/support/sessions/${sessionId}`
-        : isAdvisorBooking ? "/support/advising/sessions"
-        : isCounsellorRole && canPickUser ? "/support/counselling/sessions"
-        : isCoachAdmin ? "/support/admin/sessions" 
-        : "/support/sessions";
-      const method = isEditMode ? "PUT" : "POST";
-      
-      const payload = isEditMode ? {
-        title: form.title,
-        location: form.location,
-        description: form.description,
-        scheduledAt,
-      } : isAdvisorBooking ? {
-        title: form.title,
-        academicYearId: 1,
-        studentId: form.targetUserId,
-        scheduledAt,
-        location: form.location,
-        description: form.description,
-      } : isCounsellorRole && canPickUser ? {
-        title: form.title,
-        academicYearId: 1,
-        studentId: form.targetUserId,
-        scheduledAt,
-        location: form.location,
-        description: form.description,
-      } : isCoachAdmin || isAsCoach ? {
-        title: form.title,
-        unitId: effectiveUnitId,
-        academicYearId: 1,
-        studentId: form.targetUserId,
-        providerId: session?.user.id,
-        scheduledAt,
-        location: form.location,
-        description: form.description,
-        withType: "peer_coach"
-      } : {
-        title: form.title,
-        unitId: effectiveUnitId,
-        academicYearId: 1,
-        providerId: form.targetUserId, 
-        scheduledAt,
-        location: form.location,
-        description: form.description,
-        withType: (role === "University Counsellor") ? "counsellor" : (role === "Academic Advisor" ? "advisor" : "peer_coach")
-      };
-
+  const submitMutation = useMutation({
+    mutationFn: async (payloadData: { endpoint: string; method: string; payload: any }) => {
+      const { endpoint, method, payload } = payloadData;
       const res = await fetch(`${API_URL}${endpoint}`, {
         method,
         headers: {
@@ -193,18 +134,6 @@ export default function ScheduleSessionScreen() {
         body: JSON.stringify(payload)
       });
 
-      if (res.ok) {
-        Alert.alert("Success", isEditMode ? "Session updated successfully!" : "Session has been scheduled successfully!", [
-          { text: "OK", onPress: () => router.back() }
-        ]);
-      } else {
-        const errData = await res.json();
-        let errorMsg = errData.message || errData.error || (isEditMode ? "Failed to update session." : "Failed to schedule session.");
-        if (typeof errorMsg !== "string") {
-          errorMsg = JSON.stringify(errorMsg);
-        }
-        Alert.alert("Error", errorMsg);
-      }
     } catch (err) {
       console.error(err);
       Alert.alert("Error", "A network error occurred.");
