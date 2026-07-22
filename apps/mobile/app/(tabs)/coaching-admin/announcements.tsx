@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform } from "react-native";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../../context/auth-context";
@@ -12,90 +13,88 @@ export default function AnnouncementsScreen() {
   const token = session?.accessToken;
   const router = useRouter();
   
-  const [loading, setLoading] = useState(true);
-  const [announcements, setAnnouncements] = useState<any[]>([]);
+  const queryClient = useQueryClient();
   const [isCreating, setIsCreating] = useState(false);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
   
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [audience, setAudience] = useState("coaching_unit");
 
-  const fetchAnnouncements = async (pageNum = 1) => {
-    if (!token) return;
-    if (pageNum === 1) setLoading(true);
-    else setLoadingMore(true);
-
-    try {
-      const res = await fetch(`${API_URL}/support/admin/announcements?page=${pageNum}&limit=20`, {
+  const {
+    data,
+    isLoading: loading,
+    isFetchingNextPage: loadingMore,
+    hasNextPage: hasMore,
+    fetchNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['admin-announcements'],
+    initialPageParam: 1,
+    queryFn: async ({ pageParam = 1 }) => {
+      const res = await fetch(`${API_URL}/support/admin/announcements?page=${pageParam}&limit=20`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (res.ok) {
-        const json = await res.json();
-        if (pageNum === 1) {
-          setAnnouncements(json.data || []);
-        } else {
-          setAnnouncements(prev => [...prev, ...(json.data || [])]);
-        }
-        setHasMore(json.meta ? pageNum < json.meta.totalPages : false);
-        setPage(pageNum);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-      setLoadingMore(false);
-    }
-  };
+      if (!res.ok) throw new Error("Failed to fetch announcements");
+      return res.json();
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      if (!lastPage.meta) return undefined;
+      return allPages.length < lastPage.meta.totalPages ? allPages.length + 1 : undefined;
+    },
+    enabled: !!token,
+    staleTime: 1000 * 60 * 5,
+  });
 
-  useEffect(() => {
-    fetchAnnouncements(1);
-  }, [token]);
+  const announcements = data?.pages.flatMap(page => page.data || []) || [];
 
   const loadMore = () => {
     if (!loadingMore && hasMore && !isCreating) {
-      fetchAnnouncements(page + 1);
+      fetchNextPage();
     }
   };
 
-  const postAnnouncement = async () => {
-    if (!title || !content) return Alert.alert("Error", "Title and content required");
-    
-    try {
+  const createMutation = useMutation({
+    mutationFn: async () => {
       const res = await fetch(`${API_URL}/support/admin/announcements`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ targetAudience: audience, title, content })
       });
-      if (res.ok) {
-        setIsCreating(false);
-        setTitle("");
-        setContent("");
-        fetchAnnouncements(1);
-      }
-    } catch (err) {
-      console.error(err);
-    }
+      if (!res.ok) throw new Error("Failed to create announcement");
+      return res.json();
+    },
+    onSuccess: () => {
+      setIsCreating(false);
+      setTitle("");
+      setContent("");
+      queryClient.invalidateQueries({ queryKey: ['admin-announcements'] });
+    },
+    onError: (err) => console.error(err),
+  });
+
+  const postAnnouncement = () => {
+    if (!title || !content) return Alert.alert("Error", "Title and content required");
+    createMutation.mutate();
   };
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`${API_URL}/support/admin/announcements/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error("Failed to delete announcement");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin-announcements'] });
+    },
+    onError: (err) => console.error(err),
+  });
 
   const deleteAnnouncement = (id: string) => {
     Alert.alert("Delete Announcement", "Are you sure you want to delete this?", [
       { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: async () => {
-        try {
-          const res = await fetch(`${API_URL}/support/admin/announcements/${id}`, {
-            method: "DELETE",
-            headers: { Authorization: `Bearer ${token}` }
-          });
-          if (res.ok) {
-            fetchAnnouncements(1);
-          }
-        } catch (err) {
-          console.error(err);
-        }
-      }}
+      { text: "Delete", style: "destructive", onPress: () => deleteMutation.mutate(id) }
     ]);
   };
 
