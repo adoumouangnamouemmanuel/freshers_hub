@@ -5,6 +5,7 @@ import React, { useEffect, useState } from "react";
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { useAuth } from "@/context/auth-context";
 import { apiRequest } from "@/lib/api";
+import SessionDetailModal from "@/components/features/sessions/SessionDetailModal";
 
 export default function FresherDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -13,6 +14,7 @@ export default function FresherDetailsScreen() {
   
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedSession, setSelectedSession] = useState<any>(null);
   
   const [fresher, setFresher] = useState<any>(null);
   const [sessions, setSessions] = useState<any[]>([]);
@@ -136,7 +138,7 @@ export default function FresherDetailsScreen() {
         <View style={styles.historyList}>
           {sessions.length > 0 ? (
             sessions.map(session => (
-              <View key={session.id} style={styles.sessionCard}>
+              <TouchableOpacity key={session.id} style={styles.sessionCard} onPress={() => setSelectedSession(session)}>
                 <View style={styles.sessionTop}>
                   <View style={styles.sessionDateBox}>
                     <Text style={styles.sessionMonth}>{new Date(session.date).toLocaleString('default', { month: 'short' }).toUpperCase()}</Text>
@@ -176,7 +178,7 @@ export default function FresherDetailsScreen() {
                     <Text style={styles.reportSubmittedText}>Report Submitted</Text>
                   </View>
                 )}
-              </View>
+              </TouchableOpacity>
             ))
           ) : (
             <View style={styles.emptyCard}>
@@ -185,6 +187,16 @@ export default function FresherDetailsScreen() {
           )}
         </View>
       </ScrollView>
+
+      <SessionDetailModal
+        session={selectedSession}
+        visible={!!selectedSession}
+        onClose={() => setSelectedSession(null)}
+        onRefresh={fetchDetails}
+        currentUserId={session?.user?.id}
+        accessToken={session?.accessToken}
+        currentUserRoles={session?.user?.roles}
+      />
     </View>
   );
 }
