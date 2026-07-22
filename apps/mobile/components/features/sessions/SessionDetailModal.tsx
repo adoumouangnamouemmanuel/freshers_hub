@@ -47,13 +47,14 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
   }, [session]);
 
   useEffect(() => {
-    if (isCounsellorView && visible) {
+    const isStrictCounsellor = currentUserRoles.some(r => r?.name === 'counsellor' || r === 'counsellor');
+    if (isStrictCounsellor && visible) {
       // Fetch peer counsellors
       apiRequest<any[]>('/support/counselling/peer-counsellors', {
         headers: { Authorization: `Bearer ${accessToken}` }
       }).then(res => setPeerCounsellors(res || [])).catch(console.error);
     }
-  }, [isCounsellorView, visible]);
+  }, [currentUserRoles, visible]);
 
   const onDateChange = (event: any, selectedDate?: Date) => {
     setShowDatePicker(Platform.OS === 'ios');
@@ -372,7 +373,7 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
               </View>
             ) : (
               <>
-                {isCounsellorView && session.status === 'scheduled' && (
+                {isCounsellor && session.status === 'scheduled' && (
                   <View style={{ marginBottom: 16, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: '#E5E7EB' }}>
                     <TouchableOpacity 
                       style={{ backgroundColor: '#4F46E5', flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 8, paddingVertical: 16, borderRadius: 12 }} 
