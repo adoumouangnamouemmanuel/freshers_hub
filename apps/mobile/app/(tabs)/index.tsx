@@ -8,7 +8,9 @@ import {
   ActivityIndicator,
   RefreshControl,
   Image,
-  StyleSheet
+  StyleSheet,
+  FlatList,
+  TextInput
 } from "react-native"; 
 import globalStyles from '../../styles';
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -71,6 +73,11 @@ export default function FeedScreen() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   // New DB States
   const [assignedCoaches, setAssignedCoaches] = useState<CoachAssignment[]>([]);
@@ -104,51 +111,81 @@ export default function FeedScreen() {
   
   const isContinuingStudent = !isFresher && !isStaff && !isCoachAdmin && !isAdmin && !isPeerCoach && !isPeerCounsellor && !isClubLead && !isAdvisor && !isCounsellor && !isStudentLeader;
 
-  const fetchData = async () => {
-    if (!session?.accessToken) return;
-    const headers = { Authorization: `Bearer ${session.accessToken}` };
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
+  const fetchDashboardStats = async () => {
+    if (!session?.accessToken) return;
     try {
+      const headers = { Authorization: `Bearer ${session.accessToken}` };
       const data = await apiRequest<any>("/home/dashboard", { headers });
       if (!data) return;
 
-      setPosts(data.posts || []);
       setUnreadCount(data.unreadCount || 0);
-
-      if (data.groups) {
-        setMyGroups(data.groups);
-      }
-
+      if (data.groups) setMyGroups(data.groups);
       if (data.fresherData) {
         setAssignedCoaches(data.fresherData.assignedCoaches || []);
         setAssignedBuddy(data.fresherData.assignedBuddy || null);
       }
-
-      if (data.coachData) {
-        setAssignedFreshers(data.coachData.assignedFreshers || []);
-      }
-
+      if (data.coachData) setAssignedFreshers(data.coachData.assignedFreshers || []);
       if (data.sessions) {
         setUpcomingSessions(data.sessions.upcoming || []);
         setOverdueSessions(data.sessions.overdue || []);
       }
-
-      if (data.adminStats) {
-        setAdminStats(data.adminStats);
-      }
-
-      if (data.advisingStats) {
-        setAdvisingData(data.advisingStats);
-      }
-
-      if (data.counsellingStats) {
-        setCounsellingData(data.counsellingStats);
-      }
-
+      if (data.adminStats) setAdminStats(data.adminStats);
+      if (data.advisingStats) setAdvisingData(data.advisingStats);
+      if (data.counsellingStats) setCounsellingData(data.counsellingStats);
     } catch (err) {
-      console.error("Failed to fetch dashboard data:", err);
+      console.error("Failed to fetch dashboard stats:", err);
+    }
+  };
+
+  const fetchPosts = async (pageNum = 1, reset = false) => {
+    if (!session?.accessToken) return;
+    if (pageNum === 1) setIsLoading(true);
+    else setIsLoadingMore(true);
+
+    try {
+      let url = `/posts?page=${pageNum}&limit=15`;
+      if (debouncedSearchQuery) url += `&q=${encodeURIComponent(debouncedSearchQuery)}`;
+      if (activeCategory !== "All") url += `&category=${encodeURIComponent(activeCategory)}`;
+
+      const headers = { Authorization: `Bearer ${session.accessToken}` };
+      const res = await apiRequest<{ data: Post[]; meta: { totalPages: number } }>(url, { headers });
+
+      if (res?.data) {
+        if (reset) {
+          setPosts(res.data);
+        } else {
+          setPosts(prev => {
+            const newPosts = res.data.filter(p => !prev.find(existing => existing.id === p.id));
+            return [...prev, ...newPosts];
+          });
+        }
+        setHasMore(pageNum < (res.meta?.totalPages || 1));
+        setPage(pageNum);
+      }
+    } catch (err) {
+      console.error("Failed to fetch posts:", err);
     } finally {
       setIsLoading(false);
+      setIsLoadingMore(false);
+    }
+  };
+
+  const fetchData = async () => {
+    await fetchDashboardStats();
+    await fetchPosts(1, true);
+  };
+
+  const handleLoadMore = () => {
+    if (!isLoadingMore && hasMore) {
+      fetchPosts(page + 1);
     }
   };
 
@@ -178,10 +215,12 @@ export default function FeedScreen() {
   const categories = ["All", "Announcement", "Event", "Alert"];
   const [activeCategory, setActiveCategory] = useState("All");
 
-  const filteredPosts = posts.filter(p => {
-    if (activeCategory !== "All" && p.category?.toLowerCase() !== activeCategory.toLowerCase()) return false;
-    return true;
-  });
+  // Re-fetch posts on search/category change
+  useEffect(() => {
+    if (!session?.accessToken) return;
+    setHasMore(true);
+    fetchPosts(1, true);
+  }, [debouncedSearchQuery, activeCategory]);
 
   const nextSession = upcomingSessions.length > 0 ? upcomingSessions[0] : null;
   const myLedClubs = myGroups.filter(g => g.isLeader);
@@ -189,12 +228,17 @@ export default function FeedScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
       <StatusBar style="dark" />
-      <ScrollView
-        style={styles.scroll}
+      <FlatList
+        data={posts}
+        keyExtractor={item => item.id}
+        renderItem={({ item }) => <PostCard post={item} onUpdate={fetchData} />}
         contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom + 20, 100) }]}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#A93C40" />}
-      >
+        onEndReached={handleLoadMore}
+        onEndReachedThreshold={0.5}
+        ListHeaderComponent={
+          <>
         {/* Dynamic Personal Greeting Header */}
         <View style={styles.personalHeader}>
           <View style={styles.greetingRow}>
@@ -527,6 +571,19 @@ export default function FeedScreen() {
         <View style={styles.feedSection}>
           <Text style={styles.feedTitle}>Campus Updates</Text>
           
+          <View style={styles.searchContainer}>
+            <IconSymbol name="magnifyingglass" size={20} color="#6B7280" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Search posts..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholderTextColor="#9CA3AF"
+              autoCapitalize="none"
+              returnKeyType="search"
+            />
+          </View>
+
           <View style={styles.categoryScrollContainer}>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScrollContent}>
               {categories.map(cat => (
@@ -541,28 +598,30 @@ export default function FeedScreen() {
             </ScrollView>
           </View>
 
-          {isLoading ? (
+          {isLoading && (
             <ActivityIndicator size="large" color="#A93C40" style={{ marginTop: 24 }} />
-          ) : filteredPosts.length === 0 ? (
+          )}
+          
+          {!isLoading && posts.length === 0 && (
             <View style={styles.emptyFeedCard}>
               <View style={styles.emptyFeedIcon}>
                 <IconSymbol name="newspaper.fill" size={28} color="#9BA3AE" />
               </View>
-              <Text style={styles.emptyFeedTitle}>You&apos;re all caught up!</Text>
+              <Text style={styles.emptyFeedTitle}>No posts found</Text>
               <Text style={styles.emptyFeedDesc}>
-                Announcements and events will appear here.
+                Try adjusting your search or filters.
               </Text>
-            </View>
-          ) : (
-            <View style={styles.postsList}>
-              {filteredPosts.map((post) => (
-                <PostCard key={post.id} post={post} onUpdate={fetchData} />
-              ))}
             </View>
           )}
         </View>
-
-      </ScrollView>
+        </>
+        }
+        ListFooterComponent={
+          isLoadingMore ? (
+            <ActivityIndicator size="small" color="#A93C40" style={{ marginVertical: 20 }} />
+          ) : null
+        }
+      />
     </SafeAreaView>
   );
 }
@@ -1103,11 +1162,29 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   feedTitle: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#1A2B4A",
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 16,
     paddingHorizontal: 20,
-    letterSpacing: -0.5,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 20,
+    marginBottom: 16,
+    paddingHorizontal: 12,
+    height: 44,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+    fontSize: 16,
+    color: '#111827',
   },
   categoryScrollContainer: {
     marginBottom: 12,
