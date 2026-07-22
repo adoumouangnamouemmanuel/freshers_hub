@@ -30,12 +30,25 @@ export default function SettingsScreen() {
     AsyncStorage.getItem("@dark_mode").then((val) => {
       if (val !== null) setDarkMode(val === "true");
     });
-    AsyncStorage.getItem("@notifs_events").then((val) => {
-      if (val !== null) setEventNotifs(val === "true");
-    });
-    AsyncStorage.getItem("@notifs_clubs").then((val) => {
-      if (val !== null) setClubNotifs(val === "true");
-    });
+    
+    // Fetch settings from API
+    const fetchSettings = async () => {
+      if (!session?.accessToken) return;
+      try {
+        const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
+        const res = await fetch(`${API_URL}/notifications/settings`, {
+          headers: { Authorization: `Bearer ${session.accessToken}` }
+        });
+        const data = await res.json();
+        if (data.success && data.settings) {
+          setEventNotifs(data.settings.event !== false); // default true
+          setClubNotifs(data.settings.club !== false); // default true
+        }
+      } catch (err) {
+        console.error("Failed to fetch settings", err);
+      }
+    };
+    fetchSettings();
     
     // Check biometric availability
     const checkBiometric = async () => {
@@ -49,19 +62,38 @@ export default function SettingsScreen() {
       }
     };
     checkBiometric();
-  }, []);
+  }, [session?.accessToken]);
 
   const toggleDarkMode = async (val: boolean) => {
     setDarkMode(val);
     await AsyncStorage.setItem("@dark_mode", String(val));
   };
+  
+  const updateBackendSettings = async (updates: any) => {
+    if (!session?.accessToken) return;
+    try {
+      const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
+      await fetch(`${API_URL}/notifications/settings`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${session.accessToken}`
+        },
+        body: JSON.stringify({ settings: updates })
+      });
+    } catch (err) {
+      console.error("Failed to update settings", err);
+    }
+  };
+
   const toggleEventNotifs = async (val: boolean) => {
     setEventNotifs(val);
-    await AsyncStorage.setItem("@notifs_events", String(val));
+    await updateBackendSettings({ event: val, event_push: val });
   };
+  
   const toggleClubNotifs = async (val: boolean) => {
     setClubNotifs(val);
-    await AsyncStorage.setItem("@notifs_clubs", String(val));
+    await updateBackendSettings({ club: val, club_push: val });
   };
 
   const toggleBiometric = async (val: boolean) => {
