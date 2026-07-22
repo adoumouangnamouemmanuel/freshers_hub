@@ -405,11 +405,11 @@ class SupportAdminRepository {
 
     const { rows } = await pool.query(`
       INSERT INTO sessions 
-        (title, unit_id, academic_year_id, student_id, provider_id, with_type, scheduled_at, location, description, is_mandatory, status)
+        (title, unit_id, academic_year_id, student_id, provider_id, with_type, scheduled_at, location, description, is_mandatory, status, created_by)
       VALUES 
-        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'scheduled')
+        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'scheduled', $11)
       RETURNING *
-    `, [finalTitle, unitId, academicYearId, studentId, providerId, withType || 'peer_coach', scheduledAt, location, description, isMandatory || false]);
+    `, [finalTitle, unitId, academicYearId, studentId, providerId, withType || 'peer_coach', scheduledAt, location, description, isMandatory || false, bookedById]);
     return rows[0];
   }
 }
