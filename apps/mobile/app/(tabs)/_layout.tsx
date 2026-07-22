@@ -2,8 +2,8 @@ import { Tabs, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Modal, Pressable, View, Text, StyleSheet } from 'react-native';
+import * as Haptics from 'expo-haptics';
 
-import { HapticTab } from '@/components/haptic-tab';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { useAuth } from '@/context/auth-context';
 import { isClubLead, isCoachAdmin, isCoach, isAdvisor, isCounsellor } from '@/lib/permissions';
@@ -33,6 +33,13 @@ export default function TabLayout() {
   return (
     <>
     <Tabs
+      screenListeners={{
+        tabPress: () => {
+          if (process.env.EXPO_OS === 'ios') {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          }
+        },
+      }}
       screenOptions={{
         tabBarActiveTintColor: ACTIVE_TINT,
         tabBarInactiveTintColor: INACTIVE_TINT,
@@ -59,7 +66,6 @@ export default function TabLayout() {
           marginTop: 2,
         },
         headerShown: false,
-        tabBarButton: HapticTab,
       }}>
       <Tabs.Screen
         name="index"
@@ -137,14 +143,17 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => (
             <IconSymbol size={26} name="briefcase.fill" color={color} />
           ),
-          tabBarButton: showMyRoles 
-            ? (props) => (
-                <Pressable 
-                  {...(props as any)} 
-                  onPress={() => setRolesModalVisible(true)} 
-                />
-              )
-            : () => null,
+          ...(showMyRoles 
+            ? {
+                tabBarButton: (props) => (
+                  <Pressable 
+                    {...(props as any)} 
+                    onPress={() => setRolesModalVisible(true)} 
+                  />
+                )
+              }
+            : { href: null }
+          ),
         }}
       />
       <Tabs.Screen
