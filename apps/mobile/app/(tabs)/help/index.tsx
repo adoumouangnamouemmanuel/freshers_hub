@@ -15,8 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { MOCK_OFFICES } from "@/lib/mock-data";
-import { apiRequest } from "@/lib/api";
+import { apiRequest, API_URL } from "@/lib/api";
 
 type FAQ = {
   id: string;
@@ -32,7 +31,7 @@ function FeaturedCard({
   office,
   onPress,
 }: {
-  office: typeof MOCK_OFFICES[keyof typeof MOCK_OFFICES];
+  office: any;
   onPress: () => void;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
@@ -44,7 +43,7 @@ function FeaturedCard({
     <Pressable onPress={onPress} onPressIn={handlePressIn} onPressOut={handlePressOut}>
       <Animated.View style={[styles.featuredCard, { transform: [{ scale }] }]}>
         <ImageBackground
-          source={office.heroImage}
+          source={office.hero_image ? { uri: API_URL + office.hero_image } : undefined}
           style={styles.featuredImageBg}
           imageStyle={{ borderRadius: 24 }}
         >
@@ -54,7 +53,7 @@ function FeaturedCard({
               <IconSymbol name={office.icon as any} size={24} color="#FFF" />
             </View>
             <View>
-              <Text style={styles.featuredTitle}>{office.shortName}</Text>
+              <Text style={styles.featuredTitle}>{office.short_name}</Text>
               <Text style={styles.featuredDesc} numberOfLines={1}>
                 {office.name}
               </Text>
@@ -70,7 +69,7 @@ function ListCard({
   office,
   onPress,
 }: {
-  office: typeof MOCK_OFFICES[keyof typeof MOCK_OFFICES];
+  office: any;
   onPress: () => void;
 }) {
   const scale = useRef(new Animated.Value(1)).current;
@@ -85,7 +84,7 @@ function ListCard({
           <IconSymbol name={office.icon as any} size={24} color={PRIMARY_COLOR} />
         </View>
         <View style={styles.listInfo}>
-          <Text style={styles.listTitle}>{office.shortName}</Text>
+          <Text style={styles.listTitle}>{office.short_name}</Text>
           <Text style={styles.listDesc} numberOfLines={1}>
             {office.location}
           </Text>
@@ -103,8 +102,24 @@ export default function HelpScreen() {
   const [results, setResults] = useState<FAQ[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   
-  const featuredOffices = [MOCK_OFFICES.health, MOCK_OFFICES.it, MOCK_OFFICES.career];
-  const allOffices = Object.values(MOCK_OFFICES);
+  const [allOffices, setAllOffices] = useState<any[]>([]);
+  const [featuredOffices, setFeaturedOffices] = useState<any[]>([]);
+  const [isLoadingOffices, setIsLoadingOffices] = useState(true);
+
+  useEffect(() => {
+    apiRequest<{data: any[]}>("/help/offices")
+      .then(res => {
+        setAllOffices(res.data);
+        // Fallback featuring logic based on icons we know are featured
+        setFeaturedOffices(res.data.filter(o => 
+          o.icon === "cross.case.fill" || 
+          o.icon === "questionmark.circle.fill" || 
+          o.icon === "briefcase.fill"
+        ));
+      })
+      .catch(console.error)
+      .finally(() => setIsLoadingOffices(false));
+  }, []);
 
   useEffect(() => {
     if (!query.trim()) {
@@ -115,8 +130,8 @@ export default function HelpScreen() {
     const timeoutId = setTimeout(async () => {
       setIsLoading(true);
       try {
-        const data = await apiRequest<{results: FAQ[]}>(`/faqs/search?q=${encodeURIComponent(query.trim())}`);
-        setResults(data.results);
+        const res = await apiRequest<{data: FAQ[]}>(`/faqs/search?q=${encodeURIComponent(query.trim())}`);
+        setResults(res.data || []);
       } catch (e) {
         console.error("Search failed:", e);
         setResults([]);
@@ -187,26 +202,34 @@ export default function HelpScreen() {
                 snapToInterval={280 + 16}
                 decelerationRate="fast"
               >
-                {featuredOffices.map((office) => (
-                  <FeaturedCard
-                    key={office.id}
-                    office={office}
-                    onPress={() => router.push({ pathname: "/(tabs)/help/[id]", params: { id: office.id } })}
-                  />
-                ))}
+                {isLoadingOffices ? (
+                  <ActivityIndicator size="small" color={PRIMARY_COLOR} />
+                ) : (
+                  featuredOffices.map((office) => (
+                    <FeaturedCard
+                      key={office.id}
+                      office={office}
+                      onPress={() => router.push({ pathname: "/(tabs)/help/[id]", params: { id: office.id } })}
+                    />
+                  ))
+                )}
               </ScrollView>
             </View>
 
             <View style={[styles.section, { paddingHorizontal: 20, marginTop: 12 }]}>
               <Text style={styles.sectionTitle}>All Departments</Text>
               <View style={styles.listContainer}>
-                {allOffices.map((office) => (
-                  <ListCard
-                    key={office.id}
-                    office={office}
-                    onPress={() => router.push({ pathname: "/(tabs)/help/[id]", params: { id: office.id } })}
-                  />
-                ))}
+                {isLoadingOffices ? (
+                  <ActivityIndicator size="small" color={PRIMARY_COLOR} />
+                ) : (
+                  allOffices.map((office) => (
+                    <ListCard
+                      key={office.id}
+                      office={office}
+                      onPress={() => router.push({ pathname: "/(tabs)/help/[id]", params: { id: office.id } })}
+                    />
+                  ))
+                )}
               </View>
             </View>
           </>
