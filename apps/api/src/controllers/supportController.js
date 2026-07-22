@@ -1,6 +1,7 @@
 const AppError = require("../utils/AppError");
 const asyncHandler = require("../utils/asyncHandler");
 const { pool } = require("../services/db");
+const notificationService = require("../services/notificationService");
 
 // Get all sessions (filtered automatically by RLS)
 const getSessions = asyncHandler(async (req, res) => {
@@ -141,6 +142,21 @@ const bookSession = asyncHandler(async (req, res) => {
     `, [finalTitle, unitId, academicYearId, finalStudentId, finalProviderId, withType, scheduledAt, location, description, isMandatory || false]);
 
     await client.query("COMMIT");
+
+    // Send notification
+    const notifyUserId = finalStudentId === req.user.id ? finalProviderId : finalStudentId;
+    if (notifyUserId) {
+      const typeStr = withType === "counsellor" ? "Counselling" : withType === "advisor" ? "Advising" : "Coaching";
+      await notificationService.sendNotification({
+        fromUserId: req.user.id,
+        toUserId: notifyUserId,
+        category: "session",
+        title: "New Session Booked",
+        body: `A new ${typeStr} session "${finalTitle}" has been scheduled for ${new Date(scheduledAt).toLocaleString()}.`,
+        relatedEntity: { type: "session", id: rows[0].id }
+      }).catch(err => console.error("Failed to send session booking notification:", err));
+    }
+
     res.status(201).json(rows[0]);
   } finally {
     client.release();
@@ -174,6 +190,21 @@ const updateSessionStatus = asyncHandler(async (req, res) => {
     }
 
     await client.query("COMMIT");
+
+    // Send notification
+    const sessionData = rows[0];
+    const notifyUserId = sessionData.student_id === req.user.id ? sessionData.provider_id : sessionData.student_id;
+    if (notifyUserId) {
+      await notificationService.sendNotification({
+        fromUserId: req.user.id,
+        toUserId: notifyUserId,
+        category: "session",
+        title: "Session Status Updated",
+        body: `Your session "${sessionData.title}" has been marked as ${status}.`,
+        relatedEntity: { type: "session", id: sessionData.id }
+      }).catch(err => console.error("Failed to send session status notification:", err));
+    }
+
     res.json(rows[0]);
   } finally {
     client.release();
@@ -201,6 +232,21 @@ const updateSession = asyncHandler(async (req, res) => {
     if (rows.length === 0) {
       throw new AppError("Session not found", 404);
     }
+
+    // Send notification
+    const sessionData = rows[0];
+    const notifyUserId = sessionData.student_id === req.user.id ? sessionData.provider_id : sessionData.student_id;
+    if (notifyUserId) {
+      await notificationService.sendNotification({
+        fromUserId: req.user.id,
+        toUserId: notifyUserId,
+        category: "session",
+        title: "Session Details Updated",
+        body: `Details for your session "${sessionData.title}" have been updated.`,
+        relatedEntity: { type: "session", id: sessionData.id }
+      }).catch(err => console.error("Failed to send session details notification:", err));
+    }
+
     res.json(rows[0]);
   } finally {
     client.release();
