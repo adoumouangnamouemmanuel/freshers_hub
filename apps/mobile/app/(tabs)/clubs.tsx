@@ -9,6 +9,8 @@ import { useRouter } from "expo-router";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { StatusBar } from "expo-status-bar";
 
+import { useQuery } from "@tanstack/react-query";
+
 type Club = {
   id: string;
   name: string;
@@ -22,37 +24,41 @@ export default function ClubsScreen() {
   const { session } = useAuth();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const [clubs, setClubs] = useState<Club[]>([]);
-  const [myClubs, setMyClubs] = useState<Club[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
 
-  const fetchData = async () => {
-    try {
-      const headers = session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : undefined;
-      const [allRes, myRes] = await Promise.all([
-        apiRequest<{ data: Club[] }>("/groups", { headers }),
-        apiRequest<{ data: Club[] }>("/groups/my", { headers })
-      ]);
-      setClubs(allRes.data || []);
-      setMyClubs(myRes.data || []);
-    } catch (err) {
-      console.error("Error fetching clubs:", err);
-    } finally {
-      setIsLoading(false);
-      setRefreshing(false);
-    }
-  };
+  const headers = session?.accessToken ? { Authorization: `Bearer ${session.accessToken}` } : undefined;
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  // TODO: Review and potentially increase this staleTime duration (currently 24 hours)
+  const { data: allClubsData, isLoading: isLoadingAll, refetch: refetchAll } = useQuery({
+    queryKey: ['clubs', 'all'],
+    queryFn: async () => {
+      const res = await apiRequest<{ data: Club[] }>("/groups", { headers });
+      return res.data || [];
+    },
+    enabled: !!session?.accessToken,
+    staleTime: 1000 * 60 * 60 * 24, // 24 hours
+  });
 
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchData();
+  // TODO: Review and potentially increase this staleTime duration (currently 24 hours)
+  const { data: myClubsData, isLoading: isLoadingMy, refetch: refetchMy, isFetching } = useQuery({
+    queryKey: ['clubs', 'my'],
+    queryFn: async () => {
+      const res = await apiRequest<{ data: Club[] }>("/groups/my", { headers });
+      return res.data || [];
+    },
+    enabled: !!session?.accessToken,
+    staleTime: 1000 * 60 * 60 * 24, // 24 hours
+  });
+
+  const clubs = allClubsData || [];
+  const myClubs = myClubsData || [];
+  const isLoading = isLoadingAll || isLoadingMy;
+  const refreshing = isFetching;
+
+  const onRefresh = async () => {
+    await Promise.all([refetchAll(), refetchMy()]);
   };
 
   // Derive categories from clubs data
