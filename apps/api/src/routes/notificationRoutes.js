@@ -41,7 +41,7 @@ router.delete("/push-token", handleRemovePushToken);
 // ── Send notification (immediate or scheduled reminder) ───────────────────────
 router.post(
   "/send",
-  requireRoles("counsellor", "coach", "advisor", "admin", "oipcc_admin", "staff", "faculty", "platform_admin"),
+  requireRoles("counsellor", "coach_admin", "advisor", "admin", "oipcc_admin", "staff", "faculty", "platform_admin"),
   handleSendNotification
 );
 
