@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { StyleSheet, Text, View, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, TextInput } from "react-native";
+import { useQuery } from "@tanstack/react-query";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../../context/auth-context";
@@ -14,30 +15,21 @@ export default function PeerCounsellorsScreen() {
   const token = session?.accessToken;
   const router = useRouter();
 
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [counsellors, setCounsellors] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const fetchPeerCounsellors = async () => {
-    try {
+  // TODO: Review and potentially increase this staleTime duration (currently 5 minutes)
+  const { data: counsellors = [], isLoading: loading, isFetching: refreshing, refetch } = useQuery({
+    queryKey: ['counselling', 'peer-counsellors'],
+    queryFn: async () => {
       const res = await fetch(`${API_URL}/support/counselling/peer-counsellors`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (res.ok) {
-        setCounsellors(await res.json());
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    if (token) fetchPeerCounsellors();
-  }, [token]);
+      if (!res.ok) throw new Error("Failed to fetch peer counsellors");
+      return res.json();
+    },
+    enabled: !!token,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+  });
 
   const filteredCounsellors = counsellors.filter((u: any) => {
     const matchesSearch = u.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -78,7 +70,7 @@ export default function PeerCounsellorsScreen() {
       <ScrollView 
         style={styles.scroll} 
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchPeerCounsellors(); }} tintColor="#4F46E5" />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => refetch()} tintColor="#4F46E5" />}
       >
         {filteredCounsellors.length === 0 ? (
           <View style={styles.emptyState}>
