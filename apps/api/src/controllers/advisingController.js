@@ -34,7 +34,7 @@ const getAdvisingDashboard = asyncHandler(async (req, res) => {
         COUNT(CASE WHEN status = 'scheduled' AND scheduled_at > NOW() THEN 1 END) AS upcoming_sessions,
         COUNT(CASE WHEN status = 'scheduled' AND scheduled_at <= NOW() THEN 1 END) AS overdue_sessions,
         COUNT(CASE WHEN status = 'completed' THEN 1 END) AS completed_sessions,
-        (SELECT COUNT(*) FROM users u JOIN user_roles ur ON u.id = ur.user_id JOIN roles r ON ur.role_id = r.id WHERE r.name = 'student' AND u.is_active = true) AS total_students_seen,
+        (SELECT COUNT(DISTINCT student_id) FROM sessions WHERE provider_id = $2 AND status = 'completed') AS total_students_seen,
         COUNT(CASE WHEN scheduled_at >= date_trunc('week', NOW()) AND scheduled_at < date_trunc('week', NOW()) + interval '7 days' THEN 1 END) AS this_week_sessions,
         COUNT(CASE WHEN scheduled_at::date = CURRENT_DATE AND status = 'scheduled' THEN 1 END) AS today_sessions
       FROM sessions
@@ -144,10 +144,24 @@ const getAdvisingStudents = asyncHandler(async (req, res) => {
 const getAdvisingReports = asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 20;
+    const search = req.query.search || "";
+    
+    const offset = (page - 1) * limit;
     const unitId = await getAdvisingUnitId(client);
+    
+    const queryParams = [unitId, req.user.id, limit, offset];
+    let searchCondition = "";
+    
+    if (search) {
+      searchCondition = `AND (u1.full_name ILIKE $5 OR u2.full_name ILIKE $5 OR sr.content ILIKE $5)`;
+      queryParams.push(`%${search}%`);
+    }
 
     const { rows } = await client.query(`
       SELECT 
+        COUNT(*) OVER() AS total_count,
         sr.id, sr.session_id, sr.content, sr.submitted_at,
         sr.needs_follow_up,
         u1.full_name AS student_name, u1.avatar_url AS student_avatar,
@@ -157,11 +171,16 @@ const getAdvisingReports = asyncHandler(async (req, res) => {
       JOIN sessions s ON sr.session_id = s.id
       JOIN users u1 ON s.student_id = u1.id
       JOIN users u2 ON s.provider_id = u2.id
-      WHERE s.unit_id = $1 AND s.provider_id = $2
+      WHERE s.unit_id = $1 AND s.provider_id = $2 ${searchCondition}
       ORDER BY sr.submitted_at DESC
-    `, [unitId, req.user.id]);
+      LIMIT $3 OFFSET $4
+    `, queryParams);
 
-    res.json(rows);
+    const total = rows.length > 0 ? parseInt(rows[0].total_count, 10) : 0;
+    res.json({
+      data: rows,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) }
+    });
   } finally {
     client.release();
   }
