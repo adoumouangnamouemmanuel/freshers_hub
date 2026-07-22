@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/context/auth-context";
@@ -26,29 +27,34 @@ export default function SettingsScreen() {
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   const [biometricType, setBiometricType] = useState<"face" | "fingerprint" | "iris" | "undefined">("undefined");
 
+  const queryClient = useQueryClient();
+
+  const { data: notificationSettings } = useQuery({
+    queryKey: ['notification-settings'],
+    queryFn: async () => {
+      const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
+      const res = await fetch(`${API_URL}/notifications/settings`, {
+        headers: { Authorization: `Bearer ${session?.accessToken}` }
+      });
+      if (!res.ok) throw new Error("Failed to fetch settings");
+      const data = await res.json();
+      return data.settings;
+    },
+    enabled: !!session?.accessToken,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  useEffect(() => {
+    if (notificationSettings) {
+      setEventNotifs(notificationSettings.event !== false);
+      setClubNotifs(notificationSettings.club !== false);
+    }
+  }, [notificationSettings]);
+
   useEffect(() => {
     AsyncStorage.getItem("@dark_mode").then((val) => {
       if (val !== null) setDarkMode(val === "true");
     });
-    
-    // Fetch settings from API
-    const fetchSettings = async () => {
-      if (!session?.accessToken) return;
-      try {
-        const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
-        const res = await fetch(`${API_URL}/notifications/settings`, {
-          headers: { Authorization: `Bearer ${session.accessToken}` }
-        });
-        const data = await res.json();
-        if (data.success && data.settings) {
-          setEventNotifs(data.settings.event !== false); // default true
-          setClubNotifs(data.settings.club !== false); // default true
-        }
-      } catch (err) {
-        console.error("Failed to fetch settings", err);
-      }
-    };
-    fetchSettings();
     
     // Check biometric availability
     const checkBiometric = async () => {
@@ -69,21 +75,29 @@ export default function SettingsScreen() {
     await AsyncStorage.setItem("@dark_mode", String(val));
   };
   
-  const updateBackendSettings = async (updates: any) => {
-    if (!session?.accessToken) return;
-    try {
+  const updateSettingsMutation = useMutation({
+    mutationFn: async (updates: any) => {
       const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
-      await fetch(`${API_URL}/notifications/settings`, {
+      const res = await fetch(`${API_URL}/notifications/settings`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.accessToken}`
+          Authorization: `Bearer ${session?.accessToken}`
         },
         body: JSON.stringify({ settings: updates })
       });
-    } catch (err) {
-      console.error("Failed to update settings", err);
-    }
+      if (!res.ok) throw new Error("Failed to update settings");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notification-settings'] });
+    },
+    onError: (err) => console.error("Failed to update settings", err),
+  });
+
+  const updateBackendSettings = (updates: any) => {
+    if (!session?.accessToken) return;
+    updateSettingsMutation.mutate(updates);
   };
 
   const toggleEventNotifs = async (val: boolean) => {
