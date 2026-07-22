@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   View,
   Text,
@@ -120,9 +121,6 @@ export default function NotificationsScreen() {
   const { session } = useAuth();
   const insets  = useSafeAreaInsets();
 
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [isLoading,  setIsLoading]  = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -131,34 +129,34 @@ export default function NotificationsScreen() {
 
   const headers = { Authorization: `Bearer ${session?.accessToken}` };
 
-  const fetchNotifications = useCallback(async () => {
-    if (!session?.accessToken) return;
-    try {
+  const { data: notificationsData, isLoading, refetch, isFetching } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: async () => {
       const data = await apiRequest<{ notifications: AppNotification[] }>(
         "/notifications?page=1&limit=50",
         { headers }
       );
-      setNotifications(data.notifications || []);
-    } catch (err) {
-      console.error("Failed to fetch notifications:", err);
-    }
-  }, [session?.accessToken]);
+      return data.notifications || [];
+    },
+    enabled: !!session?.accessToken,
+  });
 
-  useEffect(() => {
-    fetchNotifications().finally(() => setIsLoading(false));
-  }, [fetchNotifications]);
+  const notifications = notificationsData || [];
+  const refreshing = isFetching;
+  const queryClient = useQueryClient();
 
   const handleRefresh = async () => {
-    setRefreshing(true);
-    await fetchNotifications();
-    setRefreshing(false);
+    await refetch();
   };
 
   const markAllRead = async () => {
     if (!session?.accessToken) return;
     try {
       await apiRequest("/notifications/read-all", { method: "PATCH", headers });
-      setNotifications((prev) => prev.map((n) => ({ ...n, readAt: new Date().toISOString() })));
+      queryClient.setQueryData(['notifications'], (old: AppNotification[] = []) => 
+        old.map(n => ({ ...n, readAt: new Date().toISOString() }))
+      );
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
     } catch {}
   };
 
@@ -166,11 +164,12 @@ export default function NotificationsScreen() {
     if (!notification.readAt) {
       try {
         await apiRequest(`/notifications/${notification.id}/read`, { method: "PATCH", headers });
-        setNotifications((prev) =>
-          prev.map((n) =>
+        queryClient.setQueryData(['notifications'], (old: AppNotification[] = []) =>
+          old.map((n) =>
             n.id === notification.id ? { ...n, readAt: new Date().toISOString() } : n
           )
         );
+        queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
       } catch {}
     }
     if (notification.relatedEntity) {
@@ -287,7 +286,7 @@ export default function NotificationsScreen() {
           session={selectedSession}
           visible={sessionModalVisible}
           onClose={() => setSessionModalVisible(false)}
-          onRefresh={fetchNotifications}
+          onRefresh={() => refetch()}
           currentUserId={session?.user?.id}
           accessToken={session?.accessToken}
           isCounsellorView={session?.user?.roles?.some(r => r.name === "peer_counsellor" || r.name === "peer_coach")}
