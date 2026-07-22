@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { StyleSheet, Text, View, ActivityIndicator, TouchableOpacity, ScrollView, Animated } from "react-native";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "../../context/auth-context";
 import { IconSymbol } from "../../components/ui/icon-symbol";
 import { router } from "expo-router";
@@ -11,32 +12,35 @@ export default function CoachingScreen() {
   const { session } = useAuth();
   const token = session?.accessToken;
   const user = session?.user;
-  const [loading, setLoading] = useState(true);
-  const [coaches, setCoaches] = useState<any[]>([]);
-  const [sessions, setSessions] = useState<any[]>([]);
   const [selectedSession, setSelectedSession] = useState<any>(null);
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const headers = { Authorization: `Bearer ${token}` };
-        
-        const [coachesRes, sessionsRes] = await Promise.all([
-          fetch(`${API_URL}/support/coaches/assigned`, { headers }),
-          fetch(`${API_URL}/support/sessions`, { headers }),
-        ]);
+  const { data: coaches = [], isLoading: loadingCoaches } = useQuery({
+    queryKey: ['assigned-coaches'],
+    queryFn: async () => {
+      const res = await fetch(`${API_URL}/support/coaches/assigned`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error("Failed to fetch coaches");
+      return res.json();
+    },
+    enabled: !!token,
+    staleTime: 1000 * 60 * 5,
+  });
 
-        if (coachesRes.ok) setCoaches(await coachesRes.json());
-        if (sessionsRes.ok) setSessions(await sessionsRes.json());
-      } catch (err) {
-        console.error("Failed to fetch coaching data", err);
-      } finally {
-        setLoading(false);
-      }
-    }
+  const { data: sessions = [], isLoading: loadingSessions, refetch: refetchSessions } = useQuery({
+    queryKey: ['sessions'],
+    queryFn: async () => {
+      const res = await fetch(`${API_URL}/support/sessions`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error("Failed to fetch sessions");
+      return res.json();
+    },
+    enabled: !!token,
+    staleTime: 1000 * 60 * 5,
+  });
 
-    if (token) fetchData();
-  }, [token]);
+  const loading = loadingCoaches || loadingSessions;
 
   if (loading) {
     return (
@@ -147,14 +151,7 @@ export default function CoachingScreen() {
         session={selectedSession}
         visible={!!selectedSession}
         onClose={() => setSelectedSession(null)}
-        onRefresh={() => {
-          if (token) {
-            fetch(`${API_URL}/support/sessions`, { headers: { Authorization: `Bearer ${token}` } })
-              .then(res => res.json())
-              .then(data => setSessions(data))
-              .catch(err => console.error(err));
-          }
-        }}
+        onRefresh={refetchSessions}
         currentUserId={session?.user?.id}
         accessToken={session?.accessToken}
         currentUserRoles={session?.user?.roles}
