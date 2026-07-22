@@ -15,7 +15,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { FontAwesome5 } from "@expo/vector-icons";
 
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { MOCK_OFFICES } from "@/lib/mock-data";
+import { apiRequest, API_URL } from "@/lib/api";
+import { ActivityIndicator } from "react-native";
 
 const PRIMARY_COLOR = "#A93C40";
 const TEXT_COLOR = "#1A2B4A";
@@ -43,8 +44,25 @@ export default function OfficeDetailScreen() {
   const scrollY = useRef(new Animated.Value(0)).current;
   const [showAllStaff, setShowAllStaff] = useState(false);
   const [isSharing, setIsSharing] = useState(false);
+  
+  const [office, setOffice] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const office = id ? MOCK_OFFICES[id] : null;
+  React.useEffect(() => {
+    if (!id) return;
+    apiRequest<{data: any}>(`/help/offices/${id}`)
+      .then(res => setOffice(res.data))
+      .catch(console.error)
+      .finally(() => setIsLoading(false));
+  }, [id]);
+
+  if (isLoading) {
+    return (
+      <View style={[styles.screen, styles.center]}>
+        <ActivityIndicator size="large" color={PRIMARY_COLOR} />
+      </View>
+    );
+  }
 
   if (!office) {
     return (
@@ -54,50 +72,21 @@ export default function OfficeDetailScreen() {
     );
   }
 
-  const handleOpenLink = async (url: any) => {
+  const handleOpenLink = async (url: string) => {
     if (isSharing) return;
     setIsSharing(true);
     try {
-      if (typeof url === 'string' && (url.startsWith('http') || url.startsWith('https'))) {
+      if (url.startsWith('/assets/')) {
+        const fullUrl = API_URL + url;
+        const WebBrowser = require('expo-web-browser');
+        await WebBrowser.openBrowserAsync(fullUrl);
+      } else if (url.startsWith('http') || url.startsWith('https')) {
         const WebBrowser = require('expo-web-browser');
         await WebBrowser.openBrowserAsync(url);
-      } else if (typeof url === 'string' && (url.startsWith('mailto:') || url.startsWith('tel:'))) {
+      } else if (url.startsWith('mailto:') || url.startsWith('tel:')) {
         await Linking.openURL(url).catch((err) => console.error("An error occurred", err));
       } else {
-        // Assume it's a local asset (required)
-        const { Asset } = require('expo-asset');
-        const asset = Asset.fromModule(url);
-        if (!asset.localUri) {
-          await asset.downloadAsync();
-        }
-        
-        if (asset.localUri) {
-          const { Platform } = require('react-native');
-          
-          const isDocx = asset.type === 'docx' || asset.localUri?.toLowerCase().endsWith('.docx');
-          const mimeType = isDocx ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' : 'application/pdf';
-          const uti = isDocx ? 'org.openxmlformats.wordprocessingml.document' : 'com.adobe.pdf';
-
-          if (Platform.OS === 'android') {
-            const IntentLauncher = require('expo-intent-launcher');
-            const FileSystemLegacy = require('expo-file-system/legacy');
-            const contentUri = await FileSystemLegacy.getContentUriAsync(asset.localUri);
-            await IntentLauncher.startActivityAsync('android.intent.action.VIEW', {
-              data: contentUri,
-              flags: 1,
-              type: mimeType,
-            });
-          } else {
-            const Sharing = require('expo-sharing');
-            if (await Sharing.isAvailableAsync()) {
-              await Sharing.shareAsync(asset.localUri, { UTI: uti, dialogTitle: 'View Document' });
-            } else {
-              alert('Sharing/viewing is not available on this device.');
-            }
-          }
-        } else {
-          alert('Could not download or locate the document.');
-        }
+        alert('Could not open link.');
       }
     } catch (error) {
       console.error(error);
@@ -130,15 +119,24 @@ export default function OfficeDetailScreen() {
   return (
     <View style={styles.screen}>
       {/* Animated Parallax Header */}
-      <Animated.Image
-        source={office.heroImage}
-        style={[
-          styles.headerImage,
-          {
-            transform: [{ translateY: headerTranslateY }, { scale: headerScale }],
-          },
-        ]}
-      />
+      {office.hero_image ? (
+        <Animated.Image
+          source={{ uri: API_URL + office.hero_image }}
+          style={[
+            styles.headerImage,
+            {
+              transform: [{ translateY: headerTranslateY }, { scale: headerScale }],
+            },
+          ]}
+        />
+      ) : (
+        <Animated.View
+          style={[
+            styles.headerImage,
+            { backgroundColor: PRIMARY_COLOR, transform: [{ translateY: headerTranslateY }, { scale: headerScale }] },
+          ]}
+        />
+      )}
       <View style={[styles.headerOverlay, { height: HEADER_HEIGHT }]} />
 
       {/* Navigation Bar */}
@@ -167,25 +165,23 @@ export default function OfficeDetailScreen() {
             </View>
 
             {/* Quick Contact Actions (Floating Row) */}
-            {office.contacts && (
-              <View style={styles.quickActionsRow}>
-                {office.contacts.phone && (
-                  <Pressable style={styles.actionBtn} onPress={() => handleIntent("phone", office.contacts!.phone!)}>
-                    <IconSymbol name="phone.fill" size={20} color="#FFF" />
-                  </Pressable>
-                )}
-                {office.contacts.email && (
-                  <Pressable style={styles.actionBtn} onPress={() => handleIntent("email", office.contacts!.email!)}>
-                    <IconSymbol name="envelope.fill" size={20} color="#FFF" />
-                  </Pressable>
-                )}
-                {office.contacts.whatsapp && (
-                  <Pressable style={[styles.actionBtn, { backgroundColor: "#25D366" }]} onPress={() => handleIntent("whatsapp", office.contacts!.whatsapp!)}>
-                    <FontAwesome5 name="whatsapp" size={20} color="#FFF" />
-                  </Pressable>
-                )}
-              </View>
-            )}
+            <View style={styles.quickActionsRow}>
+              {office.contact_phone && (
+                <Pressable style={styles.actionBtn} onPress={() => handleIntent("phone", office.contact_phone)}>
+                  <IconSymbol name="phone.fill" size={20} color="#FFF" />
+                </Pressable>
+              )}
+              {office.contact_email && (
+                <Pressable style={styles.actionBtn} onPress={() => handleIntent("email", office.contact_email)}>
+                  <IconSymbol name="envelope.fill" size={20} color="#FFF" />
+                </Pressable>
+              )}
+              {office.contact_whatsapp && (
+                <Pressable style={[styles.actionBtn, { backgroundColor: "#25D366" }]} onPress={() => handleIntent("whatsapp", office.contact_whatsapp)}>
+                  <FontAwesome5 name="whatsapp" size={20} color="#FFF" />
+                </Pressable>
+              )}
+            </View>
 
             {/* Info Cards */}
             <View style={styles.infoCard}>
@@ -221,7 +217,7 @@ export default function OfficeDetailScreen() {
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Resources & Links</Text>
                 <View style={styles.linkList}>
-                  {office.links.map((link, index) => (
+                  {office.links.map((link: { title: string; url: string; icon: string }, index: number) => (
                     <Pressable
                       key={index}
                       style={styles.linkCard}
@@ -243,7 +239,7 @@ export default function OfficeDetailScreen() {
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Frequently Asked</Text>
                 <View style={styles.linkList}>
-                  {office.faqs.map((faq, index) => (
+                  {office.faqs.map((faq: { question: string; answer: string }, index: number) => (
                     <FAQItem key={index} question={faq.question} answer={faq.answer} />
                   ))}
                 </View>
@@ -255,19 +251,19 @@ export default function OfficeDetailScreen() {
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Documents & Forms</Text>
                 <View style={styles.linkList}>
-                  {office.documents.map((doc, index) => (
+                  {office.documents.map((doc: { title: string; url: string; type?: string; size?: string }, index: number) => (
                     <Pressable
                       key={index}
                       style={styles.linkCard}
                       onPress={() => handleOpenLink(doc.url)}
                     >
-                      <View style={[styles.linkIconWrapper, { backgroundColor: "#A93C4015" }]}>
+                      <View style={[styles.linkIconWrapper, { backgroundColor: "#A93C4015" }]} >
                         <IconSymbol name="newspaper.fill" size={20} color={PRIMARY_COLOR} />
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.linkText}>{doc.title}</Text>
                         <Text style={{ fontSize: 13, color: "#9BA3AE", marginTop: 2 }}>
-                          {doc.type.toUpperCase()} • {doc.size}
+                          {doc.type?.toUpperCase() || "DOC"} • {doc.size || "Unknown size"}
                         </Text>
                       </View>
                       <IconSymbol name="chevron.right" size={20} color="#C4C8D0" />
@@ -289,9 +285,9 @@ export default function OfficeDetailScreen() {
                   )}
                 </View>
                 <View style={styles.staffListContainer}>
-                  {(showAllStaff ? office.staff : office.staff.slice(0, 3)).map((staff) => (
+                  {(showAllStaff ? office.staff : office.staff.slice(0, 3)).map((staff: any) => (
                     <View key={staff.id} style={styles.staffHorizontalCard}>
-                      <Image source={staff.image} style={styles.avatarImageSmall} />
+                      <Image source={{ uri: API_URL + staff.image_url }} style={styles.avatarImageSmall} />
                       <View style={styles.staffInfoCol}>
                         <Text style={styles.staffNameHorizontal} numberOfLines={1}>{staff.name}</Text>
                         <Text style={styles.staffRoleHorizontal} numberOfLines={1}>{staff.role}</Text>
@@ -303,7 +299,7 @@ export default function OfficeDetailScreen() {
                         </Pressable>
                         
                         {staff.phone && (
-                          <Pressable style={styles.staffActionBtnIconSmall} onPress={() => handleIntent("phone", staff.phone!)}>
+                          <Pressable style={styles.staffActionBtnIconSmall} onPress={() => handleIntent("phone", staff.phone)}>
                             <IconSymbol name="phone.fill" size={16} color={PRIMARY_COLOR} />
                           </Pressable>
                         )}
