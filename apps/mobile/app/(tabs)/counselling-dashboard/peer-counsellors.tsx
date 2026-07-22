@@ -121,7 +121,7 @@ const styles = StyleSheet.create({
   searchContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", paddingHorizontal: 16, paddingVertical: 12, marginHorizontal: 20, marginTop: 10, borderRadius: 12, borderWidth: 1, borderColor: "#E5E7EB" },
   searchInput: { flex: 1, marginLeft: 10, fontSize: 16, color: "#111827" },
   scroll: { flex: 1 },
-  content: { padding: 20, paddingBottom: 100 },
+  content: { padding: 20 },
   emptyState: { alignItems: "center", justifyContent: "center", paddingVertical: 60 },
   emptyText: { marginTop: 12, fontSize: 16, color: "#6B7280" },
   userCard: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", padding: 16, borderRadius: 16, marginBottom: 12, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
