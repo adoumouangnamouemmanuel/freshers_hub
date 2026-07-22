@@ -63,6 +63,7 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 export default function MapScreen() {
+  const { focusId } = useLocalSearchParams<{ focusId?: string }>();
   const [locations, setLocations] = useState<LocationItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string>("All");
@@ -145,6 +146,21 @@ export default function MapScreen() {
       }, 100);
     }
   }, [filteredLocations, activeCategory, searchQuery, locations.length]);
+
+  // Handle auto-focus from global search
+  useEffect(() => {
+    if (focusId && locations.length > 0) {
+      const targetLoc = locations.find(l => l.id === focusId);
+      if (targetLoc) {
+        setSelectedItem(targetLoc);
+        setTimeout(() => {
+          if (markerRefs.current[targetLoc.id]) {
+            markerRefs.current[targetLoc.id].showCallout();
+          }
+        }, 700); // Wait for the 600ms animateToRegion to finish
+      }
+    }
+  }, [focusId, locations]);
 
   const fetchLocations = async () => {
     try {
