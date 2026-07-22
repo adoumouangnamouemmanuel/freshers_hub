@@ -12,6 +12,7 @@ import {
 } from "react-native"; 
 import globalStyles from '../../styles';
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/auth-context";
@@ -29,47 +30,35 @@ export default function EditPostScreen() {
   const router = useRouter();
   const { session } = useAuth();
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
   
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [category, setCategory] = useState("Announcement");
   
-  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const categories = ["Announcement", "Event", "Alert"];
 
-  useEffect(() => {
-    async function fetchPost() {
-      try {
-        const data = await apiRequest<{ post: Post }>(`/posts/${id}`);
-        setTitle(data.post.title);
-        setContent(data.post.content);
-        // Ensure category matches one of the options, ignore case
-        const matchedCategory = categories.find(c => c.toLowerCase() === data.post.category.toLowerCase());
-        if (matchedCategory) {
-          setCategory(matchedCategory);
-        }
-      } catch (err) {
-        console.error("Failed to fetch post", err);
-        Alert.alert("Error", "Could not load post details.");
-        router.back();
-      } finally {
-        setIsLoading(false);
+  const { isLoading } = useQuery({
+    queryKey: ['post', id],
+    queryFn: async () => {
+      const data = await apiRequest<{ post: Post }>(`/posts/${id}`);
+      setTitle(data.post.title);
+      setContent(data.post.content);
+      const matchedCategory = categories.find(c => c.toLowerCase() === data.post.category.toLowerCase());
+      if (matchedCategory) {
+        setCategory(matchedCategory);
       }
-    }
-    fetchPost();
-  }, [id]);
+      return data;
+    },
+    enabled: !!id,
+    staleTime: 0,
+  });
 
-  const handleSubmit = async () => {
-    if (!title.trim() || !content.trim()) {
-      Alert.alert("Error", "Title and content are required.");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      await apiRequest(`/posts/${id}`, {
+  const submitMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest(`/posts/${id}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${session?.accessToken}`,
@@ -80,13 +69,28 @@ export default function EditPostScreen() {
           category,
         }),
       });
-      
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['post', id] });
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
       router.replace(`/post/${id}`);
-    } catch (error) {
-      Alert.alert("Error", (error as Error).message || "Failed to update post.");
-    } finally {
+    },
+    onError: (error: any) => {
+      Alert.alert("Error", error.message || "Failed to update post.");
+    },
+    onSettled: () => {
       setIsSubmitting(false);
     }
+  });
+
+  const handleSubmit = async () => {
+    if (!title.trim() || !content.trim()) {
+      Alert.alert("Error", "Title and content are required.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    submitMutation.mutate();
   };
 
   if (isLoading) {
