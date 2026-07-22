@@ -6,7 +6,7 @@ class SupportAdminRepository {
     const { rows } = await pool.query(`
       SELECT 
         (SELECT COUNT(DISTINCT ur.user_id) FROM user_roles ur JOIN roles r ON ur.role_id = r.id JOIN users u ON ur.user_id = u.id WHERE r.name = 'student' AND u.class_year = 2030 AND NOT EXISTS (
-          SELECT 1 FROM user_roles ur2 JOIN roles r2 ON ur2.role_id = r2.id WHERE ur2.user_id = ur.user_id AND r2.name = 'peer_coach'
+          SELECT 1 FROM user_roles ur2 JOIN roles r2 ON ur2.role_id = r2.id WHERE ur2.user_id = ur.user_id AND r2.name IN ('peer_coach', 'coach_admin', 'counsellor', 'peer_counsellor', 'advisor', 'admin', 'staff')
         )) as total_freshers,
         (SELECT COUNT(DISTINCT ur.user_id) FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE r.name = 'peer_coach') as total_coaches,
         (SELECT COUNT(DISTINCT ca.fresher_id) FROM coach_assignments ca JOIN users u ON ca.fresher_id = u.id WHERE u.class_year = 2030) as assigned_freshers,
