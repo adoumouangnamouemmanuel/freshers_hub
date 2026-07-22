@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, TextInput, Alert, KeyboardAvoidingView, Platform } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
@@ -15,27 +15,50 @@ export default function AnnouncementsScreen() {
   const [loading, setLoading] = useState(true);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [isCreating, setIsCreating] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [audience, setAudience] = useState("coaching_unit");
 
-  const fetchAnnouncements = async () => {
+  const fetchAnnouncements = async (pageNum = 1) => {
+    if (!token) return;
+    if (pageNum === 1) setLoading(true);
+    else setLoadingMore(true);
+
     try {
-      const res = await fetch(`${API_URL}/support/admin/announcements`, {
+      const res = await fetch(`${API_URL}/support/admin/announcements?page=${pageNum}&limit=20`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (res.ok) setAnnouncements(await res.json());
+      if (res.ok) {
+        const json = await res.json();
+        if (pageNum === 1) {
+          setAnnouncements(json.data || []);
+        } else {
+          setAnnouncements(prev => [...prev, ...(json.data || [])]);
+        }
+        setHasMore(json.meta ? pageNum < json.meta.totalPages : false);
+        setPage(pageNum);
+      }
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
   useEffect(() => {
-    if (token) fetchAnnouncements();
+    fetchAnnouncements(1);
   }, [token]);
+
+  const loadMore = () => {
+    if (!loadingMore && hasMore && !isCreating) {
+      fetchAnnouncements(page + 1);
+    }
+  };
 
   const postAnnouncement = async () => {
     if (!title || !content) return Alert.alert("Error", "Title and content required");
@@ -50,7 +73,7 @@ export default function AnnouncementsScreen() {
         setIsCreating(false);
         setTitle("");
         setContent("");
-        fetchAnnouncements();
+        fetchAnnouncements(1);
       }
     } catch (err) {
       console.error(err);
@@ -67,7 +90,7 @@ export default function AnnouncementsScreen() {
             headers: { Authorization: `Bearer ${token}` }
           });
           if (res.ok) {
-            fetchAnnouncements();
+            fetchAnnouncements(1);
           }
         } catch (err) {
           console.error(err);
@@ -136,6 +159,9 @@ export default function AnnouncementsScreen() {
           data={announcements}
           keyExtractor={a => a.id}
           contentContainerStyle={styles.listContent}
+          onEndReached={loadMore}
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={loadingMore ? <ActivityIndicator size="small" color="#1A2B4A" style={{ margin: 20 }} /> : null}
           ListEmptyComponent={() => (
             <View style={styles.emptyBox}>
               <IconSymbol name="megaphone.fill" size={32} color="#9BA3AE" />
