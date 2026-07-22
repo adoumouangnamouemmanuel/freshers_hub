@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Linking, Alert } from "react-native";
+import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator, Linking, Alert, TouchableOpacity } from "react-native";
 import { Image } from "expo-image";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -7,6 +7,7 @@ import { useAuth } from "@/context/auth-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import Animated, { FadeIn, FadeInDown, SlideInDown } from "react-native-reanimated";
+import SessionDetailModal from "@/components/features/sessions/SessionDetailModal";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -20,7 +21,7 @@ export default function UserProfileScreen() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
   const [notifying, setNotifying] = useState(false);
-  const [expandedSessionId, setExpandedSessionId] = useState<number | null>(null);
+  const [selectedSession, setSelectedSession] = useState<any>(null);
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -264,15 +265,12 @@ export default function UserProfileScreen() {
         <Animated.View entering={FadeInDown.delay(250).duration(500)} style={styles.detailsCard}>
           <Text style={styles.cardTitle}>Recent Sessions</Text>
           {filteredSessions.map((session: any, idx: number) => {
-            const isExpanded = expandedSessionId === session.id;
+            const isCompleted = session.status === 'completed';
             return (
-              <View key={session.id}>
-                <Pressable 
-                  style={styles.infoRow} 
-                  onPress={() => setExpandedSessionId(isExpanded ? null : session.id)}
-                >
-                  <View style={[styles.infoIconBox, { backgroundColor: 'rgba(201, 147, 58, 0.1)' }]}>
-                    <IconSymbol name="calendar" size={16} color="#C9933A" />
+              <TouchableOpacity key={session.id} onPress={() => setSelectedSession(session)}>
+                <View style={styles.infoRow}>
+                  <View style={[styles.infoIconBox, { backgroundColor: isCompleted ? 'rgba(5, 150, 105, 0.1)' : 'rgba(79, 70, 229, 0.1)' }]}>
+                    <IconSymbol name={isCompleted ? "checkmark.circle.fill" : "calendar"} size={16} color={isCompleted ? "#059669" : "#4F46E5"} />
                   </View>
                   <View style={styles.infoTextContainer}>
                     <Text style={styles.infoLabel}>{session.type}</Text>
@@ -281,36 +279,9 @@ export default function UserProfileScreen() {
                   <View style={styles.statusBadge}>
                     <Text style={styles.statusText}>{session.status}</Text>
                   </View>
-                </Pressable>
-                
-                {isExpanded && (
-                  <View style={styles.expandedSessionContent}>
-                    <Text style={styles.sessionDetailText}><Text style={{fontWeight: '700'}}>With:</Text> {session.with}</Text>
-                    <Text style={styles.sessionDetailText}><Text style={{fontWeight: '700'}}>Location:</Text> {session.location}</Text>
-                    
-                    {session.status === 'completed' && session.provider_id === session?.user?.id && !session.has_report ? (
-                      <Pressable 
-                        style={styles.submitReportBtn}
-                        onPress={() => router.push(`/my-coaching/report?sessionId=${session.id}&fresherName=${encodeURIComponent(profile.full_name)}` as any)}
-                      >
-                        <Text style={styles.submitReportBtnText}>Submit Report</Text>
-                      </Pressable>
-                    ) : session.report ? (
-                      <View style={styles.sessionReportBox}>
-                        <Text style={styles.sessionReportTitle}>Topic Discussed</Text>
-                        <Text style={styles.sessionReportText}>{session.report.topic}</Text>
-                        
-                        <Text style={[styles.sessionReportTitle, { marginTop: 8 }]}>Action Items</Text>
-                        <Text style={styles.sessionReportText}>{session.report.actions}</Text>
-
-                        <Text style={[styles.sessionReportTitle, { marginTop: 8 }]}>Student Mood/Status</Text>
-                        <Text style={styles.sessionReportText}>{session.report.mood}</Text>
-                      </View>
-                    ) : null}
-                  </View>
-                )}
+                </View>
                 {idx < filteredSessions.length - 1 && <View style={styles.divider} />}
-              </View>
+              </TouchableOpacity>
             );
           })}
           {filteredSessions.length === 0 && (
