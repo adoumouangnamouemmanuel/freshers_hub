@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { StyleSheet, Text, View, ScrollView, ActivityIndicator, TouchableOpacity, Image, Share, RefreshControl } from "react-native";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from '@expo/vector-icons';
@@ -30,36 +31,27 @@ export default function ClubDetailsScreen() {
   const router = useRouter();
   const { session } = useAuth();
   
-  const [club, setClub] = useState<ClubDetails | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const queryClient = useQueryClient();
   const [joining, setJoining] = useState(false);
+
+  // TODO: Review and potentially increase this staleTime duration (currently 24 hours)
+  const { data: club, isLoading: loading, isFetching: refreshing, refetch } = useQuery({
+    queryKey: ['clubs', id],
+    queryFn: async () => {
+      const data = await apiRequest<{ data: ClubDetails }>(`/groups/${id}`, {
+        headers: { Authorization: `Bearer ${session?.accessToken}` }
+      });
+      return data.data;
+    },
+    enabled: !!id && !!session?.accessToken,
+    staleTime: 1000 * 60 * 60 * 24, // 24 hours
+  });
 
   // Determine if the current user is a member
   const isMember = club?.members.some(m => m.id === session?.user.id) || false;
 
-  const fetchClubDetails = async () => {
-    if (!id || !session?.accessToken) return;
-    try {
-      const data = await apiRequest<{ data: ClubDetails }>(`/groups/${id}`, {
-        headers: { Authorization: `Bearer ${session.accessToken}` }
-      });
-      setClub(data.data);
-    } catch (err) {
-      console.error("Error fetching club details:", err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchClubDetails();
-  }, [id, session?.accessToken]);
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchClubDetails();
+  const onRefresh = async () => {
+    await refetch();
   };
 
   const handleJoin = async () => {
@@ -71,11 +63,12 @@ export default function ClubDetailsScreen() {
         headers: { Authorization: `Bearer ${session.accessToken}` }
       });
       if (club && session?.user) {
-        setClub({
-          ...club,
-          memberCount: club.memberCount + 1,
-          members: [...club.members, { id: session.user.id, full_name: session.user.fullName || 'You', isLeader: false }]
-        });
+        queryClient.setQueryData(['clubs', id], (old: any) => ({
+          ...old,
+          memberCount: old.memberCount + 1,
+          members: [...old.members, { id: session.user.id, full_name: session.user.fullName || 'You', isLeader: false }]
+        }));
+        queryClient.invalidateQueries({ queryKey: ['clubs'] });
       }
     } catch (err) {
       console.error("Error joining club:", err);
@@ -93,11 +86,12 @@ export default function ClubDetailsScreen() {
         headers: { Authorization: `Bearer ${session.accessToken}` }
       });
       if (club && session?.user) {
-        setClub({
-          ...club,
-          memberCount: Math.max(0, club.memberCount - 1),
-          members: club.members.filter(m => m.id !== session.user.id)
-        });
+        queryClient.setQueryData(['clubs', id], (old: any) => ({
+          ...old,
+          memberCount: Math.max(0, old.memberCount - 1),
+          members: old.members.filter((m: Member) => m.id !== session.user.id)
+        }));
+        queryClient.invalidateQueries({ queryKey: ['clubs'] });
       }
     } catch (err) {
       console.error("Error leaving club:", err);
