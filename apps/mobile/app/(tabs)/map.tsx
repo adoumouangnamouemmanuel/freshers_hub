@@ -1,4 +1,4 @@
-import React, { useState, useRef, useMemo, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import {
   StyleSheet,
   Text,
@@ -10,16 +10,17 @@ import {
   Keyboard,
   ScrollView,
   Dimensions,
+  ActivityIndicator,
+  Animated,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
-import MapView, { Marker, PROVIDER_GOOGLE } from "react-native-maps";
+import MapView, { Marker, Callout, PROVIDER_GOOGLE } from "react-native-maps";
 import * as Location from "expo-location";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { MOCK_OFFICES, CATEGORIES, DIRECTORY } from "@/lib/mock-data";
+import { apiRequest } from "@/lib/api";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
 const ASHESI_REGION = {
   latitude: 5.7597,
@@ -28,221 +29,149 @@ const ASHESI_REGION = {
   longitudeDelta: 0.004,
 };
 
-type LocationItem = typeof DIRECTORY[0];
+const customMapStyle = [
+  {
+    featureType: "poi",
+    stylers: [{ visibility: "off" }]
+  }
+];
+
+type LocationItem = {
+  id: string;
+  name: string;
+  shortName: string | null;
+  category: string;
+  building: string | null;
+  description: string | null;
+  icon: string | null;
+  emoji: string | null;
+  hours: string | null;
+  latitude: number;
+  longitude: number;
+  coordinate: {
+    latitude: number;
+    longitude: number;
+  };
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+  Academic: "#3B82F6",
+  Dining: "#F59E0B",
+  Hostel: "#10B981",
+  Services: "#8B5CF6",
+  Recreation: "#EF4444",
+};
 
 export default function MapScreen() {
-  const [activeCategories, setActiveCategories] = useState<string[]>(
-    CATEGORIES.filter((c) => c.essential).map((c) => c.id)
-  );
+  const [locations, setLocations] = useState<LocationItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState<string>("All");
   const [selectedItem, setSelectedItem] = useState<LocationItem | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [savedPlaces, setSavedPlaces] = useState<LocationItem[]>([]);
-  const [recentPlaces, setRecentPlaces] = useState<LocationItem[]>([]);
-  const [showBookmarks, setShowBookmarks] = useState(false);
-  const { focusId } = useLocalSearchParams<{ focusId: string }>();
-  
-  // Location States
   const [userCoords, setUserCoords] = useState<Location.LocationObjectCoords | null>(null);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
+  
   const mapRef = useRef<MapView>(null);
+  const markerRefs = useRef<Record<string, any>>({});
   const insets = useSafeAreaInsets();
+  
+  // Slide animation for bottom sheet
+  const slideAnim = useRef(new Animated.Value(height)).current;
 
-  // Floating label positions (screen x,y for each building)
-  const [labelPositions, setLabelPositions] = useState<Record<string, { x: number; y: number }>>({}); 
+  const filteredLocations = useMemo(() => {
+    return locations.filter(loc => {
+      const matchesCategory = activeCategory === "All" || loc.category === activeCategory;
+      const matchesSearch = !searchQuery.trim() || 
+        loc.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        loc.category?.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [locations, activeCategory, searchQuery]);
 
-  // Filter building markers based on active categories (including parent buildings containing active subcategories)
-  const activeBuildings = DIRECTORY.filter((building) => {
-    if (!building.coordinate) return false;
 
-    // Direct category match
-    if (activeCategories.includes(building.category)) return true;
-
-    // Indirect matching: Does the building house any rooms/offices in active categories?
-    const hasActiveIndoorLocation = DIRECTORY.some(
-      (item) => item.parentId === building.id && activeCategories.includes(item.category)
-    );
-
-    return hasActiveIndoorLocation;
-  });
-
-  const updateLabelPositions = useCallback(async () => {
-    if (!mapRef.current) return;
-    const positions: Record<string, { x: number; y: number }> = {};
-    try {
-      const results = await Promise.all(
-        activeBuildings.map(async (b) => {
-          if (!b.coordinate) return null;
-          try {
-            const pt = await (mapRef.current as any).pointForCoordinate(b.coordinate);
-            return { id: b.id, pt };
-          } catch { return null; }
-        })
-      );
-      results.forEach((r) => { if (r) positions[r.id] = r.pt; });
-    } catch {}
-    setLabelPositions(positions);
-  }, [activeBuildings]);
-
-  // Safe Location Permission Handling
   useEffect(() => {
+    fetchLocations();
     (async () => {
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status === "granted") {
-          const loc = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced,
-          });
+          const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
           setUserCoords(loc.coords);
-        } else {
-          setErrorMsg("Permission to access location was denied");
         }
       } catch (e) {
-        console.warn("Failed to get device location:", e);
+        console.warn("Failed to get location:", e);
       }
     })();
   }, []);
 
   useEffect(() => {
-    // Load saved and recent places
-    AsyncStorage.getItem("@map_saved").then(val => {
-      if (val) setSavedPlaces(JSON.parse(val));
-    });
-    AsyncStorage.getItem("@map_recent").then(val => {
-      if (val) setRecentPlaces(JSON.parse(val));
-    });
-
-    // Highlight user's assigned hostel (Simulated as b5 for Fresher)
-    setTimeout(() => {
-      const myHostel = DIRECTORY.find(d => d.id === "b5");
-      if (myHostel) {
-        focusItem(myHostel, false);
-      }
-    }, 1000);
-  }, []);
-
-  useEffect(() => {
-    if (focusId) {
-      setTimeout(() => {
-        const itemToFocus = DIRECTORY.find(d => d.id === focusId);
-        if (itemToFocus) {
-          focusItem(itemToFocus, true);
-        }
-      }, 500);
-    }
-  }, [focusId]);
-
-  const toggleSavePlace = async (item: LocationItem) => {
-    const isSaved = savedPlaces.some(p => p.id === item.id);
-    let newSaved;
-    if (isSaved) {
-      newSaved = savedPlaces.filter(p => p.id !== item.id);
-    } else {
-      newSaved = [...savedPlaces, item];
-    }
-    setSavedPlaces(newSaved);
-    await AsyncStorage.setItem("@map_saved", JSON.stringify(newSaved));
-  };
-
-  const getCoordinate = (item: LocationItem) => {
-    if (item.coordinate) return item.coordinate;
-    const parent = DIRECTORY.find((d) => d.id === item.parentId);
-    return parent?.coordinate;
-  };
-
-  const toggleCategory = (catId: string) => {
-    setActiveCategories((prev) =>
-      prev.includes(catId) ? prev.filter((id) => id !== catId) : [...prev, catId]
-    );
-  };
-
-  // Search filter
-  const searchResults = useMemo(() => {
-    if (!searchQuery.trim()) return [];
-    const query = searchQuery.toLowerCase();
-    return DIRECTORY.filter(
-      (item) =>
-        item.name?.toLowerCase().includes(query) ||
-        item.category?.toLowerCase().includes(query) ||
-        (item.building && item.building?.toLowerCase().includes(query)) ||
-        (item.description && item.description?.toLowerCase().includes(query))
-    );
-  }, [searchQuery]);
-
-  const getDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
-    const R = 6371; // km
-    const dLat = ((lat2 - lat1) * Math.PI) / 180;
-    const dLon = ((lon2 - lon1) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat1 * Math.PI) / 180) *
-        Math.cos((lat2 * Math.PI) / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
-
-  // "Nearest to Me" Shortcut
-  const findNearest = (category: string) => {
-    // Determine the reference position (user GPS if available, otherwise campus center)
-    const refLat = userCoords?.latitude ?? ASHESI_REGION.latitude;
-    const refLng = userCoords?.longitude ?? ASHESI_REGION.longitude;
-
-    const matches = DIRECTORY.filter((item) => item.category === category);
-    if (matches.length === 0) return;
-
-    let nearestItem: LocationItem | null = null;
-    let minDistance = Infinity;
-
-    matches.forEach((item) => {
-      const coord = getCoordinate(item);
-      if (coord) {
-        const dist = getDistance(refLat, refLng, coord.latitude, coord.longitude);
-        if (dist < minDistance) {
-          minDistance = dist;
-          nearestItem = item;
-        }
-      }
-    });
-
-    if (nearestItem) {
-      focusItem(nearestItem);
-    }
-  };
-
-  const focusItem = (item: LocationItem, addToRecent = true) => {
-    setSelectedItem(item);
-    setSearchQuery("");
-    setIsSearching(false);
-    Keyboard.dismiss();
-
-    if (addToRecent) {
-      setRecentPlaces(prev => {
-        const filtered = prev.filter(p => p.id !== item.id);
-        const next = [item, ...filtered].slice(0, 10);
-        AsyncStorage.setItem("@map_recent", JSON.stringify(next));
-        return next;
-      });
-    }
-
-    const coord = getCoordinate(item);
-    if (coord) {
+    if (selectedItem) {
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        useNativeDriver: true,
+        friction: 8,
+        tension: 50,
+      }).start();
+      
       mapRef.current?.animateToRegion(
         {
-          ...coord,
+          ...selectedItem.coordinate,
           latitudeDelta: 0.0012,
           longitudeDelta: 0.0012,
         },
         600
       );
-
-      // Make sure the category layer is turned on so the pin is visible
-      if (!activeCategories.includes(item.category)) {
-        setActiveCategories((prev) => [...prev, item.category]);
-      }
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: height,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
     }
+  }, [selectedItem]);
+
+  useEffect(() => {
+    if (locations.length === 0) return;
+    
+    if (activeCategory === "All" && searchQuery.trim() === "") {
+      mapRef.current?.animateToRegion(ASHESI_REGION, 500);
+    } else if (filteredLocations.length > 0) {
+      const coords = filteredLocations.map(loc => loc.coordinate);
+      setTimeout(() => {
+        mapRef.current?.fitToCoordinates(coords, {
+          edgePadding: { top: 150, right: 50, bottom: 400, left: 50 },
+          animated: true,
+        });
+      }, 100);
+    }
+  }, [filteredLocations, activeCategory, searchQuery, locations.length]);
+
+  const fetchLocations = async () => {
+    try {
+      setIsLoading(true);
+      const res = await apiRequest<{ locations: LocationItem[] }>("/locations");
+      setLocations(res.locations);
+    } catch (e) {
+      console.error("Failed to fetch locations", e);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const categories = useMemo(() => {
+    const cats = new Set(locations.map(l => l.category));
+    return ["All", ...Array.from(cats)].filter(Boolean);
+  }, [locations]);
+
+  const handleGetDirections = () => {
+    if (!selectedItem) return;
+    const { latitude, longitude } = selectedItem.coordinate;
+    const url = Platform.select({
+      ios: `maps://app?daddr=${latitude},${longitude}`,
+      android: `google.navigation:q=${latitude},${longitude}`,
+      default: `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`,
+    });
+    Linking.openURL(url as string);
   };
 
   const resetMap = () => {
@@ -253,24 +182,18 @@ export default function MapScreen() {
     mapRef.current?.animateToRegion(ASHESI_REGION, 500);
   };
 
-  const handleGetDirections = () => {
-    if (!selectedItem) return;
-    const coord = getCoordinate(selectedItem);
-    if (!coord) return;
-
-    const url = Platform.select({
-      ios: `maps://app?daddr=${coord.latitude},${coord.longitude}`,
-      android: `google.navigation:q=${coord.latitude},${coord.longitude}`,
-      default: `https://www.google.com/maps/dir/?api=1&destination=${coord.latitude},${coord.longitude}`,
-    });
-    Linking.openURL(url);
-  };
-
-
-  // Office details resolver
-  const getOfficeDetails = (linkedOfficeId?: string) => {
-    if (!linkedOfficeId || !MOCK_OFFICES[linkedOfficeId]) return null;
-    return MOCK_OFFICES[linkedOfficeId];
+  const focusUserLocation = () => {
+    if (userCoords) {
+      mapRef.current?.animateToRegion(
+        {
+          latitude: userCoords.latitude,
+          longitude: userCoords.longitude,
+          latitudeDelta: 0.0012,
+          longitudeDelta: 0.0012,
+        },
+        500
+      );
+    }
   };
 
   return (
@@ -283,98 +206,78 @@ export default function MapScreen() {
         mapType="satellite"
         showsUserLocation={!!userCoords}
         showsMyLocationButton={false}
-        showsPointsOfInterest={false}
         showsCompass={true}
+        showsPointsOfInterest={false}
+        customMapStyle={customMapStyle}
         zoomControlEnabled={true}
         onPress={() => {
           setIsSearching(false);
           Keyboard.dismiss();
           setSelectedItem(null);
         }}
-        onMapReady={updateLabelPositions}
-        onRegionChangeComplete={updateLabelPositions}
       >
-        {activeBuildings.map((building) => {
-          const categoryColor =
-            CATEGORIES.find((c) => c.id === building.category)?.color ?? "#A93C40";
+        {filteredLocations.map(loc => {
+          const isSelected = selectedItem?.id === loc.id;
+          const isFiltered = activeCategory !== "All";
+          const isSearched = searchQuery.trim().length > 0;
+          const showLabel = isSelected || isFiltered || isSearched;
+          const color = CATEGORY_COLORS[loc.category] || "#A93C40";
           return (
             <Marker
-              key={building.id}
-              coordinate={building.coordinate!}
-              pinColor={categoryColor}
-              onPress={() => focusItem(building)}
-            />
+              key={loc.id}
+              coordinate={loc.coordinate}
+              onPress={() => {
+                setSelectedItem(loc);
+                setIsSearching(false);
+                Keyboard.dismiss();
+              }}
+              style={{ zIndex: isSelected ? 10 : 1 }}
+            >
+               <Callout tooltip>
+                 <View style={{
+                   backgroundColor: "#FFFFFF",
+                   paddingHorizontal: 12,
+                   paddingVertical: 8,
+                   borderRadius: 12,
+                   borderWidth: 1.5,
+                   borderColor: color,
+                   alignItems: "center",
+                   justifyContent: "center",
+                   elevation: 5,
+                   shadowColor: "#000",
+                   shadowOffset: { width: 0, height: 2 },
+                   shadowOpacity: 0.3,
+                   shadowRadius: 4,
+                 }}>
+                   <Text style={{ fontSize: 13, fontWeight: "700", color: "#1A2B4A" }}>
+                     {loc.shortName || loc.name}
+                   </Text>
+                 </View>
+               </Callout>
+            </Marker>
           );
         })}
       </MapView>
 
-      {/* Floating place-name labels overlay */}
-      <View style={StyleSheet.absoluteFillObject} pointerEvents="box-none">
-        {activeBuildings.map((building) => {
-          const pos = labelPositions[building.id];
-          if (!pos) return null;
-          const isActive =
-            selectedItem?.id === building.id || selectedItem?.parentId === building.id;
-          const categoryColor =
-            CATEGORIES.find((c) => c.id === building.category)?.color ?? "#A93C40";
-          return (
-            <Pressable
-              key={`label-${building.id}`}
-              onPress={() => focusItem(building)}
-              style={{
-                position: "absolute",
-                left: pos.x,
-                top: pos.y - 42,
-                transform: [{ translateX: -60 }],
-                width: 120,
-                alignItems: "center",
-              }}
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  backgroundColor: isActive ? categoryColor : "#FFFFFF",
-                  paddingHorizontal: 8,
-                  paddingVertical: 4,
-                  borderRadius: 12,
-                  borderWidth: 1.5,
-                  borderColor: isActive ? "#FFFFFF" : categoryColor,
-                  elevation: 4,
-                  shadowColor: "#000",
-                  shadowOffset: { width: 0, height: 2 },
-                  shadowOpacity: 0.2,
-                  shadowRadius: 3,
-                }}
-              >
-                <Text style={{ fontSize: 14 }}>{building.emoji}</Text>
-                <Text
-                  numberOfLines={1}
-                  style={{
-                    fontSize: 11,
-                    fontWeight: "bold",
-                    color: isActive ? "#FFFFFF" : "#1A2B4A",
-                    marginLeft: 4,
-                    flexShrink: 1,
-                  }}
-                >
-                  {building.shortName || building.name}
-                </Text>
-              </View>
-            </Pressable>
-          );
-        })}
+      {/* Map Action Buttons */}
+      <View style={[styles.mapActions, { top: Math.max(insets.top, 16) + 120 }]}>
+        <Pressable style={styles.actionBtn} onPress={resetMap}>
+          <IconSymbol name="map.fill" size={20} color="#1A2B4A" />
+        </Pressable>
+        {userCoords && (
+          <Pressable style={styles.actionBtn} onPress={focusUserLocation}>
+            <IconSymbol name="location.fill" size={20} color="#1A2B4A" />
+          </Pressable>
+        )}
       </View>
 
-      {/* Top Overlay Interface */}
-      <View style={[styles.topOverlay, { paddingTop: Math.max(insets.top, 16) }]}>
-        {/* Search Bar Row */}
-        <View style={styles.searchRow}>
-          <View style={styles.searchWrapper}>
-            <IconSymbol name="magnifyingglass" size={20} color="#6B7280" />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Find classrooms, hostels, dining..."
+      {/* Top Search & Filter Bar */}
+      <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 16) }]}>
+        <View style={styles.searchContainer}>
+          <IconSymbol name="magnifyingglass" size={20} color="#9BA3AE" />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search campus locations..."
             placeholderTextColor="#9BA3AE"
             value={searchQuery}
             onChangeText={(text) => {
@@ -384,290 +287,297 @@ export default function MapScreen() {
             onFocus={() => setIsSearching(true)}
           />
           {searchQuery.length > 0 && (
-            <Pressable onPress={() => setSearchQuery("")} style={styles.clearBtn}>
+            <Pressable onPress={() => setSearchQuery("")} style={{ padding: 4 }}>
               <IconSymbol name="xmark.circle.fill" size={18} color="#9BA3AE" />
             </Pressable>
           )}
-          </View>
-          <Pressable 
-            style={[styles.bookmarkBtn, showBookmarks && styles.bookmarkBtnActive]} 
-            onPress={() => setShowBookmarks(!showBookmarks)}
-          >
-            <IconSymbol name="bookmark.fill" size={20} color={showBookmarks ? "#FFFFFF" : "#1A2B4A"} />
-          </Pressable>
         </View>
 
-        {/* Bookmarks & Recent Dropdown */}
-        {showBookmarks && !isSearching && (
-          <View style={styles.bookmarksSheet}>
-            <Text style={styles.bookmarksTitle}>Saved Places</Text>
-            {savedPlaces.length === 0 ? (
-              <Text style={styles.emptyText}>No saved places yet.</Text>
-            ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-                {savedPlaces.map(p => (
-                  <Pressable key={p.id} style={styles.recentItemCard} onPress={() => focusItem(p)}>
-                    <Text style={styles.recentItemEmoji}>{p.emoji || "📍"}</Text>
-                    <Text style={styles.recentItemName} numberOfLines={1}>{p.shortName || p.name}</Text>
-                  </Pressable>
-                ))}
-              </ScrollView>
-            )}
-            
-            <Text style={styles.bookmarksTitle}>Recently Viewed</Text>
-            {recentPlaces.length === 0 ? (
-              <Text style={styles.emptyText}>No recent activity.</Text>
-            ) : (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                {recentPlaces.map(p => (
-                  <Pressable key={p.id} style={styles.recentItemCard} onPress={() => focusItem(p)}>
-                    <Text style={styles.recentItemEmoji}>{p.emoji || "📍"}</Text>
-                    <Text style={styles.recentItemName} numberOfLines={1}>{p.shortName || p.name}</Text>
-                  </Pressable>
-                ))}
-              </ScrollView>
-            )}
-          </View>
-        )}
-
-        {/* Search Results Dropdown */}
-        {isSearching && searchResults.length > 0 && (
-          <ScrollView
-            style={styles.searchResults}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            {searchResults.map((result) => (
-              <Pressable
-                key={result.id}
-                style={styles.resultItem}
-                onPress={() => focusItem(result)}
-              >
-                <View style={styles.resultTextContainer}>
-                  <Text style={styles.resultName}>{result.name}</Text>
-                  <Text style={styles.resultSubtitle}>
-                    {result.category.toUpperCase()}{" "}
-                    {result.building ? `• Inside ${result.building}` : ""}
-                  </Text>
-                </View>
-              </Pressable>
-            ))}
-          </ScrollView>
-        )}
-
-        {/* Category Horizontal Chips */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.categoriesContainer}
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          style={styles.categoriesScroll}
           contentContainerStyle={styles.categoriesContent}
         >
-          {CATEGORIES.map((cat) => {
-            const isActive = activeCategories.includes(cat.id);
-            return (
-              <Pressable
-                key={cat.id}
-                onPress={() => toggleCategory(cat.id)}
-                style={[
-                  styles.categoryChip,
-                  {
-                    backgroundColor: isActive ? cat.color : "#FFFFFF",
-                    borderColor: isActive ? cat.color : "#E5E7EB",
-                  },
-                ]}
-              >
-                <IconSymbol
-                  name={cat.icon as any}
-                  size={14}
-                  color={isActive ? "#FFFFFF" : "#4B5563"}
-                />
-                <Text style={[styles.categoryText, { color: isActive ? "#FFFFFF" : "#4B5563" }]}>
-                  {cat.name}
-                </Text>
-              </Pressable>
-            );
-          })}
+          {categories.map(cat => (
+            <Pressable
+              key={cat}
+              onPress={() => { setActiveCategory(cat); setSelectedItem(null); }}
+              style={[styles.categoryPill, activeCategory === cat && styles.categoryPillActive]}
+            >
+              <Text style={[styles.categoryPillText, activeCategory === cat && styles.categoryPillTextActive]}>
+                {cat}
+              </Text>
+            </Pressable>
+          ))}
         </ScrollView>
       </View>
 
-      {/* Floating Action Controls */}
-      <View style={[styles.floatingControls, { top: Math.max(insets.top, 16) + 130 }]}>
-        <Pressable style={styles.controlBtn} onPress={resetMap}>
-          <IconSymbol name="location.fill" size={20} color="#1A2B4A" />
-        </Pressable>
-        <Pressable style={styles.controlBtn} onPress={() => findNearest("health")}>
-          <Text style={styles.quickActionText}>🏥</Text>
-        </Pressable>
-        <Pressable style={styles.controlBtn} onPress={() => findNearest("dining")}>
-          <Text style={styles.quickActionText}>🍽️</Text>
-        </Pressable>
-      </View>
-
-      {/* Pin Detail bottom sheet */}
-      {selectedItem && !isSearching && (
-        <View
-          style={[styles.detailSheetWrapper, { paddingBottom: Math.max(insets.bottom, 20) }]}
-        >
-          <View style={styles.detailSheet}>
-            {/* Heading Section */}
-            <View style={styles.detailHeader}>
-              <View style={styles.titleWrapper}>
-                <Text style={styles.detailTitle}>{selectedItem.name}</Text>
-                <Text style={styles.detailSubtitle}>
-                  {selectedItem.category.toUpperCase()}{" "}
-                  {selectedItem.building && `• ${selectedItem.building}`}
-                </Text>
-              </View>
-              <View style={styles.titleActionsRow}>
-                <Pressable onPress={() => toggleSavePlace(selectedItem)} style={styles.saveBtn}>
-                  <IconSymbol name={savedPlaces.some(p => p.id === selectedItem.id) ? "bookmark.fill" : "bookmark"} size={20} color="#A93C40" />
-                </Pressable>
-                <Pressable style={styles.closeBtn} onPress={() => setSelectedItem(null)}>
-                  <IconSymbol name="xmark" size={16} color="#1A2B4A" />
-                </Pressable>
-              </View>
-            </View>
-
-            <ScrollView
-              style={styles.detailScroll}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 16 }}
-            >
-              {/* Floor/Building Context */}
-              {selectedItem.floor && (
-                <View style={styles.contextBadge}>
-                  <IconSymbol name="building.2.fill" size={14} color="#A93C40" />
-                  <Text style={styles.contextText}>
-                    {selectedItem.floor} inside {selectedItem.building}
-                  </Text>
-                </View>
-              )}
-
-              {/* Description */}
-              <Text style={styles.detailDescription}>
-                {selectedItem.description || "No description provided."}
-              </Text>
-
-              {/* Operating hours */}
-              {selectedItem.hours && (
-                <View style={styles.infoRow}>
-                  <IconSymbol name="calendar" size={16} color="#4B5563" />
-                  <Text style={styles.infoText}>{selectedItem.hours}</Text>
-                </View>
-              )}
-
-              {/* Office integration details (pulled directly from Help Center records) */}
-              {selectedItem.linked_office_id && getOfficeDetails(selectedItem.linked_office_id) && (
-                <View style={styles.officeBlock}>
-                  <View style={styles.officeBlockHeader}>
-                    <Text style={styles.officeBlockTitle}>Help Center Office Support</Text>
-                  </View>
-                  {getOfficeDetails(selectedItem.linked_office_id)?.contacts?.email && (
-                    <Text style={styles.officeInfoLine}>
-                      ✉️ {getOfficeDetails(selectedItem.linked_office_id)?.contacts?.email}
-                    </Text>
-                  )}
-                  {getOfficeDetails(selectedItem.linked_office_id)?.contacts?.phone && (
-                    <Text style={styles.officeInfoLine}>
-                      📞 {getOfficeDetails(selectedItem.linked_office_id)?.contacts?.phone}
-                    </Text>
-                  )}
-                  {getOfficeDetails(selectedItem.linked_office_id)?.staff && (
-                    <View style={styles.staffList}>
-                      <Text style={styles.staffHeader}>Key Staff:</Text>
-                      {getOfficeDetails(selectedItem.linked_office_id)?.staff.map((member) => (
-                        <Text key={member.id} style={styles.staffLine}>
-                          • {member.name} ({member.role})
-                        </Text>
-                      ))}
-                    </View>
-                  )}
-                </View>
-              )}
-            </ScrollView>
-
-            {/* Handoff directions button */}
-            <Pressable style={styles.directionsBtn} onPress={handleGetDirections}>
-              <IconSymbol
-                name="arrow.triangle.turn.up.right.circle.fill"
-                size={18}
-                color="#FFFFFF"
-              />
-              <Text style={styles.directionsText}>Get Directions</Text>
-            </Pressable>
-          </View>
+      {/* Loading Overlay */}
+      {isLoading && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#A93C40" />
         </View>
       )}
+
+      {/* Search Results Dropdown */}
+      {isSearching && searchQuery.length > 0 && (
+        <View style={[styles.searchResults, { top: insets.top + 120 }]}>
+          <ScrollView keyboardShouldPersistTaps="handled">
+            {filteredLocations.map(loc => (
+              <Pressable
+                key={loc.id}
+                style={styles.searchResultItem}
+                onPress={() => {
+                  setSelectedItem(loc);
+                  setIsSearching(false);
+                  Keyboard.dismiss();
+                }}
+              >
+                <Text style={styles.searchResultEmoji}>{loc.emoji || "📍"}</Text>
+                <View>
+                  <Text style={styles.searchResultName}>{loc.name}</Text>
+                  <Text style={styles.searchResultCategory}>{loc.category}</Text>
+                </View>
+              </Pressable>
+            ))}
+            {filteredLocations.length === 0 && (
+              <Text style={styles.noResultsText}>No locations found</Text>
+            )}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* Bottom Sheet Details */}
+      <Animated.View style={[styles.bottomSheet, { transform: [{ translateY: slideAnim }] }]}>
+        {selectedItem && (
+          <View style={[styles.sheetContent, { paddingBottom: Math.max(insets.bottom, 24) }]}>
+            <View style={styles.sheetHeader}>
+              <View style={[styles.sheetIconWrapper, { backgroundColor: CATEGORY_COLORS[selectedItem.category] || "#A93C40" }]}>
+                <Text style={styles.sheetIconEmoji}>{selectedItem.emoji || "📍"}</Text>
+              </View>
+              <View style={styles.sheetTitleContainer}>
+                <Text style={styles.sheetTitle}>{selectedItem.name}</Text>
+                <Text style={styles.sheetCategory}>{selectedItem.category}</Text>
+              </View>
+              <Pressable onPress={() => setSelectedItem(null)} style={styles.closeSheetBtn}>
+                <IconSymbol name="xmark" size={24} color="#9BA3AE" />
+              </Pressable>
+            </View>
+
+            {selectedItem.description && (
+              <Text style={styles.sheetDescription}>{selectedItem.description}</Text>
+            )}
+
+            {selectedItem.hours && (
+              <View style={styles.infoRow}>
+                <IconSymbol name="clock.fill" size={18} color="#6B7280" />
+                <Text style={styles.infoText}>{selectedItem.hours}</Text>
+              </View>
+            )}
+
+            <Pressable style={styles.directionsBtn} onPress={handleGetDirections}>
+              <IconSymbol name="location.fill" size={20} color="#FFFFFF" />
+              <Text style={styles.directionsBtnText}>Get Directions</Text>
+            </Pressable>
+          </View>
+        )}
+      </Animated.View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: "#E5E7EB",
-  },
-  map: {
-    ...StyleSheet.absoluteFillObject,
-  },
-
-  // Custom Markers
-  markerContainer: {
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  markerIconBg: {
-    alignItems: "center",
-    justifyContent: "center",
+  screen: { flex: 1, backgroundColor: "#F3F4F6" },
+  map: { width, height },
+  
+  markerContainer: { alignItems: "center", justifyContent: "center" },
+  markerPin: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 2,
+    alignItems: "center",
+    justifyContent: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
     elevation: 5,
   },
+  markerSelected: {
+    transform: [{ scale: 1.2 }],
+    zIndex: 10,
+  },
+  markerEmoji: { fontSize: 18 },
   markerLabel: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginTop: 4,
+    borderWidth: 1,
+  },
+  markerLabelSelected: {
+    backgroundColor: '#A93C40',
+  },
+  markerLabelText: {
     fontSize: 10,
-    fontWeight: "bold",
-    marginTop: 2,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: 4,
-    overflow: "hidden",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
-    elevation: 1,
+    fontWeight: 'bold',
+    color: '#1A2B4A',
+  },
+  markerLabelTextSelected: {
+    color: '#FFFFFF',
+  },
+  pulseRing: {
+    position: "absolute",
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 2,
+    borderColor: "#A93C40",
+    opacity: 0.3,
+    zIndex: -1,
   },
 
-  // Top overlay interface
-  topOverlay: {
+  topBar: {
     position: "absolute",
-    left: 12,
-    right: 12,
+    top: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
     zIndex: 20,
-    gap: 8,
   },
-  searchRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  searchWrapper: {
+  searchContainer: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 12,
-    height: 48,
-    borderRadius: 24,
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    height: 56,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
+    shadowRadius: 12,
+    elevation: 5,
+    marginBottom: 12,
   },
-  bookmarkBtn: {
+  searchInput: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 16,
+    color: "#1A2B4A",
+  },
+  categoriesScroll: { flexGrow: 0 },
+  categoriesContent: { gap: 8, paddingRight: 32 },
+  categoryPill: {
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  categoryPillActive: { backgroundColor: "#A93C40" },
+  categoryPillText: { fontSize: 14, fontWeight: "600", color: "#6B7280" },
+  categoryPillTextActive: { color: "#FFFFFF" },
+
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255,255,255,0.6)",
+    alignItems: "center",
+    justifyContent: "center",
+    zIndex: 10,
+  },
+
+  searchResults: {
+    position: "absolute",
+    left: 16,
+    right: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    maxHeight: 300,
+    zIndex: 30,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 5,
+  },
+  searchResultItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  searchResultEmoji: { fontSize: 24, marginRight: 12 },
+  searchResultName: { fontSize: 16, fontWeight: "600", color: "#1A2B4A" },
+  searchResultCategory: { fontSize: 13, color: "#6B7280", marginTop: 2 },
+  noResultsText: { padding: 20, textAlign: "center", color: "#6B7280" },
+
+  bottomSheet: {
+    position: "absolute",
+    bottom: 0,
+    marginBottom: 80,
+    left: 0,
+    right: 0,
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 20,
+    zIndex: 40,
+  },
+  sheetContent: { padding: 24 },
+  sheetHeader: { flexDirection: "row", alignItems: "flex-start", marginBottom: 16 },
+  sheetIconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 16,
+  },
+  sheetIconEmoji: { fontSize: 24 },
+  sheetTitleContainer: { flex: 1 },
+  sheetTitle: { fontSize: 22, fontWeight: "800", color: "#1A2B4A", marginBottom: 4 },
+  sheetCategory: { fontSize: 14, fontWeight: "600", color: "#6B7280", textTransform: "uppercase" },
+  closeSheetBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  sheetDescription: { fontSize: 15, color: "#4B5563", lineHeight: 22, marginBottom: 16 },
+  infoRow: { flexDirection: "row", alignItems: "center", marginBottom: 24 },
+  infoText: { fontSize: 15, color: "#4B5563", marginLeft: 12, fontWeight: "500" },
+  directionsBtn: {
+    backgroundColor: "#A93C40",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    borderRadius: 16,
+    gap: 8,
+  },
+  directionsBtnText: { color: "#FFFFFF", fontSize: 16, fontWeight: "700" },
+
+  mapActions: {
+    position: "absolute",
+    right: 16,
+    gap: 12,
+    zIndex: 10,
+  },
+  actionBtn: {
     width: 48,
     height: 48,
     borderRadius: 24,
@@ -675,291 +585,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 3,
-  },
-  bookmarkBtnActive: {
-    backgroundColor: "#A93C40",
-  },
-  bookmarksSheet: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    padding: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  bookmarksTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#1A2B4A",
-    marginBottom: 8,
-  },
-  emptyText: {
-    fontSize: 13,
-    color: "#9BA3AE",
-    fontStyle: "italic",
-    marginBottom: 12,
-  },
-  recentItemCard: {
-    backgroundColor: "#F3F4F6",
-    borderRadius: 12,
-    padding: 12,
-    marginRight: 8,
-    alignItems: "center",
-    width: 80,
-  },
-  recentItemEmoji: {
-    fontSize: 20,
-    marginBottom: 4,
-  },
-  recentItemName: {
-    fontSize: 11,
-    fontWeight: "600",
-    color: "#4B5563",
-    textAlign: "center",
-  },
-  searchInput: {
-    flex: 1,
-    marginLeft: 8,
-    fontSize: 15,
-    color: "#1A2B4A",
-    fontWeight: "500",
-  },
-  clearBtn: {
-    padding: 4,
-  },
-  searchResults: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    maxHeight: 200,
-    padding: 4,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  resultItem: {
-    padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-  },
-  resultTextContainer: {
-    flex: 1,
-  },
-  resultName: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#1A2B4A",
-  },
-  resultSubtitle: {
-    fontSize: 12,
-    color: "#6B7280",
-    marginTop: 2,
-  },
-
-  // Horizontal Category Chips
-  categoriesContainer: {
-    flexDirection: "row",
-  },
-  categoriesContent: {
-    gap: 8,
-    paddingVertical: 4,
-  },
-  categoryChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    height: 32,
-    borderRadius: 16,
-    borderWidth: 1,
-    gap: 6,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  categoryText: {
-    fontSize: 12,
-    fontWeight: "600",
-  },
-
-  // Floating Actions Controls
-  floatingControls: {
-    position: "absolute",
-    right: 16,
-    zIndex: 10,
-    gap: 10,
-  },
-  controlBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  quickActionText: {
-    fontSize: 18,
-  },
-
-  // Detail Sheet Bottom
-  detailSheetWrapper: {
-    position: "absolute",
-    bottom: 100,
-    left: 0,
-    right: 0,
-    paddingHorizontal: 16,
-    zIndex: 10,
-  },
-  detailSheet: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 24,
-    padding: 16,
-    maxHeight: 340,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 10,
-  },
-  detailHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    padding: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-  },
-  titleWrapper: {
-    flex: 1,
-    paddingRight: 12,
-  },
-  titleActionsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  saveBtn: {
-    padding: 4,
-  },
-  detailTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#1A2B4A",
-  },
-  detailSubtitle: {
-    fontSize: 12,
-    color: "#9BA3AE",
-    marginTop: 2,
-  },
-  closeBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "#F3F4F6",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  detailScroll: {
-    flex: 1,
-  },
-  contextBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FEF2F2",
-    alignSelf: "flex-start",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 6,
-    gap: 6,
-    marginBottom: 8,
-  },
-  contextText: {
-    fontSize: 12,
-    color: "#A93C40",
-    fontWeight: "600",
-  },
-  detailDescription: {
-    fontSize: 14,
-    color: "#4B5563",
-    lineHeight: 20,
-    marginBottom: 12,
-  },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginBottom: 8,
-  },
-  infoText: {
-    fontSize: 13,
-    color: "#4B5563",
-    fontWeight: "500",
-  },
-  officeBlock: {
-    backgroundColor: "#F9FAFB",
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-    borderRadius: 12,
-    padding: 10,
-    marginTop: 8,
-  },
-  officeBlockHeader: {
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
-    paddingBottom: 4,
-    marginBottom: 6,
-  },
-  officeBlockTitle: {
-    fontSize: 13,
-    fontWeight: "bold",
-    color: "#1A2B4A",
-  },
-  officeInfoLine: {
-    fontSize: 12,
-    color: "#4B5563",
-    marginBottom: 3,
-  },
-  staffList: {
-    marginTop: 6,
-  },
-  staffHeader: {
-    fontSize: 12,
-    fontWeight: "bold",
-    color: "#1A2B4A",
-    marginBottom: 2,
-  },
-  staffLine: {
-    fontSize: 12,
-    color: "#6B7280",
-    marginLeft: 4,
-  },
-  directionsBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#A93C40",
-    paddingVertical: 12,
-    borderRadius: 12,
-    gap: 8,
-    marginTop: 10,
-  },
-  directionsText: {
-    color: "#FFFFFF",
-    fontSize: 14,
-    fontWeight: "bold",
+    shadowRadius: 8,
+    elevation: 4,
   },
 });
