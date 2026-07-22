@@ -105,7 +105,11 @@ export default function UserProfileScreen() {
   const assignedCoach = profile.assigned_coach;
   
   const completedSessions = parseInt(
-    isCoach ? (profile.completed_sessions_as_provider || 0) : (profile.completed_sessions_as_student || 0)
+    isCoach 
+      ? (profile.completed_sessions_as_provider || 0) 
+      : (profile.completed_sessions_with_viewer !== undefined 
+          ? profile.completed_sessions_with_viewer 
+          : (profile.completed_sessions_as_student || 0))
   );
   
   // A coach/peer counsellor's target is 3 sessions per assigned fresher. A fresher's target is simply 3.
