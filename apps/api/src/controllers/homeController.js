@@ -42,7 +42,7 @@ const getHomeDashboard = asyncHandler(async (req, res) => {
       promises.push(
         client.query(`
           SELECT g.id, g.name, g.image_url, g.category, 
-                 (g.created_by = $1 OR EXISTS (SELECT 1 FROM group_leaders gl WHERE gl.group_id = g.id AND gl.user_id = $1)) as "isLeader" 
+                 (g.lead_user_id = $1 OR EXISTS (SELECT 1 FROM group_leaders gl WHERE gl.group_id = g.id AND gl.user_id = $1)) as "isLeader" 
           FROM groups g 
           JOIN group_members gm ON g.id = gm.group_id 
           WHERE gm.user_id = $1
