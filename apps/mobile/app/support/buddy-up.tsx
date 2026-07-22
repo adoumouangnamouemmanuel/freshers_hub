@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 import { StyleSheet, Text, View, TouchableOpacity, ScrollView, ActivityIndicator, Linking } from "react-native";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "../../context/auth-context";
 import { IconSymbol } from "../../components/ui/icon-symbol";
 
@@ -9,33 +10,21 @@ export default function BuddyUpScreen() {
   const { session } = useAuth();
   const token = session?.accessToken;
   const user = session?.user;
-  const [loading, setLoading] = useState(true);
-  const [buddy, setBuddy] = useState<any>(null);
+  const { data: buddy = null, isLoading: loading } = useQuery({
+    queryKey: ['buddy-pairing'],
+    queryFn: async () => {
+      const headers = { Authorization: `Bearer ${token}` };
+      const res = await fetch(`${API_URL}/support/buddy`, { headers });
+      if (!res.ok) throw new Error("Failed to fetch buddy pairing");
+      return res.json();
+    },
+    enabled: !!token,
+    staleTime: 1000 * 60 * 5,
+  });
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const headers = { Authorization: `Bearer ${token}` };
-        const res = await fetch(`${API_URL}/support/buddy`, { headers });
-        if (res.ok) {
-          const data = await res.json();
-          setBuddy(data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch buddy pairing", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-    if (token) fetchData();
-  }, [token]);
-
-  const handleWhatsAppContact = async () => {
-    if (!buddy?.phone) return;
-    
-    // Log the click in the backend
-    try {
-      await fetch(`${API_URL}/support/contact`, {
+  const contactMutation = useMutation({
+    mutationFn: async () => {
+      return fetch(`${API_URL}/support/contact`, {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -47,9 +36,14 @@ export default function BuddyUpScreen() {
           context: 'buddy_up_initial_contact'
         })
       });
-    } catch (e) {
-      console.warn("Failed to log contact click", e);
     }
+  });
+
+  const handleWhatsAppContact = async () => {
+    if (!buddy?.phone) return;
+    
+    // Log the click in the backend
+    contactMutation.mutate();
     
     // Clean phone number (remove non-digits)
     const cleanPhone = buddy.phone.replace(/\D/g, '');
