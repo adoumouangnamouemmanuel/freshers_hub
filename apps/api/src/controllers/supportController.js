@@ -17,7 +17,7 @@ const getSessions = asyncHandler(async (req, res) => {
     let queryStr = `
       SELECT 
         COUNT(*) OVER() AS total_count,
-        s.id, s.unit_id, s.academic_year_id, s.student_id, s.provider_id, 
+        s.id, s.unit_id, s.academic_year_id, s.student_id, s.provider_id, s.created_by,
         s.with_type as type, s.scheduled_at as date, s.location, s.description, s.status, s.is_mandatory, s.title,
         EXISTS (SELECT 1 FROM session_reports sr WHERE sr.session_id = s.id) AS has_report,
         u1.full_name AS student_name, u1.avatar_url AS student_avatar,
@@ -80,7 +80,7 @@ const getMySessions = asyncHandler(async (req, res) => {
     const { rows } = await client.query(`
       SELECT 
         COUNT(*) OVER() AS total_count,
-        s.id, s.unit_id, s.academic_year_id, s.student_id, s.provider_id, 
+        s.id, s.unit_id, s.academic_year_id, s.student_id, s.provider_id, s.created_by,
         s.with_type as type, s.scheduled_at as date, s.location, s.description, s.status, s.is_mandatory, s.title,
         EXISTS (SELECT 1 FROM session_reports sr WHERE sr.session_id = s.id) AS has_report,
         u1.full_name AS student_name, u1.avatar_url AS student_avatar,
@@ -164,11 +164,11 @@ const bookSession = asyncHandler(async (req, res) => {
 
     const { rows } = await client.query(`
       INSERT INTO sessions 
-        (title, unit_id, academic_year_id, student_id, provider_id, with_type, scheduled_at, location, description, is_mandatory, status)
+        (title, unit_id, academic_year_id, student_id, provider_id, with_type, scheduled_at, location, description, is_mandatory, status, created_by)
       VALUES 
-        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'scheduled')
+        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'scheduled', $11)
       RETURNING *
-    `, [finalTitle, unitId, academicYearId, finalStudentId, finalProviderId, withType, scheduledAt, location, description, isMandatory || false]);
+    `, [finalTitle, unitId, academicYearId, finalStudentId, finalProviderId, withType, scheduledAt, location, description, isMandatory || false, req.user.id]);
 
     await client.query("COMMIT");
 
