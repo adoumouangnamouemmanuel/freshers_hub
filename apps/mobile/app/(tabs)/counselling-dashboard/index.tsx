@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { StyleSheet, Text, View, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, Platform } from "react-native";
+import { useQuery } from "@tanstack/react-query";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../../context/auth-context";
@@ -15,33 +16,21 @@ export default function counsellingDashboard() {
   const router = useRouter();
   const firstName = session?.user?.fullName?.split(" ")[0] ?? "counsellor";
 
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [data, setData] = useState<any>(null);
-
-  const fetchDashboard = async () => {
-    try {
+  const { data, isLoading: loading, isFetching: refreshing, refetch } = useQuery({
+    queryKey: ['counselling-dashboard'],
+    queryFn: async () => {
       const res = await fetch(`${API_URL}/support/counselling/dashboard`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) {
-        setData(await res.json());
-      }
-    } catch (err) {
-      console.error("Failed to fetch counselling dashboard:", err);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    if (token) fetchDashboard();
-  }, [token]);
+      if (!res.ok) throw new Error("Failed to fetch counselling dashboard");
+      return res.json();
+    },
+    enabled: !!token,
+    staleTime: 1000 * 60 * 5,
+  });
 
   const onRefresh = () => {
-    setRefreshing(true);
-    fetchDashboard();
+    refetch();
   };
 
   if (loading) {
