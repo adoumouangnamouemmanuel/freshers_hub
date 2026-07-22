@@ -226,6 +226,7 @@ const getAdminUserProfile = asyncHandler(async (req, res) => {
     userProfile.recent_sessions = recentSessions.map(rs => {
       return {
         id: rs.id,
+        title: rs.title,
         type: (rs.type === 'peer_coach' && rs.with_name?.toLowerCase().includes('yvonne')) ? 'Coaching' : (rs.type === 'peer_coach' ? 'Peer Coaching' : (rs.type || 'Session')),
         date: new Date(rs.date).toLocaleDateString() + " • " + new Date(rs.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
         status: rs.status,
