@@ -8,6 +8,9 @@ import { useCallback, useState } from "react";
 export function usePushNotifications(accessToken: string | undefined) {
   const [isEnabled, setIsEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // We keep expoPushToken undefined since we are stubbing
+  const expoPushToken = undefined;
 
   const enablePush = useCallback(async () => {
     setIsLoading(true);
@@ -15,6 +18,7 @@ export function usePushNotifications(accessToken: string | undefined) {
     setTimeout(() => {
       setIsEnabled(true);
       setIsLoading(false);
+      // NOTE: In the real implementation, this would sync with POST /notifications/push-token
     }, 500);
   }, []);
 
@@ -24,8 +28,9 @@ export function usePushNotifications(accessToken: string | undefined) {
     setTimeout(() => {
       setIsEnabled(false);
       setIsLoading(false);
+      // NOTE: In the real implementation, this would sync with DELETE /notifications/push-token
     }, 500);
   }, []);
 
-  return { isEnabled, isLoading, enablePush, disablePush };
+  return { isEnabled, isLoading, enablePush, disablePush, expoPushToken };
 }
