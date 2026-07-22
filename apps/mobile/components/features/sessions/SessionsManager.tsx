@@ -556,7 +556,7 @@ const styles = StyleSheet.create({
 
   fabContainer: {
     position: "absolute",
-    bottom: 80,
+    bottom: 0,
     right: 24,
   },
   fabPrimary: {
