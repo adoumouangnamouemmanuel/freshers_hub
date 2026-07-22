@@ -134,12 +134,95 @@ export default function ScheduleSessionScreen() {
         body: JSON.stringify(payload)
       });
 
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "A network error occurred.");
-    } finally {
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || "Something went wrong.");
+      }
+      return res;
+    },
+    onSuccess: () => {
+      Alert.alert("Success", isEditMode ? "Session updated successfully!" : "Session has been scheduled successfully!", [
+        { text: "OK", onPress: () => {
+          queryClient.invalidateQueries({ queryKey: ['sessions'] });
+          queryClient.invalidateQueries({ queryKey: ['counselling-sessions'] });
+          queryClient.invalidateQueries({ queryKey: ['advising-sessions'] });
+          queryClient.invalidateQueries({ queryKey: ['coaching-admin-dashboard'] });
+          router.back();
+        } }
+      ]);
+    },
+    onError: (err: any) => {
+      Alert.alert("Error", err.message);
+    },
+    onSettled: () => {
       setLoading(false);
     }
+  });
+
+  const handleSubmit = async () => {
+    if (!form.location) {
+      Alert.alert("Missing Fields", "Please enter a location or meeting link.");
+      return;
+    }
+
+    if (!form.targetUserId) {
+      Alert.alert("Missing User", "Please select a user to schedule with.");
+      return;
+    }
+
+    setLoading(true);
+    const scheduledAt = date.toISOString();
+
+    const isAdvisorBooking = isAsAdvisor || isAdvisorRole;
+    const endpoint = isEditMode 
+      ? `/support/sessions/${sessionId}`
+      : isAdvisorBooking ? "/support/advising/sessions"
+      : isCounsellorRole && canPickUser ? "/support/counselling/sessions"
+      : isCoachAdmin ? "/support/admin/sessions" 
+      : "/support/sessions";
+    const method = isEditMode ? "PUT" : "POST";
+    
+    const payload = isEditMode ? {
+      title: form.title,
+      location: form.location,
+      description: form.description,
+      scheduledAt,
+    } : isAdvisorBooking ? {
+      title: form.title,
+      academicYearId: 1,
+      studentId: form.targetUserId,
+      scheduledAt,
+      location: form.location,
+      description: form.description,
+    } : isCounsellorRole && canPickUser ? {
+      title: form.title,
+      academicYearId: 1,
+      studentId: form.targetUserId,
+      scheduledAt,
+      location: form.location,
+      description: form.description,
+    } : isCoachAdmin || isAsCoach ? {
+      title: form.title,
+      unitId: effectiveUnitId,
+      academicYearId: 1,
+      studentId: form.targetUserId,
+      providerId: session?.user.id,
+      scheduledAt,
+      location: form.location,
+      description: form.description,
+      withType: "peer_coach"
+    } : {
+      title: form.title,
+      unitId: effectiveUnitId,
+      academicYearId: 1,
+      providerId: form.targetUserId, 
+      scheduledAt,
+      location: form.location,
+      description: form.description,
+      withType: (role === "University Counsellor") ? "counsellor" : (role === "Academic Advisor" ? "advisor" : "peer_coach")
+    };
+
+    submitMutation.mutate({ endpoint, method, payload });
   };
 
   return (
