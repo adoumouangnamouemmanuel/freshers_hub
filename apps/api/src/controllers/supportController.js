@@ -206,35 +206,56 @@ const updateSessionStatus = asyncHandler(async (req, res) => {
     await client.query("BEGIN");
     await client.query("SELECT set_config('app.current_user_id', $1, true)", [req.user.id]);
 
+    const { rows: sessionRows } = await client.query("SELECT * FROM sessions WHERE id = $1", [id]);
+    if (sessionRows.length === 0) {
+      await client.query("ROLLBACK");
+      throw new AppError("Session not found", 404);
+    }
+
+    const sessionData = sessionRows[0];
+    const isOwner = sessionData.created_by === req.user.id;
+    const isProvider = sessionData.provider_id === req.user.id;
+    const isStudent = sessionData.student_id === req.user.id;
+    const hasAllowedRole = req.user.roles && req.user.roles.some(r => 
+      ['coach_admin', 'advisor', 'counsellor', 'peer_coach'].includes(r)
+    );
+
+    if (status === 'completed') {
+      if (!isOwner && !(isProvider && hasAllowedRole)) {
+        await client.query("ROLLBACK");
+        throw new AppError("Permission denied to complete session", 403);
+      }
+    } else {
+      if (!isOwner && !isStudent && !isProvider) {
+        await client.query("ROLLBACK");
+        throw new AppError("Permission denied to update session status", 403);
+      }
+    }
+
     const { rows } = await client.query(`
       UPDATE sessions
       SET status = $1, updated_at = now()
-      WHERE id = $2 AND (student_id = $3 OR provider_id = $3)
+      WHERE id = $2
       RETURNING *
-    `, [status, id, req.user.id]);
-
-    if (rows.length === 0) {
-      await client.query("ROLLBACK");
-      throw new AppError("Session not found or permission denied", 404);
-    }
+    `, [status, id]);
 
     await client.query("COMMIT");
 
     // Send notification
-    const sessionData = rows[0];
-    const notifyUserId = sessionData.student_id === req.user.id ? sessionData.provider_id : sessionData.student_id;
+    const updatedSessionData = rows[0];
+    const notifyUserId = updatedSessionData.student_id === req.user.id ? updatedSessionData.provider_id : updatedSessionData.student_id;
     if (notifyUserId) {
       await notificationService.sendNotification({
         fromUserId: req.user.id,
         toUserId: notifyUserId,
         category: "session",
         title: "Session Status Updated",
-        body: `Your session "${sessionData.title}" has been marked as ${status}.`,
-        relatedEntity: `session:${sessionData.id}`
+        body: `Your session "${updatedSessionData.title}" has been marked as ${status}.`,
+        relatedEntity: `session:${updatedSessionData.id}`
       }).catch(err => console.error("Failed to send session status notification:", err));
     }
 
-    res.json(rows[0]);
+    res.json(updatedSessionData);
   } finally {
     client.release();
   }
@@ -254,7 +275,7 @@ const updateSession = asyncHandler(async (req, res) => {
           scheduled_at = COALESCE($3, scheduled_at),
           title = COALESCE($4, title),
           updated_at = now()
-      WHERE id = $5 AND (student_id = $6 OR provider_id = $6)
+      WHERE id = $5 AND created_by = $6
       RETURNING *
     `, [location, description, scheduledAt, title, id, req.user.id]);
 
@@ -288,11 +309,11 @@ const deleteSession = asyncHandler(async (req, res) => {
   const client = await pool.connect();
   try {
     const { rowCount } = await client.query(`
-      DELETE FROM sessions WHERE id = $1 AND (student_id = $2 OR provider_id = $2)
+      DELETE FROM sessions WHERE id = $1 AND created_by = $2
     `, [id, req.user.id]);
 
     if (rowCount === 0) {
-      throw new AppError("Session not found", 404);
+      throw new AppError("Session not found or permission denied", 404);
     }
 
     res.json({ success: true, message: "Session deleted" });
