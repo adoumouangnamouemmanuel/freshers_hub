@@ -379,19 +379,39 @@ class SupportAdminRepository {
     };
   }
 
-  async getAdminStudents(page = 1, limit = 20) {
+  async getAdminStudents(page = 1, limit = 20, search = "", tab = "all") {
     const offset = (page - 1) * limit;
+    
+    // Determine dynamic fresher year based on current year + 4
+    const currentYear = new Date().getFullYear();
+    const fresherYear = currentYear + 4;
+    
+    let baseWhere = `(r.name = 'peer_coach' OR (r.name = 'student' AND u.class_year = ${fresherYear}))`;
+    
+    if (tab === "freshers") {
+      baseWhere = `(r.name = 'student' AND u.class_year = ${fresherYear})`;
+    } else if (tab === "coaches") {
+      baseWhere = `r.name = 'peer_coach'`;
+    }
+    
+    const queryParams = [limit, offset];
+    let searchCondition = "";
+    if (search) {
+      searchCondition = `AND (u.full_name ILIKE $3 OR u.major ILIKE $3)`;
+      queryParams.push(`%${search}%`);
+    }
+
     const { rows } = await pool.query(`
       SELECT COUNT(*) OVER() AS total_count,
              u.id, u.full_name as name, u.avatar_url, u.country, u.major, MIN(r.name) as type
       FROM users u
       JOIN user_roles ur ON u.id = ur.user_id
       JOIN roles r ON ur.role_id = r.id
-      WHERE r.name = 'peer_coach' OR (r.name = 'student' AND u.class_year = 2030)
+      WHERE ${baseWhere} ${searchCondition}
       GROUP BY u.id, u.full_name, u.avatar_url, u.country, u.major
       ORDER BY u.full_name ASC
       LIMIT $1 OFFSET $2
-    `, [limit, offset]);
+    `, queryParams);
     
     const total = rows.length > 0 ? parseInt(rows[0].total_count, 10) : 0;
     return {
