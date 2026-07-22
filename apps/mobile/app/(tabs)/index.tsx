@@ -23,6 +23,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { PostCard } from "@/components/dashboard/PostCard";
+import { useQuery } from "@tanstack/react-query";
 // import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Post = {
@@ -60,9 +61,35 @@ type AdminStats = {
   upcoming_sessions_count?: number;
   completed_mandatory_sessions?: number;
   active_coaches?: number;
-  overdue_sessions_count?: number;
 };
 
+function NotificationBell() {
+  const router = useRouter();
+  const { session } = useAuth();
+  
+  const { data: unreadData } = useQuery({
+    queryKey: ['notifications', 'unread-count'],
+    queryFn: async () => {
+      const headers = { Authorization: `Bearer ${session?.accessToken}` };
+      return apiRequest<{ count: number }>("/notifications/unread-count", { headers });
+    },
+    enabled: !!session?.accessToken,
+    refetchInterval: 60000, // 60 seconds polling
+  });
+  
+  const unreadCount = unreadData?.count || 0;
+
+  return (
+    <Pressable style={styles.iconBtn} onPress={() => router.push("/notifications")}>
+      <IconSymbol name="bell.fill" size={22} color="#1A2B4A" />
+      {unreadCount > 0 && (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>{unreadCount > 99 ? "99+" : unreadCount}</Text>
+        </View>
+      )}
+    </Pressable>
+  );
+}
 
 export default function FeedScreen() {
   const router = useRouter();
@@ -70,7 +97,6 @@ export default function FeedScreen() {
   const insets = useSafeAreaInsets();
 
   const [posts, setPosts] = useState<Post[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
@@ -126,7 +152,6 @@ export default function FeedScreen() {
       const data = await apiRequest<any>("/home/dashboard", { headers });
       if (!data) return;
 
-      setUnreadCount(data.unreadCount || 0);
       if (data.groups) setMyGroups(data.groups);
       if (data.fresherData) {
         setAssignedCoaches(data.fresherData.assignedCoaches || []);
@@ -259,14 +284,7 @@ export default function FeedScreen() {
             <Pressable style={styles.iconBtn} onPress={() => router.push("/search")}>
               <IconSymbol name="magnifyingglass" size={22} color="#1A2B4A" />
             </Pressable>
-            <Pressable style={styles.iconBtn} onPress={() => router.push("/notifications")}>
-              <IconSymbol name="bell.fill" size={22} color="#1A2B4A" />
-              {unreadCount > 0 && (
-                <View style={styles.badge}>
-                  <Text style={styles.badgeText}>{unreadCount > 99 ? "99+" : unreadCount}</Text>
-                </View>
-              )}
-            </Pressable>
+            <NotificationBell />
           </View>
         </View>
 
