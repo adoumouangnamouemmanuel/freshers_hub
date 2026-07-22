@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { StyleSheet, Text, View, FlatList, ActivityIndicator, TouchableOpacity, Alert, ScrollView, Image } from "react-native";
+import { useQuery } from "@tanstack/react-query";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../../context/auth-context";
@@ -14,26 +15,21 @@ export default function ComplianceScreen() {
   const token = session?.accessToken;
   const router = useRouter();
   
-  const [loading, setLoading] = useState(true);
-  const [freshers, setFreshers] = useState<any[]>([]);
   const [filterType, setFilterType] = useState<"All" | "At Risk" | "Non-Compliant" | "Compliant">("All");
   const [notifyTarget, setNotifyTarget] = useState<{ id: string; name: string } | null>(null);
 
-  useEffect(() => {
-    const fetchFreshers = async () => {
-      try {
-        const res = await fetch(`${API_URL}/support/admin/freshers`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) setFreshers(await res.json());
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (token) fetchFreshers();
-  }, [token]);
+  const { data: freshers = [], isLoading: loading } = useQuery({
+    queryKey: ['admin-freshers-compliance'],
+    queryFn: async () => {
+      const res = await fetch(`${API_URL}/support/admin/freshers`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error("Failed to fetch freshers");
+      return res.json();
+    },
+    enabled: !!token,
+    staleTime: 1000 * 60 * 5,
+  });
 
   const filteredFreshers = freshers.filter(f => {
     const sessions = parseInt(f.completed_sessions || 0);
