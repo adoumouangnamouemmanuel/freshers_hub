@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 20, fontWeight: "800", color: "#1A2B4A" },
   placeholder: { width: 40 },
   
-  listContent: { padding: 20, gap: 12 },
+  listContent: { padding: 20, gap: 12, paddingBottom: 150 },
   card: { backgroundColor: "#FFFFFF", padding: 16, borderRadius: 20, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.03, shadowRadius: 8, elevation: 2, flexDirection: "row", alignItems: "center" },
   cardInfo: { flex: 1, paddingRight: 16 },
   name: { fontSize: 16, fontWeight: "700", color: "#1A2B4A", marginBottom: 2 },
