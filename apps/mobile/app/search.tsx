@@ -68,7 +68,17 @@ export default function SearchScreen() {
   const [users, setUsers] = useState<UserResult[]>([]);
   
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const categories = ["All", "People", "Map", "Clubs", "FAQs", "Posts"];
+  
+  const userRoles = session?.user?.roles || [];
+  const staffRoles = ['coach_admin', 'advisor', 'counsellor', 'staff', 'faculty', 'oipcc_admin'];
+  const isStaffOrAdmin = userRoles.some(r => {
+    const roleName = typeof r === 'string' ? r : (r as any).name;
+    return staffRoles.includes(roleName);
+  });
+  
+  const categories = isStaffOrAdmin 
+    ? ["All", "People", "Posts"] 
+    : ["All", "Map", "Clubs", "FAQs", "Posts"];
 
   const [isSearching, setIsSearching] = useState(false);
 
