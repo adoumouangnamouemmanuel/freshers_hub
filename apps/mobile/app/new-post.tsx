@@ -14,6 +14,7 @@ import {
 } from "react-native"; 
 import globalStyles from '../styles';
 import DateTimePicker from "@react-native-community/datetimepicker";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useLocalSearchParams } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -51,10 +52,9 @@ export default function NewPostScreen() {
   const standardLocations = ["Library", "Student Center", "Main Quad", "Auditorium", "Other"];
   
   // Targeting fields
+  const queryClient = useQueryClient();
   const [isTargeted, setIsTargeted] = useState(false);
   const [targetGroupIds, setTargetGroupIds] = useState<string[]>([]);
-  const [groups, setGroups] = useState<Group[]>([]);
-  
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const categories = preselectGroup 
@@ -66,6 +66,18 @@ export default function NewPostScreen() {
   const isOnlyPeerCoach = isPeerCoach && roles.length === 1; // Or just check if they lack admin/advisor roles
   const hasAdminRights = roles.some((r: any) => ["admin", "advisor", "counsellor", "coach_admin"].includes(r.name));
 
+  const { data: groups = [] } = useQuery({
+    queryKey: ['groups'],
+    queryFn: async () => {
+      const res = await apiRequest<{ data: Group[] }>("/groups", {
+        headers: { Authorization: `Bearer ${session?.accessToken}` }
+      });
+      return res.data?.filter(g => g.type !== 'club') || [];
+    },
+    enabled: !!session?.accessToken && !preselectGroup && !(isPeerCoach && !hasAdminRights),
+    staleTime: 1000 * 60 * 5,
+  });
+
   useEffect(() => {
     if (session?.accessToken) {
       if (preselectGroup) {
@@ -74,17 +86,6 @@ export default function NewPostScreen() {
       } else if (isPeerCoach && !hasAdminRights) {
         setIsTargeted(true);
         setTargetGroupIds(["assigned_students"]);
-      } else {
-        // Fetch general groups for home screen posts
-        apiRequest<{ data: Group[] }>("/groups", {
-          headers: { Authorization: `Bearer ${session.accessToken}` }
-        })
-          .then(res => {
-            // Only keep non-club prebuilt groups
-            let availableGroups = res.data?.filter(g => g.type !== 'club') || [];
-            setGroups(availableGroups);
-          })
-          .catch(err => console.error("Failed to fetch groups", err));
       }
     }
   }, [session?.accessToken, preselectGroup, isPeerCoach, hasAdminRights]);
@@ -96,6 +97,30 @@ export default function NewPostScreen() {
         : [...prev, groupId]
     );
   };
+
+  const submitMutation = useMutation({
+    mutationFn: async (payloadData: { endpoint: string; payload: any }) => {
+      const { endpoint, payload } = payloadData;
+      return apiRequest(endpoint, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session?.accessToken}`,
+        },
+        body: JSON.stringify(payload),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      router.replace("/(tabs)");
+    },
+    onError: (error: any) => {
+      Alert.alert("Error", error.message || "Failed to create post.");
+    },
+    onSettled: () => {
+      setIsSubmitting(false);
+    }
+  });
 
   const handleSubmit = async () => {
     if (!title.trim() || !content.trim()) {
@@ -114,39 +139,25 @@ export default function NewPostScreen() {
     }
 
     setIsSubmitting(true);
-    try {
-      const endpoint = isEvent ? "/events" : "/posts";
-      const payload: any = {
-        title,
-        content,
-        category,
-        visibility: isTargeted ? "targeted" : "public",
-        targetGroupIds: isTargeted ? targetGroupIds : [],
-      };
+    
+    const endpoint = isEvent ? "/events" : "/posts";
+    const payload: any = {
+      title,
+      content,
+      category,
+      visibility: isTargeted ? "targeted" : "public",
+      targetGroupIds: isTargeted ? targetGroupIds : [],
+    };
 
-      if (isEvent) {
-        payload.eventDate = eventDate.toISOString().split("T")[0]; // YYYY-MM-DD
-        payload.eventTime = eventDate.toTimeString().split(" ")[0].substring(0, 5); // HH:MM
-        payload.location = selectedLocation === "Other" ? customLocation : selectedLocation;
-        payload.capacity = capacity ? parseInt(capacity, 10) : null;
-        payload.rsvpEnabled = rsvpEnabled;
-      }
-
-      await apiRequest(endpoint, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${session?.accessToken}`,
-        },
-        body: JSON.stringify(payload),
-      });
-      
-      // Go back to the feed
-      router.replace("/(tabs)");
-    } catch (error) {
-      Alert.alert("Error", (error as Error).message || "Failed to create post.");
-    } finally {
-      setIsSubmitting(false);
+    if (isEvent) {
+      payload.eventDate = eventDate.toISOString().split("T")[0]; // YYYY-MM-DD
+      payload.eventTime = eventDate.toTimeString().split(" ")[0].substring(0, 5); // HH:MM
+      payload.location = selectedLocation === "Other" ? customLocation : selectedLocation;
+      payload.capacity = capacity ? parseInt(capacity, 10) : null;
+      payload.rsvpEnabled = rsvpEnabled;
     }
+
+    submitMutation.mutate({ endpoint, payload });
   };
 
   return (
