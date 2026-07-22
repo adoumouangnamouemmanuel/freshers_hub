@@ -198,7 +198,7 @@ export default function ClubsScreen() {
       </ScrollView>
       {/* Floating Action Button (FAB) for Club Feeds */}
       {myClubs.length > 0 && !searchQuery && (
-        <View style={[styles.fabContainer, { bottom: insets.bottom + 84 }]}>
+        <View style={[styles.fabContainer, { bottom: insets.bottom -24 }]}>
           <Pressable 
             style={styles.fab}
             onPress={() => router.push('/clubs-feed' as any)}
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   searchContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#FFFFFF", borderRadius: 12, paddingHorizontal: 12, height: 44, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2 },
   searchInput: { flex: 1, marginLeft: 8, fontSize: 16, color: "#111827" },
   
-  scrollContent: { paddingBottom: 200 },
+  scrollContent: { paddingBottom: 100 },
   section: { marginTop: 24 },
   sectionTitle: { fontSize: 20, fontWeight: "800", color: "#111827", paddingHorizontal: 20, marginBottom: 16 },
   
