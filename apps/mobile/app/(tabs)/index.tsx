@@ -109,105 +109,42 @@ export default function FeedScreen() {
     const headers = { Authorization: `Bearer ${session.accessToken}` };
 
     try {
-      const promises: Promise<any>[] = [
-        apiRequest<{ data: Post[] }>("/posts", { headers }).then(d => setPosts(d.data || [])),
-        apiRequest<{ unreadCount: number }>("/notifications/unread-count", { headers }).then(d => setUnreadCount(d.unreadCount || 0))
-      ];
+      const data = await apiRequest<any>("/home/dashboard", { headers });
+      if (!data) return;
 
-      if (isFresher) {
-        promises.push(
-          apiRequest<CoachAssignment[]>("/support/coaches/assigned", { headers }).then(d => setAssignedCoaches(d || [])).catch(() => {}),
-          apiRequest<BuddyPairing>("/support/buddy", { headers }).then(d => setAssignedBuddy(d || null)).catch(() => {})
-        );
+      setPosts(data.posts || []);
+      setUnreadCount(data.unreadCount || 0);
+
+      if (data.groups) {
+        setMyGroups(data.groups);
       }
 
-      if (isPeerCoach) {
-        promises.push(
-          apiRequest<AssignedFresher[]>("/support/coaches/freshers", { headers }).then(d => setAssignedFreshers(d || [])).catch(() => {})
-        );
+      if (data.fresherData) {
+        setAssignedCoaches(data.fresherData.assignedCoaches || []);
+        setAssignedBuddy(data.fresherData.assignedBuddy || null);
       }
 
-      if (isContinuingStudent || isClubLead || isFresher) {
-        promises.push(
-          apiRequest<{data: Group[]}>("/groups/my", { headers }).then(d => setMyGroups(d.data || [])).catch(() => {})
-        );
+      if (data.coachData) {
+        setAssignedFreshers(data.coachData.assignedFreshers || []);
       }
 
-      const processSessions = (data: any) => {
-        if (!data) return;
-        const sessionsList = Array.isArray(data) ? data : (data.data || data.sessions || []);
-        const now = new Date();
-        const upcoming: any[] = [];
-        const overdue: any[] = [];
-        
-        (sessionsList || []).forEach((s: any) => {
-          if (s.status === 'scheduled') {
-            let sessionDate;
-            if (s.date) {
-               sessionDate = new Date(s.date);
-            } else if (s.session_date) {
-               sessionDate = new Date(`${s.session_date}T${s.start_time || '00:00:00'}`);
-            } else if (s.scheduled_at) {
-               sessionDate = new Date(s.scheduled_at);
-            } else {
-               sessionDate = new Date(); // fallback
-            }
-
-            if (sessionDate > now) {
-                upcoming.push(s);
-              } else if (sessionDate <= now) {
-                overdue.push(s);
-              }
-          }
-        });
-        upcoming.sort((a, b) => {
-          const d1 = new Date(a.date || a.session_date || a.scheduled_at).getTime();
-          const d2 = new Date(b.date || b.session_date || b.scheduled_at).getTime();
-          return d1 - d2;
-        });
-        
-        overdue.sort((a, b) => {
-          const d1 = new Date(a.date || a.session_date || a.scheduled_at).getTime();
-          const d2 = new Date(b.date || b.session_date || b.scheduled_at).getTime();
-          return d2 - d1;
-        });
-
-        setUpcomingSessions(upcoming);
-        setOverdueSessions(overdue);
-      };
-
-      // For coach admin, fetch their own sessions (where they are the provider)
-      if (isCoachAdmin) {
-        promises.push(
-          apiRequest<Session[]>("/support/my-sessions", { headers }).then(processSessions).catch(() => {})
-        );
+      if (data.sessions) {
+        setUpcomingSessions(data.sessions.upcoming || []);
+        setOverdueSessions(data.sessions.overdue || []);
       }
 
-      if (isPeerCounsellor || isPeerCoach) {
-        promises.push(
-           apiRequest<Session[]>("/support/sessions", { headers }).then(processSessions).catch(() => {})
-        );
+      if (data.adminStats) {
+        setAdminStats(data.adminStats);
       }
 
-      if (isCoachAdmin) {
-        promises.push(
-          apiRequest<any>("/support/admin/dashboard", { headers }).then(d => setAdminStats(d || null)).catch(() => {})
-        );
+      if (data.advisingStats) {
+        setAdvisingData(data.advisingStats);
       }
 
-      if (isAdvisor) {
-        promises.push(
-          apiRequest<any>("/support/advising/dashboard", { headers }).then(d => setAdvisingData(d || null)).catch(() => {})
-        );
+      if (data.counsellingStats) {
+        setCounsellingData(data.counsellingStats);
       }
 
-      if (isCounsellor) {
-        promises.push(
-          apiRequest<any>("/support/counselling/dashboard", { headers }).then(d => setCounsellingData(d || null)).catch(() => {})
-        );
-      }
-
-      await Promise.all(promises);
     } catch (err) {
       console.error("Failed to fetch dashboard data:", err);
     } finally {
@@ -474,7 +411,7 @@ export default function FeedScreen() {
                      <Text style={styles.premiumNextLabel}>UP NEXT</Text>
                      <Text style={styles.premiumNextStudent}>{advisingData.upcomingSessions[0].student_name}</Text>
                      <Text style={styles.premiumNextTime}>
-                       {new Date(advisingData.upcomingSessions[0].date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                       {new Date(advisingData.upcomingSessions[0].date || advisingData.upcomingSessions[0].scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                      </Text>
                    </View>
                    <View style={styles.premiumNextIcon}>
@@ -515,7 +452,7 @@ export default function FeedScreen() {
                      <Text style={styles.premiumNextLabel}>UP NEXT</Text>
                      <Text style={styles.premiumNextStudent}>{counsellingData.upcomingSessions[0].student_name}</Text>
                      <Text style={styles.premiumNextTime}>
-                       {new Date(counsellingData.upcomingSessions[0].date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                       {new Date(counsellingData.upcomingSessions[0].date || counsellingData.upcomingSessions[0].scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                      </Text>
                    </View>
                    <View style={styles.premiumNextIcon}>
@@ -557,7 +494,7 @@ export default function FeedScreen() {
                      <Text style={styles.premiumNextLabel}>UP NEXT</Text>
                      <Text style={styles.premiumNextStudent}>{(upcomingSessions[0] as any).student_name}</Text>
                      <Text style={styles.premiumNextTime}>
-                       {new Date((upcomingSessions[0] as any).date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                       {new Date((upcomingSessions[0] as any).date || (upcomingSessions[0] as any).scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                      </Text>
                    </View>
                    <View style={styles.premiumNextIcon}>
