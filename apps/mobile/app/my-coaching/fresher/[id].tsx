@@ -222,7 +222,7 @@ const styles = StyleSheet.create({
   iconBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' },
   headerTitle: { fontSize: 18, fontWeight: '800', color: '#111827' },
   
-  scrollContent: { padding: 20, gap: 24, paddingBottom: 100 },
+  scrollContent: { padding: 20, gap: 24},
   
   profileCard: {
     backgroundColor: '#FFFFFF',
