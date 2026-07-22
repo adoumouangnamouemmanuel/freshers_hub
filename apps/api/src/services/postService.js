@@ -2,7 +2,7 @@ const postRepository = require("../repositories/postRepository");
 const AppError = require("../utils/AppError");
 const logger = require("../utils/logger");
 
-const getPosts = async (client, { userId, page = 1, limit = 50, category, authorId }) => {
+const getPosts = async (client, { userId, page = 1, limit = 50, category, authorId, q }) => {
   try {
     const pageNum = Math.max(1, parseInt(page, 10));
     const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10))); // Max 100 per page
@@ -12,7 +12,8 @@ const getPosts = async (client, { userId, page = 1, limit = 50, category, author
       page: pageNum,
       limit: limitNum,
       category,
-      authorId
+      authorId,
+      q
     });
 
     const totalPages = Math.ceil(total / limitNum);
