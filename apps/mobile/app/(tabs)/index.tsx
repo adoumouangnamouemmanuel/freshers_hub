@@ -186,10 +186,10 @@ export default function FeedScreen() {
     setRefreshing(false);
   };
 
-  const myGroups = dashboardData?.groups || [];
+  const myGroups: Group[] = dashboardData?.groups || [];
   const assignedCoaches = dashboardData?.fresherData?.assignedCoaches || [];
   const assignedBuddy = dashboardData?.fresherData?.assignedBuddy || null;
-  const assignedFreshers = dashboardData?.coachData?.assignedFreshers || [];
+  const assignedFreshers: AssignedFresher[] = dashboardData?.coachData?.assignedFreshers || [];
   const upcomingSessions = dashboardData?.sessions?.upcoming || [];
   const overdueSessions = dashboardData?.sessions?.overdue || [];
   const adminStats = dashboardData?.adminStats || null;
