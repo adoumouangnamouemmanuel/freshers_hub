@@ -1,19 +1,38 @@
 const { pool } = require("../services/db");
 
 // ── Notifications ─────────────────────────────────────────────────────────────
-const getNotifications = async (userId, limit, offset) => {
-  const { rows } = await pool.query(`
+const getNotifications = async (userId, limit, offset, filters = {}) => {
+  let query = `
     SELECT id, category, title, body, related_entity as "relatedEntity",
            read_at as "readAt", created_at as "createdAt", updated_at as "updatedAt"
     FROM notifications
     WHERE user_id = $1
-    ORDER BY created_at DESC
-    LIMIT $2 OFFSET $3
-  `, [userId, limit, offset]);
+  `;
+  let countQuery = `SELECT COUNT(*) FROM notifications WHERE user_id = $1`;
+  const params = [userId];
+  
+  if (filters.category) {
+    params.push(filters.category);
+    query += ` AND category = $${params.length}`;
+    countQuery += ` AND category = $${params.length}`;
+  }
+  
+  if (filters.isRead !== undefined) {
+    if (filters.isRead === 'true' || filters.isRead === true) {
+      query += ` AND read_at IS NOT NULL`;
+      countQuery += ` AND read_at IS NOT NULL`;
+    } else if (filters.isRead === 'false' || filters.isRead === false) {
+      query += ` AND read_at IS NULL`;
+      countQuery += ` AND read_at IS NULL`;
+    }
+  }
 
-  const count = await pool.query(`
-    SELECT COUNT(*) FROM notifications WHERE user_id = $1
-  `, [userId]);
+  query += ` ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+  
+  const queryParams = [...params, limit, offset];
+  
+  const { rows } = await pool.query(query, queryParams);
+  const count = await pool.query(countQuery, params);
 
   return {
     notifications: rows,
@@ -73,6 +92,12 @@ const removePushToken = async (userId, pushToken) => {
   `, [userId, pushToken]);
 };
 
+const removePushTokenByToken = async (pushToken) => {
+  await pool.query(`
+    DELETE FROM user_push_tokens WHERE push_token = $1
+  `, [pushToken]);
+};
+
 const getPushTokensForUser = async (userId) => {
   const { rows } = await pool.query(`
     SELECT push_token FROM user_push_tokens WHERE user_id = $1
@@ -107,6 +132,32 @@ const markReminderSent = async (id) => {
   `, [id]);
 };
 
+// ── Settings ──────────────────────────────────────────────────────────────────
+const getUserSettings = async (userId) => {
+  const { rows } = await pool.query(`
+    SELECT settings FROM user_notification_settings WHERE user_id = $1
+  `, [userId]);
+  return rows[0]?.settings || {};
+};
+
+const updateUserSettings = async (userId, settings) => {
+  await pool.query(`
+    INSERT INTO user_notification_settings (user_id, settings, updated_at)
+    VALUES ($1, $2, NOW())
+    ON CONFLICT (user_id)
+    DO UPDATE SET settings = $2, updated_at = NOW()
+  `, [userId, settings]);
+};
+
+// ── Pruning ───────────────────────────────────────────────────────────────────
+const pruneOldNotifications = async () => {
+  const { rowCount } = await pool.query(`
+    DELETE FROM notifications 
+    WHERE read_at < NOW() - INTERVAL '30 days'
+  `);
+  return rowCount;
+};
+
 module.exports = {
   getNotifications,
   getUnreadCount,
@@ -115,8 +166,12 @@ module.exports = {
   createNotification,
   upsertPushToken,
   removePushToken,
+  removePushTokenByToken,
   getPushTokensForUser,
   createReminder,
   getDueReminders,
   markReminderSent,
+  getUserSettings,
+  updateUserSettings,
+  pruneOldNotifications,
 };
