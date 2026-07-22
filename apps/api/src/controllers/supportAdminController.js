@@ -2,6 +2,7 @@ const AppError = require("../utils/AppError");
 const asyncHandler = require("../utils/asyncHandler");
 const { pool } = require("../services/db");
 const supportAdminRepository = require("../repositories/supportAdminRepository");
+const notificationService = require("../services/notificationService");
 
 // Dashboard Overview
 const getAdminDashboardStats = asyncHandler(async (req, res) => {
@@ -277,9 +278,36 @@ const adminBookSession = asyncHandler(async (req, res) => {
     const session = await supportAdminRepository.adminBookSession(
       unitId, academicYearId, studentId, providerId, withType, scheduledAt, location, isMandatory, description, title, req.user?.id
     );
+
+    // Send notification to student
+    if (studentId !== req.user?.id) {
+      const typeStr = withType === "counsellor" ? "Counselling" : withType === "advisor" ? "Advising" : "Coaching";
+      await notificationService.sendNotification({
+        fromUserId: req.user?.id,
+        toUserId: studentId,
+        category: "session",
+        title: "New Session Booked",
+        body: `A new ${typeStr} session "${session.title}" has been scheduled for ${new Date(scheduledAt).toLocaleString()}.`,
+        relatedEntity: `session:${session.id}`
+      }).catch(err => console.error("Failed to send session booking notification:", err));
+    }
+    
+    // Also notify provider if they didn't book it
+    if (providerId !== req.user?.id) {
+      const typeStr = withType === "counsellor" ? "Counselling" : withType === "advisor" ? "Advising" : "Coaching";
+      await notificationService.sendNotification({
+        fromUserId: req.user?.id,
+        toUserId: providerId,
+        category: "session",
+        title: "New Session Assigned",
+        body: `You have been assigned a new ${typeStr} session "${session.title}" for ${new Date(scheduledAt).toLocaleString()}.`,
+        relatedEntity: `session:${session.id}`
+      }).catch(err => console.error("Failed to send session assignment notification:", err));
+    }
+
     res.status(201).json(session);
   } catch (err) {
-    
+    console.error(err);
     throw new AppError("Internal server error", 500);
   }
 });
