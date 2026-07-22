@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
   },
   greeting: { fontSize: 13, fontWeight: "800", color: "#8B5CF6", letterSpacing: 1.5, textTransform: "uppercase", marginBottom: 6 },
   header: { fontSize: 34, fontWeight: "900", color: "#111827", letterSpacing: -1 },
-  scrollContent: { padding: 20, gap: 24, paddingBottom: 200, paddingTop: 24 },
+  scrollContent: { padding: 20, gap: 24, paddingBottom: 100, paddingTop: 24 },
   
   sectionHeader: { flexDirection: "row", alignItems: "center", gap: 12, marginTop: 16 },
   sectionIcon: { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center" },
@@ -506,7 +506,7 @@ const styles = StyleSheet.create({
   crisisSub: { fontSize: 13, color: "#DC2626", fontWeight: "500" },
   fabContainer: {
     position: "absolute",
-    bottom: 130, right: 24,
+    bottom: 24, right: 24,
     backgroundColor: "transparent",
     flexDirection: "row",
     gap: 12,
