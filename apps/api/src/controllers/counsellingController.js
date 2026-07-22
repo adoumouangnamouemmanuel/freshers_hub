@@ -173,11 +173,11 @@ const counsellorBookSession = asyncHandler(async (req, res) => {
 
     const { rows } = await client.query(`
       INSERT INTO sessions 
-        (title, unit_id, academic_year_id, student_id, provider_id, with_type, scheduled_at, location, description, is_mandatory, status)
+        (title, unit_id, academic_year_id, student_id, provider_id, with_type, scheduled_at, location, description, is_mandatory, status, created_by)
       VALUES 
-        ($1, $2, $3, $4, $5, NULL, $6, $7, $8, false, 'scheduled')
+        ($1, $2, $3, $4, $5, NULL, $6, $7, $8, false, 'scheduled', $9)
       RETURNING *
-    `, [finalTitle, unitId, academicYearId || 1, studentId, req.user.id, scheduledAt, location, description]);
+    `, [finalTitle, unitId, academicYearId || 1, studentId, req.user.id, scheduledAt, location, description, req.user.id]);
 
     await client.query("COMMIT");
     res.status(201).json(rows[0]);
