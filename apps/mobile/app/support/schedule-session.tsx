@@ -37,6 +37,14 @@ export default function ScheduleSessionScreen() {
   const [users, setUsers] = useState<any[]>([]);
   const [fetchingUsers, setFetchingUsers] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const [form, setForm] = useState({
     title: (editTitle as string) || "",
@@ -56,13 +64,26 @@ export default function ScheduleSessionScreen() {
   const [hasMoreUsers, setHasMoreUsers] = useState(true);
   const [loadingMoreUsers, setLoadingMoreUsers] = useState(false);
 
+  useEffect(() => {
+    if (showUserModal) {
+      setHasMoreUsers(true);
+      fetchUsers(1);
+    }
+  }, [debouncedSearchQuery]);
+
   const fetchUsers = async (pageNum = 1) => {
     setFetchingUsers(pageNum === 1);
     try {
       const endpoint = (isAsAdvisor || isAdvisorRole) ? '/support/advising/students' 
                      : isCounsellorRole ? '/support/counselling/students'
                      : '/support/admin/students';
-      const res = await fetch(`${API_URL}${endpoint}?page=${pageNum}&limit=20`, {
+      
+      let url = `${API_URL}${endpoint}?page=${pageNum}&limit=20`;
+      if (debouncedSearchQuery) {
+        url += `&search=${encodeURIComponent(debouncedSearchQuery)}`;
+      }
+
+      const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (res.ok) {
@@ -409,7 +430,7 @@ export default function ScheduleSessionScreen() {
             ) : (
               <FlatList
                 style={styles.scroll}
-                data={users.filter(u => u.name?.toLowerCase().includes(searchQuery.toLowerCase()))}
+                data={users}
                 keyExtractor={(item, index) => `${item.id}-${index}`}
                 onEndReached={handleLoadMoreUsers}
                 onEndReachedThreshold={0.5}
