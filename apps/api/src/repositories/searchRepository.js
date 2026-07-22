@@ -71,14 +71,14 @@ const searchRepository = {
 
     if (userId) {
       whereClause += ` AND (
-        g.is_private = false
+        g.type = 'public'
         OR EXISTS (
           SELECT 1 FROM group_members gm WHERE gm.group_id = g.id AND gm.user_id = $3
         )
       )`;
       queryParams.push(userId);
     } else {
-      whereClause += ` AND g.is_private = false`;
+      whereClause += ` AND g.type = 'public'`;
     }
 
     const { rows } = await pool.query(`
