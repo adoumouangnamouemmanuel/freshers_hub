@@ -3,15 +3,17 @@ const { pool } = require("../services/db");
 
 class SupportAdminRepository {
   async getDashboardStats(adminId) {
+    const currentYear = new Date().getFullYear();
+    const fresherYear = currentYear + 4;
     const { rows } = await pool.query(`
       SELECT 
-        (SELECT COUNT(DISTINCT ur.user_id) FROM user_roles ur JOIN roles r ON ur.role_id = r.id JOIN users u ON ur.user_id = u.id WHERE r.name = 'student' AND u.class_year = 2030 AND NOT EXISTS (
+        (SELECT COUNT(DISTINCT ur.user_id) FROM user_roles ur JOIN roles r ON ur.role_id = r.id JOIN users u ON ur.user_id = u.id WHERE r.name = 'student' AND u.class_year = ${fresherYear} AND NOT EXISTS (
           SELECT 1 FROM user_roles ur2 JOIN roles r2 ON ur2.role_id = r2.id WHERE ur2.user_id = ur.user_id AND r2.name IN ('peer_coach', 'coach_admin', 'counsellor', 'peer_counsellor', 'advisor', 'admin', 'staff')
         )) as total_freshers,
         (SELECT COUNT(DISTINCT ur.user_id) FROM user_roles ur JOIN roles r ON ur.role_id = r.id WHERE r.name = 'peer_coach') as total_coaches,
-        (SELECT COUNT(DISTINCT ca.fresher_id) FROM coach_assignments ca JOIN users u ON ca.fresher_id = u.id WHERE u.class_year = 2030) as assigned_freshers,
-        (SELECT COUNT(*) FROM sessions s JOIN users u ON s.student_id = u.id WHERE s.with_type = 'peer_coach' AND s.status = 'completed' AND u.class_year = 2030) as completed_mandatory_sessions,
-        (SELECT COUNT(DISTINCT ca.fresher_id) * 3 FROM coach_assignments ca JOIN users u ON ca.fresher_id = u.id WHERE u.class_year = 2030) as target_mandatory_sessions,
+        (SELECT COUNT(DISTINCT ca.fresher_id) FROM coach_assignments ca JOIN users u ON ca.fresher_id = u.id WHERE u.class_year = ${fresherYear}) as assigned_freshers,
+        (SELECT COUNT(*) FROM sessions s JOIN users u ON s.student_id = u.id WHERE s.with_type = 'peer_coach' AND s.status = 'completed' AND u.class_year = ${fresherYear}) as completed_mandatory_sessions,
+        (SELECT COUNT(DISTINCT ca.fresher_id) * 3 FROM coach_assignments ca JOIN users u ON ca.fresher_id = u.id WHERE u.class_year = ${fresherYear}) as target_mandatory_sessions,
         (SELECT COUNT(*) FROM sessions s WHERE s.with_type = 'peer_coach' AND s.status = 'scheduled' AND s.scheduled_at >= now() AND (s.provider_id = $1 OR s.student_id = $1)) as upcoming_sessions_count,
         (SELECT COUNT(*) FROM sessions s WHERE s.with_type = 'peer_coach' AND s.status = 'scheduled' AND s.scheduled_at < now() AND (s.provider_id = $1 OR s.student_id = $1)) as overdue_sessions_count
     `, [adminId]);
@@ -19,55 +21,93 @@ class SupportAdminRepository {
   }
 
   async getFreshersNeedingAttention(limit = 10) {
+    const currentYear = new Date().getFullYear();
+    const fresherYear = currentYear + 4;
     const { rows } = await pool.query(`
       SELECT u.id, u.full_name, c.full_name as coach_name
       FROM coach_assignments ca
       JOIN users u ON ca.fresher_id = u.id
       JOIN users c ON ca.peer_coach_id = c.id
-      WHERE u.class_year = 2030 AND (
+      WHERE u.class_year = $2 AND (
         SELECT COUNT(*) FROM sessions 
         WHERE student_id = ca.fresher_id AND status = 'completed'
       ) = 0
       LIMIT $1
-    `, [limit]);
+    `, [limit, fresherYear]);
     return rows;
   }
 
-  async getAdminCoaches() {
+  async getAdminCoaches(page = 1, limit = 20, search = "") {
+    const offset = (page - 1) * limit;
+    const queryParams = [limit, offset];
+    let searchCondition = "";
+
+    if (search) {
+      searchCondition = `AND (u.full_name ILIKE $3 OR u.major ILIKE $3)`;
+      queryParams.push(`%${search}%`);
+    }
+
     const { rows } = await pool.query(`
       SELECT 
+        COUNT(*) OVER() AS total_count,
         u.id, u.full_name, u.avatar_url, u.country, u.major,
         COUNT(ca.fresher_id) as assigned_count
       FROM user_roles ur
       JOIN users u ON ur.user_id = u.id
       JOIN roles r ON ur.role_id = r.id
       LEFT JOIN coach_assignments ca ON u.id = ca.peer_coach_id
-      WHERE r.name = 'peer_coach'
+      WHERE r.name = 'peer_coach' ${searchCondition}
       GROUP BY u.id
-    `);
-    return rows;
+      ORDER BY u.full_name ASC
+      LIMIT $1 OFFSET $2
+    `, queryParams);
+
+    const total = rows.length > 0 ? parseInt(rows[0].total_count, 10) : 0;
+    return {
+      data: rows,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) }
+    };
   }
 
-  async getAdminFreshers() {
+  async getAdminFreshers(page = 1, limit = 20, search = "") {
+    const currentYear = new Date().getFullYear();
+    const fresherYear = currentYear + 4;
+    const offset = (page - 1) * limit;
+    const queryParams = [limit, offset, fresherYear];
+    let searchCondition = "";
+
+    if (search) {
+      searchCondition = `AND (u.full_name ILIKE $4 OR u.major ILIKE $4)`;
+      queryParams.push(`%${search}%`);
+    }
+
     const { rows } = await pool.query(`
-        SELECT DISTINCT
+        SELECT 
+          COUNT(*) OVER() AS total_count,
           u.id, u.full_name, u.avatar_url, u.country, u.major,
           c.full_name as coach_name,
           (SELECT COUNT(*) FROM sessions WHERE student_id = u.id AND status = 'completed' AND provider_id = ca.peer_coach_id) as completed_sessions,
           (SELECT COUNT(*) FROM sessions s2 JOIN user_roles ur3 ON s2.provider_id = ur3.user_id JOIN roles r3 ON ur3.role_id = r3.id WHERE s2.student_id = u.id AND s2.status = 'completed' AND r3.name = 'coach_admin') as admin_sessions_completed
         FROM user_roles ur
         JOIN users u ON ur.user_id = u.id
-      JOIN roles r ON ur.role_id = r.id
-      LEFT JOIN coach_assignments ca ON u.id = ca.fresher_id
-      LEFT JOIN users c ON ca.peer_coach_id = c.id
-      WHERE r.name = 'student' AND u.class_year = 2030
+        JOIN roles r ON ur.role_id = r.id
+        LEFT JOIN coach_assignments ca ON u.id = ca.fresher_id
+        LEFT JOIN users c ON ca.peer_coach_id = c.id
+        WHERE r.name = 'student' AND u.class_year = $3
         AND NOT EXISTS (
           SELECT 1 FROM user_roles ur2 
           JOIN roles r2 ON ur2.role_id = r2.id 
           WHERE ur2.user_id = u.id AND r2.name = 'peer_coach'
-        )
-    `);
-    return rows;
+        ) ${searchCondition}
+        ORDER BY u.full_name ASC
+        LIMIT $1 OFFSET $2
+    `, queryParams);
+
+    const total = rows.length > 0 ? parseInt(rows[0].total_count, 10) : 0;
+    return {
+      data: rows,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) }
+    };
   }
   async getUserProfile(id) {
     const { rows } = await pool.query(`
@@ -166,19 +206,21 @@ class SupportAdminRepository {
         throw new Error("No active coaches found");
       }
       
+      const currentYear = new Date().getFullYear();
+      const fresherYear = currentYear + 4;
       const { rows: freshers } = await client.query(`
         SELECT u.id
         FROM user_roles ur
         JOIN users u ON ur.user_id = u.id
         JOIN roles r ON ur.role_id = r.id
-        WHERE r.name = 'student' AND u.class_year = 2030
+        WHERE r.name = 'student' AND u.class_year = $1
           AND NOT EXISTS (
             SELECT 1 FROM user_roles ur2 JOIN roles r2 ON ur2.role_id = r2.id WHERE ur2.user_id = u.id AND r2.name = 'peer_coach'
           )
           AND NOT EXISTS (
             SELECT 1 FROM coach_assignments ca WHERE ca.fresher_id = u.id
           )
-      `);
+      `, [fresherYear]);
       
       let count = 0;
       for (let i = 0; i < freshers.length; i++) {
@@ -208,14 +250,32 @@ class SupportAdminRepository {
     `, [studentId]);
   }
 
-  async getAnnouncements() {
+  async getAnnouncements(page = 1, limit = 20, search = "") {
+    const offset = (page - 1) * limit;
+    const queryParams = [limit, offset];
+    let searchCondition = "";
+
+    if (search) {
+      searchCondition = `WHERE a.title ILIKE $3 OR a.content ILIKE $3`;
+      queryParams.push(`%${search}%`);
+    }
+
     const { rows } = await pool.query(`
-      SELECT a.*, u.full_name as author_name
+      SELECT 
+        COUNT(*) OVER() AS total_count,
+        a.*, u.full_name as author_name
       FROM announcements a
       JOIN users u ON a.author_id = u.id
+      ${searchCondition}
       ORDER BY a.created_at DESC
-    `);
-    return rows;
+      LIMIT $1 OFFSET $2
+    `, queryParams);
+
+    const total = rows.length > 0 ? parseInt(rows[0].total_count, 10) : 0;
+    return {
+      data: rows,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) }
+    };
   }
 
   async postAnnouncement(authorId, targetAudience, title, content) {
@@ -316,16 +376,34 @@ class SupportAdminRepository {
     return rows[0];
   }
 
-  async getAdminReports() {
+  async getAdminReports(page = 1, limit = 20, search = "") {
+    const offset = (page - 1) * limit;
+    const queryParams = [limit, offset];
+    let searchCondition = "";
+
+    if (search) {
+      searchCondition = `WHERE f.full_name ILIKE $3 OR u.full_name ILIKE $3 OR sr.content ILIKE $3`;
+      queryParams.push(`%${search}%`);
+    }
+
     const { rows } = await pool.query(`
-      SELECT sr.*, s.scheduled_at, s.status, u.full_name as provider_name, f.full_name as student_name
+      SELECT 
+        COUNT(*) OVER() AS total_count,
+        sr.*, s.scheduled_at, s.status, u.full_name as provider_name, f.full_name as student_name
       FROM session_reports sr
       JOIN sessions s ON sr.session_id = s.id
       JOIN users u ON sr.provider_id = u.id
       JOIN users f ON s.student_id = f.id
+      ${searchCondition}
       ORDER BY sr.submitted_at DESC
-    `);
-    return rows;
+      LIMIT $1 OFFSET $2
+    `, queryParams);
+
+    const total = rows.length > 0 ? parseInt(rows[0].total_count, 10) : 0;
+    return {
+      data: rows,
+      meta: { total, page, limit, totalPages: Math.ceil(total / limit) }
+    };
   }
 
   async logComplianceFollowUp(fresherId, academicYearId, notes, userId) {
