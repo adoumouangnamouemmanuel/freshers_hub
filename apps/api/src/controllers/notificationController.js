@@ -86,6 +86,22 @@ const handleSendNotification = asyncHandler(async (req, res) => {
   res.status(201).json({ success: true, notification });
 });
 
+// ── GET /notifications/settings ───────────────────────────────────────────────
+const handleGetSettings = asyncHandler(async (req, res) => {
+  const settings = await notificationService.getUserSettings(req.user.id);
+  res.json({ success: true, settings });
+});
+
+// ── PUT /notifications/settings ───────────────────────────────────────────────
+const handleUpdateSettings = asyncHandler(async (req, res) => {
+  const { settings } = req.body;
+  if (!settings || typeof settings !== 'object') {
+    throw new AppError("Invalid settings object", 400);
+  }
+  const result = await notificationService.updateUserSettings(req.user.id, settings);
+  res.json(result);
+});
+
 module.exports = {
   handleGetNotifications,
   handleMarkRead,
@@ -94,4 +110,6 @@ module.exports = {
   handleRegisterPushToken,
   handleRemovePushToken,
   handleSendNotification,
+  handleGetSettings,
+  handleUpdateSettings,
 };
