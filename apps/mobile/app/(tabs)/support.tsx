@@ -38,19 +38,15 @@ export default function SupportScreen() {
     if (!session?.accessToken) return;
     try {
       const headers = { Authorization: `Bearer ${session.accessToken}` };
-      const [coachRes, buddyRes, counsellorsRes, advisorsRes, sessionsRes] = await Promise.all([
-        apiRequest<any[]>("/support/coaches/assigned", { headers }).catch(() => []),
-        apiRequest<any>("/support/buddy", { headers }).catch(() => null),
-        apiRequest<any[]>("/support/staff/counselling", { headers }).catch(() => []),
-        apiRequest<any[]>("/support/staff/advising", { headers }).catch(() => []),
-        apiRequest<any>("/support/sessions", { headers }).catch(() => []),
-      ]);
+      const dashboardRes = await apiRequest<any>("/support/dashboard", { headers }).catch(() => null);
 
-      setAssignedCoach(coachRes?.[0] || null);
-      setBuddy(buddyRes || null);
-      setCounsellors(counsellorsRes || []);
-      setAdvisors(advisorsRes || []);
-      setSessions(Array.isArray(sessionsRes) ? sessionsRes : sessionsRes?.data || []);
+      if (dashboardRes) {
+        setAssignedCoach(dashboardRes.assignedCoach || null);
+        setBuddy(dashboardRes.buddy || null);
+        setCounsellors(dashboardRes.counsellors || []);
+        setAdvisors(dashboardRes.advisors || []);
+        setSessions(Array.isArray(dashboardRes.sessions) ? dashboardRes.sessions : dashboardRes.sessions?.data || []);
+      }
     } catch (err) {
       console.error("Error fetching support data", err);
     } finally {
