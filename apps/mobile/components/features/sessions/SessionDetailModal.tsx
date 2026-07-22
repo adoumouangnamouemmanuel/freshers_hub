@@ -413,16 +413,18 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
                   </TouchableOpacity>
                 )}
                 
-                {isOwner && (
+                {(isOwner || isProvider) && (
                   <View style={styles.actionRow}>
                     <TouchableOpacity style={styles.modalBtnSecondary} onPress={() => setIsEditMode(true)}>
                       <Ionicons name="pencil" size={20} color="#4B5563" />
-                      <Text style={styles.modalBtnSecondaryText}>Edit</Text>
+                      <Text style={styles.modalBtnSecondaryText}>{isOwner ? "Edit" : "Reschedule"}</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.modalBtnDanger} onPress={handleDelete}>
-                      <Ionicons name="trash" size={20} color="#B91C1C" />
-                      <Text style={styles.modalBtnDangerText}>Delete</Text>
-                    </TouchableOpacity>
+                    {isOwner && (
+                      <TouchableOpacity style={styles.modalBtnDanger} onPress={handleDelete}>
+                        <Ionicons name="trash" size={20} color="#B91C1C" />
+                        <Text style={styles.modalBtnDangerText}>Delete</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 )}
               </>
