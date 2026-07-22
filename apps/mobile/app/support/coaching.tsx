@@ -6,6 +6,15 @@ import { IconSymbol } from "../../components/ui/icon-symbol";
 import { router } from "expo-router";
 import SessionDetailModal from "../../components/features/sessions/SessionDetailModal";
 
+interface SupportSession {
+  id: string | number;
+  title?: string;
+  location?: string;
+  status: string;
+  scheduled_at: string;
+  unit_id?: number;
+}
+
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
 export default function CoachingScreen() {
@@ -27,7 +36,7 @@ export default function CoachingScreen() {
     staleTime: 1000 * 60 * 5,
   });
 
-  const { data: sessions = [], isLoading: loadingSessions, refetch: refetchSessions } = useQuery({
+  const { data: sessions = [], isLoading: loadingSessions, refetch: refetchSessions } = useQuery<SupportSession[]>({
     queryKey: ['sessions'],
     queryFn: async () => {
       const res = await fetch(`${API_URL}/support/sessions`, {
