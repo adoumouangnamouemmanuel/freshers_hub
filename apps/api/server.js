@@ -16,6 +16,7 @@ const errorHandler = require("./src/middleware/errorHandler");
 const config = require("./src/config");
 const metricsMiddleware = require("./src/middleware/metricsMiddleware");
 const { initMetricsSyncer } = require("./src/utils/metricsSyncer");
+const { initCronJobs } = require("./src/utils/cronJobs");
 
 // TODO: Uncomment when ready to deploy Sentry or GlitchTip for error tracking
 // const Sentry = require("@sentry/node");
@@ -34,6 +35,7 @@ const port = config.port;
 
 // Start the background process to sync Redis metrics to Postgres (runs every hour)
 initMetricsSyncer();
+initCronJobs();
 
 // TODO: Uncomment Sentry request handler when Sentry is enabled
 // app.use(Sentry.Handlers.requestHandler());
