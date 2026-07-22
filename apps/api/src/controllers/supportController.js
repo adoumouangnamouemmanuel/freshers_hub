@@ -8,6 +8,7 @@ const getSessions = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
   const limit = parseInt(req.query.limit, 10) || 20;
   const offset = (page - 1) * limit;
+  const filter = req.query.filter;
 
   const client = await pool.connect();
   try {
@@ -40,7 +41,15 @@ const getSessions = asyncHandler(async (req, res) => {
       }
     } else {
       params.push(req.user.id);
-      queryStr += ` WHERE s.student_id = $${params.length} OR s.provider_id = $${params.length}`;
+      queryStr += ` WHERE (s.student_id = $${params.length} OR s.provider_id = $${params.length})`;
+    }
+
+    if (filter === 'upcoming') {
+      queryStr += ` AND s.status = 'scheduled' AND s.scheduled_at > NOW()`;
+    } else if (filter === 'overdue') {
+      queryStr += ` AND s.status = 'scheduled' AND s.scheduled_at <= NOW()`;
+    } else if (filter === 'completed') {
+      queryStr += ` AND s.status = 'completed'`;
     }
 
     queryStr += ` ORDER BY s.scheduled_at DESC`;
@@ -74,10 +83,11 @@ const getMySessions = asyncHandler(async (req, res) => {
   const page = parseInt(req.query.page, 10) || 1;
   const limit = parseInt(req.query.limit, 10) || 20;
   const offset = (page - 1) * limit;
+  const filter = req.query.filter;
 
   const client = await pool.connect();
   try {
-    const { rows } = await client.query(`
+    let queryStr = `
       SELECT 
         COUNT(*) OVER() AS total_count,
         s.id, s.unit_id, s.academic_year_id, s.student_id, s.provider_id, s.created_by,
@@ -88,10 +98,20 @@ const getMySessions = asyncHandler(async (req, res) => {
       FROM sessions s
       JOIN users u1 ON s.student_id = u1.id
       JOIN users u2 ON s.provider_id = u2.id
-      WHERE s.provider_id = $1 OR s.student_id = $1
-      ORDER BY s.scheduled_at DESC
-      LIMIT $2 OFFSET $3
-    `, [req.user.id, limit, offset]);
+      WHERE (s.provider_id = $1 OR s.student_id = $1)
+    `;
+
+    if (filter === 'upcoming') {
+      queryStr += ` AND s.status = 'scheduled' AND s.scheduled_at > NOW()`;
+    } else if (filter === 'overdue') {
+      queryStr += ` AND s.status = 'scheduled' AND s.scheduled_at <= NOW()`;
+    } else if (filter === 'completed') {
+      queryStr += ` AND s.status = 'completed'`;
+    }
+
+    queryStr += ` ORDER BY s.scheduled_at DESC LIMIT $2 OFFSET $3`;
+
+    const { rows } = await client.query(queryStr, [req.user.id, limit, offset]);
 
     const total = rows.length > 0 ? parseInt(rows[0].total_count, 10) : 0;
     res.json({
@@ -146,6 +166,11 @@ const bookSession = asyncHandler(async (req, res) => {
   const finalStudentId = studentId || req.user.id;
   const finalProviderId = providerId || req.user.id;
 
+  const hasAdminRole = req.user.roles && req.user.roles.some(r => ['admin', 'coach_admin'].includes(r));
+  if (!hasAdminRole && req.user.id !== finalStudentId && req.user.id !== finalProviderId) {
+    throw new AppError("Permission denied to book session on behalf of other users", 403);
+  }
+
   if (!unitId || !academicYearId || !finalProviderId || !finalStudentId || !scheduledAt) {
     throw new AppError("Missing required fields", 400);
   }
@@ -173,17 +198,19 @@ const bookSession = asyncHandler(async (req, res) => {
     await client.query("COMMIT");
 
     // Send notification
-    const notifyUserId = finalStudentId === req.user.id ? finalProviderId : finalStudentId;
-    if (notifyUserId) {
-      const typeStr = withType === "counsellor" ? "Counselling" : withType === "advisor" ? "Advising" : "Coaching";
-      await notificationService.sendNotification({
-        fromUserId: req.user.id,
-        toUserId: notifyUserId,
-        category: "session",
-        title: "New Session Booked",
-        body: `A new ${typeStr} session "${finalTitle}" has been scheduled for ${new Date(scheduledAt).toLocaleString()}.`,
-        relatedEntity: `session:${rows[0].id}`
-      }).catch(err => console.error("Failed to send session booking notification:", err));
+    const participants = [finalStudentId, finalProviderId];
+    for (const pId of participants) {
+      if (pId && pId !== req.user.id) {
+        const typeStr = withType === "counsellor" ? "Counselling" : withType === "advisor" ? "Advising" : "Coaching";
+        await notificationService.sendNotification({
+          fromUserId: req.user.id,
+          toUserId: pId,
+          category: "session",
+          title: "New Session Booked",
+          body: `A new ${typeStr} session "${finalTitle}" has been scheduled for ${new Date(scheduledAt).toLocaleString()}.`,
+          relatedEntity: `session:${rows[0].id}`
+        }).catch(err => console.error("Failed to send session booking notification:", err));
+      }
     }
 
     res.status(201).json(rows[0]);
@@ -197,8 +224,8 @@ const updateSessionStatus = asyncHandler(async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
-  if (!status) {
-    throw new AppError("Missing status", 400);
+  if (!status || !['scheduled', 'completed', 'cancelled', 'overdue', 'no_show'].includes(status)) {
+    throw new AppError("Invalid status", 400);
   }
 
   const client = await pool.connect();
@@ -275,7 +302,7 @@ const updateSession = asyncHandler(async (req, res) => {
           scheduled_at = COALESCE($3, scheduled_at),
           title = COALESCE($4, title),
           updated_at = now()
-      WHERE id = $5 AND created_by = $6
+      WHERE id = $5 AND (created_by = $6 OR provider_id = $6)
       RETURNING *
     `, [location, description, scheduledAt, title, id, req.user.id]);
 
@@ -393,6 +420,75 @@ const logContactClick = asyncHandler(async (req, res) => {
   }
 });
 
+// Get Support Dashboard (Aggregate endpoint)
+const getSupportDashboard = asyncHandler(async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const userId = req.user.id;
+
+    // Fetch buddy
+    const { rows: buddyRows } = await client.query(`
+      SELECT bp.id, bp.buddy_id, u.full_name AS buddy_name, u.email, u.phone, u.country, u.avatar_url
+      FROM buddy_pairings bp
+      JOIN users u ON bp.buddy_id = u.id
+      WHERE bp.fresher_id = $1
+    `, [userId]);
+
+    // Fetch assigned coach
+    const { rows: coachRows } = await client.query(`
+      SELECT ca.id, ca.peer_coach_id, u.full_name AS coach_name, u.avatar_url, u.email, u.phone
+      FROM coach_assignments ca
+      JOIN users u ON ca.peer_coach_id = u.id
+      WHERE ca.fresher_id = $1
+    `, [userId]);
+
+    // Fetch counsellors
+    const { rows: counsellorRows } = await client.query(`
+      SELECT DISTINCT u.id, u.full_name as name, u.email, u.phone, u.avatar_url
+      FROM users u
+      JOIN user_roles ur ON u.id = ur.user_id
+      JOIN units un ON ur.unit_id = un.id
+      WHERE un.name = 'counselling' AND u.is_active = true
+    `);
+
+    // Fetch advisors
+    const { rows: advisorRows } = await client.query(`
+      SELECT DISTINCT u.id, u.full_name as name, u.email, u.phone, u.avatar_url
+      FROM users u
+      JOIN user_roles ur ON u.id = ur.user_id
+      JOIN units un ON ur.unit_id = un.id
+      WHERE un.name = 'advising' AND u.is_active = true
+    `);
+
+    // Fetch sessions
+    await client.query("SELECT set_config('app.current_user_id', $1, true)", [userId]);
+    const { rows: sessionRows } = await client.query(`
+      SELECT 
+        s.id, s.unit_id, s.academic_year_id, s.student_id, s.provider_id, s.created_by,
+        s.with_type as type, s.scheduled_at as date, s.location, s.description, s.status, s.is_mandatory, s.title,
+        EXISTS (SELECT 1 FROM session_reports sr WHERE sr.session_id = s.id) AS has_report,
+        u1.full_name AS student_name, u1.avatar_url AS student_avatar,
+        u2.full_name AS provider_name, u2.avatar_url AS provider_avatar
+      FROM sessions s
+      JOIN users u1 ON s.student_id = u1.id
+      JOIN users u2 ON s.provider_id = u2.id
+      WHERE s.student_id = $1 OR s.provider_id = $1
+      ORDER BY s.scheduled_at DESC
+      LIMIT 20
+    `, [userId]);
+
+    res.json({
+      buddy: buddyRows[0] || null,
+      assignedCoach: coachRows[0] || null,
+      counsellors: counsellorRows,
+      advisors: advisorRows,
+      sessions: sessionRows
+    });
+  } finally {
+    client.release();
+  }
+});
+
 // Get staff members for a specific unit (e.g., counselling, advising)
 const getStaffByUnit = asyncHandler(async (req, res) => {
   const { unitName } = req.params;
@@ -461,6 +557,7 @@ module.exports = {
   getAssignedFreshers,
   getBuddyPairing,
   logContactClick,
+  getSupportDashboard,
   getStaffByUnit,
   submitSessionReport,
 };
