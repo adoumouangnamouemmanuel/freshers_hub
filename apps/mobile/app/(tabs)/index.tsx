@@ -23,7 +23,7 @@ import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { PostCard } from "@/components/dashboard/PostCard";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 // import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Post = {
@@ -96,25 +96,12 @@ export default function FeedScreen() {
   const { session } = useAuth();
   const insets = useSafeAreaInsets();
 
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
+
   const [refreshing, setRefreshing] = useState(false);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-
-  // New DB States
-  const [assignedCoaches, setAssignedCoaches] = useState<CoachAssignment[]>([]);
-  const [assignedBuddy, setAssignedBuddy] = useState<BuddyPairing | null>(null);
-  const [assignedFreshers, setAssignedFreshers] = useState<AssignedFresher[]>([]);
-  const [myGroups, setMyGroups] = useState<Group[]>([]);
-  const [upcomingSessions, setUpcomingSessions] = useState<Session[]>([]);
-  const [overdueSessions, setOverdueSessions] = useState<Session[]>([]);
-  const [adminStats, setAdminStats] = useState<any>(null);
-  const [advisingData, setAdvisingData] = useState<any>(null);
-  const [counsellingData, setCounsellingData] = useState<any>(null);
+  const [activeCategory, setActiveCategory] = useState("All");
 
   // Role Checks
   const currentYear = new Date().getFullYear();
@@ -145,84 +132,71 @@ export default function FeedScreen() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const fetchDashboardStats = async () => {
-    if (!session?.accessToken) return;
-    try {
-      const headers = { Authorization: `Bearer ${session.accessToken}` };
-      const data = await apiRequest<any>("/home/dashboard", { headers });
-      if (!data) return;
+  const { data: dashboardData, isLoading: isLoadingDashboard, refetch: refetchDashboard } = useQuery({
+    queryKey: ['home-dashboard'],
+    queryFn: async () => {
+      const headers = { Authorization: `Bearer ${session?.accessToken}` };
+      return apiRequest<any>("/home/dashboard", { headers });
+    },
+    enabled: !!session?.accessToken,
+    staleTime: 1000 * 60 * 5,
+  });
 
-      if (data.groups) setMyGroups(data.groups);
-      if (data.fresherData) {
-        setAssignedCoaches(data.fresherData.assignedCoaches || []);
-        setAssignedBuddy(data.fresherData.assignedBuddy || null);
-      }
-      if (data.coachData) setAssignedFreshers(data.coachData.assignedFreshers || []);
-      if (data.sessions) {
-        setUpcomingSessions(data.sessions.upcoming || []);
-        setOverdueSessions(data.sessions.overdue || []);
-      }
-      if (data.adminStats) setAdminStats(data.adminStats);
-      if (data.advisingStats) setAdvisingData(data.advisingStats);
-      if (data.counsellingStats) setCounsellingData(data.counsellingStats);
-    } catch (err) {
-      console.error("Failed to fetch dashboard stats:", err);
-    }
-  };
-
-  const fetchPosts = async (pageNum = 1, reset = false) => {
-    if (!session?.accessToken) return;
-    if (pageNum === 1) setIsLoading(true);
-    else setIsLoadingMore(true);
-
-    try {
-      let url = `/posts?page=${pageNum}&limit=15`;
+  const {
+    data: postsData,
+    isLoading: isLoadingPosts,
+    isFetchingNextPage: isLoadingMore,
+    hasNextPage: hasMore,
+    fetchNextPage,
+    refetch: refetchPosts
+  } = useInfiniteQuery({
+    queryKey: ['posts', debouncedSearchQuery, activeCategory],
+    initialPageParam: 1,
+    queryFn: async ({ pageParam = 1 }) => {
+      let url = `/posts?page=${pageParam}&limit=15`;
       if (debouncedSearchQuery) url += `&q=${encodeURIComponent(debouncedSearchQuery)}`;
       if (activeCategory !== "All") url += `&category=${encodeURIComponent(activeCategory)}`;
 
-      const headers = { Authorization: `Bearer ${session.accessToken}` };
+      const headers = { Authorization: `Bearer ${session?.accessToken}` };
       const res = await apiRequest<{ data: Post[]; meta: { totalPages: number } }>(url, { headers });
+      return res;
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      if (!lastPage.meta) return undefined;
+      return allPages.length < lastPage.meta.totalPages ? allPages.length + 1 : undefined;
+    },
+    enabled: !!session?.accessToken,
+    staleTime: 1000 * 60 * 5,
+  });
 
-      if (res?.data) {
-        if (reset) {
-          setPosts(res.data);
-        } else {
-          setPosts(prev => {
-            const newPosts = res.data.filter(p => !prev.find(existing => existing.id === p.id));
-            return [...prev, ...newPosts];
-          });
-        }
-        setHasMore(pageNum < (res.meta?.totalPages || 1));
-        setPage(pageNum);
-      }
-    } catch (err) {
-      console.error("Failed to fetch posts:", err);
-    } finally {
-      setIsLoading(false);
-      setIsLoadingMore(false);
-    }
-  };
-
-  const fetchData = async () => {
-    await fetchDashboardStats();
-    await fetchPosts(1, true);
-  };
+  const posts = postsData?.pages.flatMap(page => page.data || []) || [];
 
   const handleLoadMore = () => {
     if (!isLoadingMore && hasMore) {
-      fetchPosts(page + 1);
+      fetchNextPage();
     }
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [session?.accessToken]);
-
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchData();
+    await Promise.all([
+      refetchDashboard(),
+      refetchPosts(),
+    ]);
     setRefreshing(false);
   };
+
+  const myGroups = dashboardData?.groups || [];
+  const assignedCoaches = dashboardData?.fresherData?.assignedCoaches || [];
+  const assignedBuddy = dashboardData?.fresherData?.assignedBuddy || null;
+  const assignedFreshers = dashboardData?.coachData?.assignedFreshers || [];
+  const upcomingSessions = dashboardData?.sessions?.upcoming || [];
+  const overdueSessions = dashboardData?.sessions?.overdue || [];
+  const adminStats = dashboardData?.adminStats || null;
+  const advisingData = dashboardData?.advisingStats || null;
+  const counsellingData = dashboardData?.counsellingStats || null;
+
+  const isLoading = isLoadingDashboard || isLoadingPosts;
 
   const firstName = session?.user.fullName?.split(" ")[0] ?? "there";
   const userInitial = session?.user.fullName?.charAt(0).toUpperCase() ?? "?";
@@ -238,17 +212,9 @@ export default function FeedScreen() {
   const canPost = allowedRoles.some((roleName) => hasRole(session?.user.roles || [], roleName));
 
   const categories = ["All", "Announcement", "Event", "Alert"];
-  const [activeCategory, setActiveCategory] = useState("All");
-
-  // Re-fetch posts on search/category change
-  useEffect(() => {
-    if (!session?.accessToken) return;
-    setHasMore(true);
-    fetchPosts(1, true);
-  }, [debouncedSearchQuery, activeCategory]);
 
   const nextSession = upcomingSessions.length > 0 ? upcomingSessions[0] : null;
-  const myLedClubs = myGroups.filter(g => g.isLeader);
+  const myLedClubs = myGroups.filter((g: any) => g.isLeader);
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
@@ -256,7 +222,7 @@ export default function FeedScreen() {
       <FlatList
         data={posts}
         keyExtractor={item => item.id}
-        renderItem={({ item }) => <PostCard post={item} onUpdate={fetchData} />}
+        renderItem={({ item }) => <PostCard post={item} onUpdate={refetchPosts} />}
         contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom + 20, 100) }]}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor="#A93C40" />}
