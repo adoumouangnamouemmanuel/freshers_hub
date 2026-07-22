@@ -463,7 +463,7 @@ const styles = StyleSheet.create({
   activeTabText: { color: "#1A2B4A", fontWeight: "700" },
 
   scroll: { flex: 1 },
-  content: { padding: 20, gap: 16, paddingBottom: 200 },
+  content: { padding: 20, gap: 16, paddingBottom: 100 },
 
   card: {
     backgroundColor: "#FFFFFF",
