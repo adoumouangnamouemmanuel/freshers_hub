@@ -63,7 +63,7 @@ class AdminUsersRepository {
       params
     );
 
-    return { data: rows, total: parseInt(countRows[0].total), page, pageSize };
+    return { data: rows, total: parseInt(countRows[0].total), page: parseInt(page, 10), pageSize: parseInt(pageSize, 10) };
   }
 
   // ── Single User ────────────────────────────────────────────────────────────
