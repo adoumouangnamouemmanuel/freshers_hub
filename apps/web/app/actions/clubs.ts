@@ -12,13 +12,16 @@ async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
     throw new Error("Unauthorized");
   }
 
+  const isFormData = options.body instanceof FormData;
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    ...(!isFormData && { "Content-Type": "application/json" }),
+    ...options.headers,
+  };
+
   const res = await fetch(`${API_URL}${endpoint}`, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-      ...options.headers,
-    },
+    headers,
   });
 
   if (!res.ok) {
@@ -29,6 +32,13 @@ async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
   return res.json();
 }
 
+export async function uploadClubImageAction(formData: FormData) {
+  return fetchWithAuth("/admin/clubs/upload-image", {
+    method: "POST",
+    body: formData,
+  });
+}
+
 export async function getClubsAction(query?: any) {
   const qs = new URLSearchParams(query || {}).toString();
   return fetchWithAuth(`/admin/clubs?${qs}`, {
@@ -36,14 +46,14 @@ export async function getClubsAction(query?: any) {
   });
 }
 
-export async function createClubAction(data: { name: string; description?: string; category?: string; leadUserId?: string }) {
+export async function createClubAction(data: { name: string; description?: string; category?: string; leadUserId?: string; image_url?: string; cover_image?: string }) {
   return fetchWithAuth("/admin/clubs", {
     method: "POST",
     body: JSON.stringify(data),
   });
 }
 
-export async function updateClubAction(id: string, data: { name?: string; description?: string; category?: string; leadUserId?: string; is_active?: boolean }) {
+export async function updateClubAction(id: string, data: { name?: string; description?: string; category?: string; leadUserId?: string; is_active?: boolean; image_url?: string; cover_image?: string }) {
   return fetchWithAuth(`/admin/clubs/${id}`, {
     method: "PATCH",
     body: JSON.stringify(data),
