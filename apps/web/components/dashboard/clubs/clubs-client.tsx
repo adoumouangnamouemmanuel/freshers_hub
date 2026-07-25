@@ -59,6 +59,8 @@ export default function ClubsClient({ initialData, allUsers }: { initialData: an
       growth: growthFor(c.id ?? c.name),
       featured: hash(c.id ?? c.name) % 5 === 0,
       memberCount: parseInt(c.member_count || '0', 10),
+      eventCount: parseInt(c.event_count || '0', 10),
+      postCount: parseInt(c.post_count || '0', 10),
       status: c.is_active ? "active" : "inactive"
     })),
     [rawClubs]
@@ -110,13 +112,13 @@ export default function ClubsClient({ initialData, allUsers }: { initialData: an
       <div className="flex gap-3">
         <button 
           onClick={() => { setSearch(""); setCategory("all"); }}
-          className="px-5 py-2.5 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors"
+          className="cursor-pointer px-5 py-2.5 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors"
         >
           Clear filters
         </button>
         <button 
           onClick={() => setIsAddOpen(true)}
-          className="px-5 py-2.5 text-sm font-medium text-white bg-[#A93C40] hover:bg-[#8B3135] rounded-xl transition-colors shadow-sm"
+          className="cursor-pointer px-5 py-2.5 text-sm font-medium text-white bg-[#A93C40] hover:bg-[#8B3135] rounded-xl transition-colors shadow-sm"
         >
           Create Club
         </button>
@@ -207,7 +209,7 @@ export default function ClubsClient({ initialData, allUsers }: { initialData: an
       </AnimatedSection>
 
       {/* Toolbar */}
-      <AnimatedSection delay={0.3} className="sticky top-0 z-20 bg-[#f7f5f2]/80 backdrop-blur-xl py-4 -mx-4 px-4 sm:mx-0 sm:px-0 mb-6 border-b border-[#e5e1d8]/50">
+      <AnimatedSection delay={0.3} className="py-4 mb-6 border-b border-[#e5e1d8]/50">
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
           <div className="flex w-full sm:w-auto items-center gap-2">
             <div className="relative flex-1 sm:w-64">
@@ -222,7 +224,7 @@ export default function ClubsClient({ initialData, allUsers }: { initialData: an
             </div>
             <button 
               onClick={() => setShowFilters(!showFilters)}
-              className={`p-2 rounded-xl border transition-colors ${showFilters ? 'bg-[#A93C40] text-white border-[#A93C40]' : 'bg-white text-gray-600 border-[#e5e1d8] hover:bg-gray-50'} shadow-sm`}
+              className={`cursor-pointer p-2 rounded-xl border transition-colors ${showFilters ? 'bg-[#A93C40] text-white border-[#A93C40]' : 'bg-white text-gray-600 border-[#e5e1d8] hover:bg-gray-50'} shadow-sm`}
             >
               <Filter className="w-4 h-4" />
             </button>
@@ -241,13 +243,13 @@ export default function ClubsClient({ initialData, allUsers }: { initialData: an
             <div className="flex bg-white rounded-xl border border-[#e5e1d8] p-1 shadow-sm">
               <button
                 onClick={() => setView("grid")}
-                className={`p-1.5 rounded-lg transition-colors ${view === "grid" ? "bg-gray-100 text-[#1A2B4A]" : "text-gray-400 hover:text-gray-600"}`}
+                className={`cursor-pointer p-1.5 rounded-lg transition-colors ${view === "grid" ? "bg-gray-100 text-[#1A2B4A]" : "text-gray-400 hover:text-gray-600"}`}
               >
                 <LayoutGrid className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setView("table")}
-                className={`p-1.5 rounded-lg transition-colors ${view === "table" ? "bg-gray-100 text-[#1A2B4A]" : "text-gray-400 hover:text-gray-600"}`}
+                className={`cursor-pointer p-1.5 rounded-lg transition-colors ${view === "table" ? "bg-gray-100 text-[#1A2B4A]" : "text-gray-400 hover:text-gray-600"}`}
               >
                 <List className="w-4 h-4" />
               </button>
@@ -265,7 +267,7 @@ export default function ClubsClient({ initialData, allUsers }: { initialData: an
               <button
                 key={cat}
                 onClick={() => setCategory(cat.toLowerCase())}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${
+                className={`cursor-pointer px-3 py-1.5 rounded-full text-xs font-medium transition-colors border ${
                   category === cat.toLowerCase() 
                     ? 'bg-[#1A2B4A] text-white border-[#1A2B4A]' 
                     : 'bg-white text-gray-600 border-[#e5e1d8] hover:border-gray-300'
@@ -360,7 +362,7 @@ export default function ClubsClient({ initialData, allUsers }: { initialData: an
                     setIsLoadingMore(false);
                   }}
                   disabled={isLoadingMore}
-                  className="px-6 py-3 bg-white border border-[#e5e1d8] rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
+                  className="cursor-pointer px-6 py-3 bg-white border border-[#e5e1d8] rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
                 >
                   {isLoadingMore ? "Loading..." : "Load More"}
                 </button>
