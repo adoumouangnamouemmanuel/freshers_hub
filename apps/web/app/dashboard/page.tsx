@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 
 const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:4000").replace("localhost", "127.0.0.1");
 
-async function fetchDashboardData() {
+async function fetchDashboardData(searchParams: { [key: string]: string | string[] | undefined }) {
   const cookieStore = await cookies();
   const token = cookieStore.get("accessToken")?.value;
 
@@ -12,9 +12,12 @@ async function fetchDashboardData() {
     redirect("/login");
   }
 
+  const academicYearId = searchParams.academicYearId as string | undefined;
+  const queryParam = academicYearId ? `?academicYearId=${academicYearId}` : "";
+
   try {
     const [overviewRes, auditRes] = await Promise.all([
-      fetch(`${API_URL}/admin/analytics/overview`, {
+      fetch(`${API_URL}/admin/analytics/overview${queryParam}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -49,8 +52,12 @@ async function fetchDashboardData() {
   }
 }
 
-export default async function DashboardPage() {
-  const { overview, auditLog, error } = await fetchDashboardData();
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined }
+}) {
+  const { overview, auditLog, error } = await fetchDashboardData(searchParams);
 
   if (error) {
     return (
