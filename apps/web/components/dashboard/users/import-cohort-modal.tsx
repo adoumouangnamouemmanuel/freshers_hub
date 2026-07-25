@@ -74,7 +74,7 @@ export function ImportCohortModal({ isOpen, onClose, onSuccess }: ImportCohortMo
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-2xl"
+          className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl"
         >
           <div className="flex items-center justify-between border-b border-[#f3f4f6] px-6 py-4">
             <h2 className="text-lg font-semibold text-[#1A2B4A]">Import Cohort</h2>
