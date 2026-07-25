@@ -61,9 +61,9 @@ export function useDashboardData() {
   const [overdueSessions, setOverdueSessions] = useState<Session[]>([]);
   const [adminStats, setAdminStats] = useState<AdminStats | null>(null);
 
-  const currentYear = new Date().getFullYear();
   const userClassYear = Number(session?.user?.classYear || session?.user?.studentProfile?.graduationYear);
-  const isFresher = userClassYear === currentYear + 4;
+  const { isUserFresher } = require("@/lib/fresherUtils");
+  const isFresher = isUserFresher(userClassYear);
   
   const roles = session?.user.roles || [];
   const hasRole = (roleName: string) => roles.some((r: any) => r.name === roleName);
