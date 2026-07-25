@@ -63,7 +63,7 @@ export function RoleBadge({
     <span
       className={cn(
         "inline-flex items-center px-2 py-0.5 rounded-lg text-xs font-semibold border",
-        roleColors[role] || "bg-gray-50 text-gray-700 border-gray-200",
+        roleColors[role.toLowerCase()] || "bg-gray-50 text-gray-700 border-gray-200",
         className
       )}
     >
