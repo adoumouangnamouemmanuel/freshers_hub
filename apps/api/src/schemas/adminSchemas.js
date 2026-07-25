@@ -68,6 +68,8 @@ const createClubSchema = z.object({
     description: z.string().optional(),
     category:    z.string().optional(),
     leadUserId:  z.string().optional(),
+    image_url:   z.string().url().optional().or(z.literal('')),
+    cover_image: z.string().url().optional().or(z.literal('')),
   }),
 });
 
@@ -78,6 +80,8 @@ const updateClubSchema = z.object({
     category:    z.string().optional(),
     leadUserId:  z.string().optional(),
     is_active:   z.boolean().optional(),
+    image_url:   z.string().url().optional().or(z.literal('')),
+    cover_image: z.string().url().optional().or(z.literal('')),
   }),
 });
 
