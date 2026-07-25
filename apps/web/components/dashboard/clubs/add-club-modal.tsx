@@ -21,6 +21,9 @@ export function AddClubModal({ isOpen, onClose, allUsers, onSuccess }: AddClubMo
   const [category, setCategory] = useState("");
   const [leadUserId, setLeadUserId] = useState("");
 
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -29,17 +32,41 @@ export function AddClubModal({ isOpen, onClose, allUsers, onSuccess }: AddClubMo
     setIsSubmitting(true);
 
     try {
+      let image_url = "";
+      let cover_image = "";
+
+      if (logoFile) {
+        const logoData = new FormData();
+        logoData.append("image", logoFile);
+        logoData.append("type", "logo");
+        // We need to import uploadClubImageAction at the top
+        const logoRes = await import("@/app/actions/clubs").then(m => m.uploadClubImageAction(logoData));
+        image_url = logoRes.url;
+      }
+
+      if (coverFile) {
+        const coverData = new FormData();
+        coverData.append("image", coverFile);
+        coverData.append("type", "cover");
+        const coverRes = await import("@/app/actions/clubs").then(m => m.uploadClubImageAction(coverData));
+        cover_image = coverRes.url;
+      }
+
       await createClubAction({
         name,
         description,
         category: category || undefined,
         leadUserId: leadUserId || undefined,
+        image_url: image_url || undefined,
+        cover_image: cover_image || undefined,
       });
       onSuccess();
       setName("");
       setDescription("");
       setCategory("");
       setLeadUserId("");
+      setLogoFile(null);
+      setCoverFile(null);
     } catch (err: any) {
       setError(err.message || "Failed to create club");
     } finally {
@@ -68,7 +95,7 @@ export function AddClubModal({ isOpen, onClose, allUsers, onSuccess }: AddClubMo
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6">
+          <form onSubmit={handleSubmit} className="p-6 max-h-[75vh] overflow-y-auto">
             {error && (
               <div className="mb-6 p-3 bg-red-50 text-red-600 text-sm font-medium rounded-xl border border-red-100">
                 {error}
@@ -76,6 +103,26 @@ export function AddClubModal({ isOpen, onClose, allUsers, onSuccess }: AddClubMo
             )}
 
             <div className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Club Logo (Square)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+                  className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-[#A93C40]/10 file:text-[#A93C40] hover:file:bg-[#A93C40]/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cover Image (Wide Banner)</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
+                  className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-[#A93C40]/10 file:text-[#A93C40] hover:file:bg-[#A93C40]/20"
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Club Name <span className="text-red-500">*</span></label>
                 <input
@@ -132,7 +179,7 @@ export function AddClubModal({ isOpen, onClose, allUsers, onSuccess }: AddClubMo
               </div>
             </div>
 
-            <div className="mt-8 flex justify-end gap-3">
+            <div className="mt-8 flex justify-end gap-3 pt-4 border-t border-[#e5e1d8]">
               <button
                 type="button"
                 onClick={onClose}
