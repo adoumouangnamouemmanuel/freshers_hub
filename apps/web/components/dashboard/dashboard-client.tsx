@@ -13,13 +13,22 @@ import {
   TrendingUp,
   Users,
   ShieldAlert,
+  Edit3,
+  Trash2,
+  CheckCircle,
+  UserPlus
 } from "lucide-react";
+import Link from "next/link";
 import { StatCard } from "@/components/ui/card";
 import { ConfidentialityBanner } from "@/components/ui/confidentiality-banner";
 import {
   AnimatedPage,
   AnimatedSection,
 } from "@/components/ui/animated-container";
+import { AreaChart, Area, ResponsiveContainer, YAxis } from "recharts";
+import { useState, useEffect } from "react";
+import { exportAnalyticsAction } from "@/app/actions/export";
+import { useSearchParams } from "next/navigation";
 
 const itemVariants = {
   hidden: { opacity: 0, y: 20 },
@@ -30,13 +39,71 @@ const itemVariants = {
   },
 };
 
+const getGreeting = (name?: string) => {
+  const hour = new Date().getHours();
+  let timeOfDay = "Good evening";
+  if (hour < 12) timeOfDay = "Good morning";
+  else if (hour < 17) timeOfDay = "Good afternoon";
+
+  const firstName = name ? name.split(" ")[0] : "Admin";
+  return `${timeOfDay}, ${firstName}`;
+};
+
+const getAuditIcon = (actionStr: string) => {
+  const a = actionStr.toLowerCase();
+  if (a.includes("delete") || a.includes("remove") || a.includes("revoke")) {
+    return <Trash2 className="w-4 h-4 text-red-500" />;
+  }
+  if (a.includes("update") || a.includes("edit")) {
+    return <Edit3 className="w-4 h-4 text-blue-500" />;
+  }
+  if (a.includes("create") || a.includes("add") || a.includes("grant")) {
+    return <Plus className="w-4 h-4 text-emerald-500" />;
+  }
+  if (a.includes("activate")) {
+    return <CheckCircle className="w-4 h-4 text-emerald-500" />;
+  }
+  return <ShieldAlert className="w-4 h-4 text-muted-foreground" />;
+};
+
 export default function DashboardClient({
   overview,
   auditLog,
+  user,
 }: {
   overview: any;
   auditLog: any[];
+  user?: any;
 }) {
+  const searchParams = useSearchParams();
+  const [greeting, setGreeting] = useState("Welcome back");
+  const [isExporting, setIsExporting] = useState(false);
+
+  useEffect(() => {
+    setGreeting(getGreeting(user?.fullName));
+  }, [user]);
+
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      const csv = await exportAnalyticsAction(searchParams.get("academicYearId") || undefined);
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `fresherhub_export_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error("Failed to export", e);
+      alert("Failed to export data");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const users = overview?.users || {
     total_users: 0,
     total_students: 0,
@@ -46,27 +113,41 @@ export default function DashboardClient({
   
   const clubs = overview?.clubs || { total_clubs: 0 };
 
-  // We can create a unified array of unit health for rendering
   const unitHealth = [
     {
       unit: "Coaching",
       rate: overview?.coaching?.completion_rate || 0,
-      trend: "+0%",
-      color: "bg-emerald-500",
+      trend: overview?.coaching?.trend || "+0%",
+      history: overview?.coaching?.history || [],
+      color: "emerald",
+      bgClass: "bg-emerald-500",
+      textClass: "text-emerald-500",
+      stroke: "#10b981",
+      fill: "url(#colorEmerald)",
       label: "mandatory sessions completed",
     },
     {
       unit: "Counselling",
       rate: overview?.counselling?.completion_rate || 0,
-      trend: "+0%",
-      color: "bg-blue-500",
+      trend: overview?.counselling?.trend || "+0%",
+      history: overview?.counselling?.history || [],
+      color: "blue",
+      bgClass: "bg-blue-500",
+      textClass: "text-blue-500",
+      stroke: "#3b82f6",
+      fill: "url(#colorBlue)",
       label: "engagement rate",
     },
     {
       unit: "Advising",
       rate: overview?.advising?.completion_rate || 0,
-      trend: "+0%",
-      color: "bg-amber-500",
+      trend: overview?.advising?.trend || "+0%",
+      history: overview?.advising?.history || [],
+      color: "amber",
+      bgClass: "bg-amber-500",
+      textClass: "text-amber-500",
+      stroke: "#f59e0b",
+      fill: "url(#colorAmber)",
       label: "sessions booked",
     },
   ];
@@ -85,7 +166,7 @@ export default function DashboardClient({
             </span>
           </div>
           <h1 className="text-4xl sm:text-5xl font-heading font-extrabold tracking-tight mb-3 text-transparent bg-clip-text bg-gradient-to-r from-white to-white/70">
-            Platform Dashboard
+            {greeting}
           </h1>
           <p className="text-white/70 text-lg max-w-2xl font-medium leading-relaxed">
             The aggregate view of Fresher Hub — nothing here is a name, only a
@@ -95,19 +176,23 @@ export default function DashboardClient({
             <motion.button 
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm font-semibold hover:bg-white/20 transition-colors shadow-sm"
+              onClick={handleExport}
+              disabled={isExporting}
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm font-semibold hover:bg-white/20 transition-colors shadow-sm cursor-pointer disabled:opacity-50"
             >
-              <Download className="w-4 h-4" />
-              Export Data
+              {isExporting ? <span className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" /> : <Download className="w-4 h-4" />}
+              {isExporting ? "Exporting..." : "Export Data"}
             </motion.button>
-            <motion.button 
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shadow-lg glow-primary"
-            >
-              <Plus className="w-4 h-4" />
-              Quick Action
-            </motion.button>
+            <Link href="/dashboard/users">
+              <motion.button 
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shadow-lg glow-primary cursor-pointer"
+              >
+                <UserPlus className="w-4 h-4" />
+                Invite Users
+              </motion.button>
+            </Link>
           </div>
         </div>
       </AnimatedSection>
@@ -170,37 +255,56 @@ export default function DashboardClient({
                 key={item.unit}
                 variants={itemVariants}
                 whileHover={{ y: -3 }}
-                className="rounded-2xl border border-border/50 glass-panel p-6 shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden group"
+                className="rounded-2xl border border-border/50 glass-panel p-6 shadow-sm hover:shadow-xl transition-all duration-300 relative overflow-hidden group flex flex-col"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                <div className="relative z-10">
-                  <div className="flex items-start justify-between mb-5">
+                
+                <div className="relative z-10 flex-1">
+                  <div className="flex items-start justify-between mb-3">
                     <div>
                       <p className="font-heading font-bold text-foreground text-lg">
                         {item.unit}
                       </p>
                       <p className="text-xs font-medium text-muted-foreground mt-0.5">{item.label}</p>
                     </div>
-                    {item.rate > 0 && (
-                      <span className="flex items-center gap-0.5 text-xs font-bold text-emerald-600 bg-emerald-500/10 px-2.5 py-1 rounded-full">
+                    {item.trend && (
+                      <span className={`flex items-center gap-0.5 text-xs font-bold ${item.textClass} bg-${item.color}-500/10 px-2.5 py-1 rounded-full`}>
                         <ArrowUpRight className="w-3.5 h-3.5" />
                         {item.trend}
                       </span>
                     )}
                   </div>
-                  <div className="flex items-end gap-3 mb-4">
+                  
+                  <div className="flex items-end gap-3 mb-2">
                     <p className="text-4xl font-extrabold tracking-tight text-foreground">
                       {item.rate}%
                     </p>
                   </div>
-                  <div className="w-full bg-secondary rounded-full h-2.5 overflow-hidden">
-                    <motion.div
-                      initial={{ width: 0 }}
-                      animate={{ width: `${item.rate}%` }}
-                      transition={{ duration: 1.2, ease: [0.4, 0, 0.2, 1] }}
-                      className={`h-2.5 rounded-full ${item.color}`}
-                    />
-                  </div>
+                </div>
+
+                {/* Sparkline Chart */}
+                <div className="h-16 w-full -mx-1 relative z-0 mt-auto">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={item.history.length ? item.history : [{rate: 0}, {rate: item.rate}]}>
+                      <defs>
+                        <linearGradient id={`color${item.unit}`} x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={item.stroke} stopOpacity={0.3}/>
+                          <stop offset="95%" stopColor={item.stroke} stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <YAxis domain={[0, 100]} hide />
+                      <Area 
+                        type="monotone" 
+                        dataKey="rate" 
+                        stroke={item.stroke} 
+                        strokeWidth={3}
+                        fillOpacity={1} 
+                        fill={`url(#color${item.unit})`} 
+                        isAnimationActive={true}
+                        animationDuration={1500}
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
                 </div>
               </motion.div>
             ))}
@@ -236,12 +340,13 @@ export default function DashboardClient({
                   transition={{ delay: i * 0.08 }}
                   className="flex items-center gap-4 p-5 hover:bg-secondary/50 transition-colors"
                 >
-                  <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center shrink-0 border border-border/50">
-                    <ShieldAlert className="w-4 h-4 text-muted-foreground" />
+                  <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center shrink-0 border border-border/50 shadow-sm">
+                    {getAuditIcon(log.action)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground truncate">
-                      {log.action} <span className="text-muted-foreground font-normal">by {log.actor_name || "System"}</span>
+                      <span className="capitalize">{log.action.replace(/_/g, " ")}</span> 
+                      <span className="text-muted-foreground font-normal"> by {log.actor_name || "System"}</span>
                     </p>
                     <p className="text-xs font-medium text-muted-foreground mt-1">
                       {new Date(log.created_at).toLocaleString()}
@@ -262,7 +367,7 @@ export default function DashboardClient({
         </AnimatedSection>
 
         {/* Quick Actions */}
-        <AnimatedSection className="rounded-2xl border border-border/50 glass-panel p-6 shadow-sm">
+        <AnimatedSection className="rounded-2xl border border-border/50 glass-panel p-6 shadow-sm flex flex-col">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
               <Building2 className="w-4 h-4 text-primary" />
@@ -272,45 +377,50 @@ export default function DashboardClient({
             </h2>
           </div>
           
-          <div className="space-y-3">
+          <div className="space-y-3 flex-1 flex flex-col justify-center">
             {[
               {
                 icon: Download,
                 label: "Import new cohort",
                 desc: "Upload admissions CSV",
+                href: "/dashboard/users", // Would ideally be /dashboard/users/import
               },
               {
                 icon: Calendar,
                 label: "Create academic year",
                 desc: "Set up new cycle",
+                href: "/dashboard/academic-years",
               },
               {
                 icon: Megaphone,
                 label: "Post announcement",
                 desc: "Platform-wide notice",
+                href: "/dashboard", // Target page not fully scoped, fallback to /dashboard
               },
               {
                 icon: BarChart3,
                 label: "View analytics",
                 desc: "Platform insights",
+                href: "/dashboard/analytics",
               },
             ].map((action) => (
-              <motion.button
-                whileHover={{ scale: 1.01, x: 4 }}
-                whileTap={{ scale: 0.99 }}
-                key={action.label}
-                className="w-full flex items-center gap-4 p-3.5 rounded-xl hover:bg-secondary border border-transparent hover:border-border/50 transition-all text-left cursor-pointer group"
-              >
-                <div className="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
-                  <action.icon className="w-4 h-4 text-primary" />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
-                    {action.label}
-                  </p>
-                  <p className="text-xs font-medium text-muted-foreground mt-0.5">{action.desc}</p>
-                </div>
-              </motion.button>
+              <Link href={action.href} key={action.label}>
+                <motion.button
+                  whileHover={{ scale: 1.01, x: 4 }}
+                  whileTap={{ scale: 0.99 }}
+                  className="w-full flex items-center gap-4 p-3.5 rounded-xl hover:bg-secondary border border-transparent hover:border-border/50 transition-all text-left cursor-pointer group shadow-sm"
+                >
+                  <div className="w-10 h-10 rounded-xl bg-primary/5 flex items-center justify-center shrink-0 group-hover:bg-primary/10 transition-colors">
+                    <action.icon className="w-4 h-4 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">
+                      {action.label}
+                    </p>
+                    <p className="text-xs font-medium text-muted-foreground mt-0.5">{action.desc}</p>
+                  </div>
+                </motion.button>
+              </Link>
             ))}
           </div>
         </AnimatedSection>
