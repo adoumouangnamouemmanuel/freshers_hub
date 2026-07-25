@@ -7,8 +7,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { UsersFilters } from "./users-filters";
 import { UsersTable } from "./users-table";
 import { UsersBulkActions } from "./users-bulk-actions";
-import { getUsersAction, deactivateUsersAction, assignRolesAction } from "@/app/actions/users";
-import { useRouter } from "next/navigation";
+import { getUsersAction, deactivateUsersAction, assignRolesAction, getUserByIdAction } from "@/app/actions/users";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AddUserModal } from "./add-user-modal";
 import { EditUserModal } from "./edit-user-modal";
 import { ImportCohortModal } from "./import-cohort-modal";
@@ -23,6 +23,7 @@ interface UsersClientProps {
 
 export default function UsersClient({ initialData, allRoles, overview }: UsersClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   
   const [users, setUsers] = useState(initialData.data);
   const [total, setTotal] = useState(initialData.total);
@@ -44,6 +45,20 @@ export default function UsersClient({ initialData, allRoles, overview }: UsersCl
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<any>(null);
   const [viewingUser, setViewingUser] = useState<any>(null);
+
+  useEffect(() => {
+    const viewUserId = searchParams.get("viewUser");
+    if (viewUserId) {
+      getUserByIdAction(viewUserId).then(user => {
+        if (user) setViewingUser(user);
+        
+        // Clean up URL
+        const newParams = new URLSearchParams(searchParams.toString());
+        newParams.delete("viewUser");
+        router.replace(`?${newParams.toString()}`);
+      }).catch(console.error);
+    }
+  }, [searchParams, router]);
 
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
