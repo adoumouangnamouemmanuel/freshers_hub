@@ -41,7 +41,8 @@ export function AddClubModal({ isOpen, onClose, allUsers, onSuccess }: AddClubMo
         logoData.append("type", "logo");
         // We need to import uploadClubImageAction at the top
         const logoRes = await import("@/app/actions/clubs").then(m => m.uploadClubImageAction(logoData));
-        image_url = logoRes.url;
+        // Store relative path so mobile can prefix with its own API base URL
+        image_url = logoRes.path || logoRes.url;
       }
 
       if (coverFile) {
@@ -49,7 +50,8 @@ export function AddClubModal({ isOpen, onClose, allUsers, onSuccess }: AddClubMo
         coverData.append("image", coverFile);
         coverData.append("type", "cover");
         const coverRes = await import("@/app/actions/clubs").then(m => m.uploadClubImageAction(coverData));
-        cover_image = coverRes.url;
+        // Store relative path so mobile can prefix with its own API base URL
+        cover_image = coverRes.path || coverRes.url;
       }
 
       await createClubAction({
