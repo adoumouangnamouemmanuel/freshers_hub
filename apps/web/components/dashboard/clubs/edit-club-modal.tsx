@@ -24,6 +24,11 @@ export function EditClubModal({ club, isOpen, onClose, allUsers, onSuccess }: Ed
   const [leadUserId, setLeadUserId] = useState("");
   const [isActive, setIsActive] = useState(true);
 
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [currentLogo, setCurrentLogo] = useState("");
+  const [currentCover, setCurrentCover] = useState("");
+
   useEffect(() => {
     if (club) {
       setName(club.name || "");
@@ -31,6 +36,10 @@ export function EditClubModal({ club, isOpen, onClose, allUsers, onSuccess }: Ed
       setCategory(club.category || "");
       setLeadUserId(club.lead_id || club.lead_user_id || "");
       setIsActive(club.is_active ?? true);
+      setCurrentLogo(club.image_url || "");
+      setCurrentCover(club.cover_image || "");
+      setLogoFile(null);
+      setCoverFile(null);
       setError("");
     }
   }, [club]);
@@ -43,12 +52,33 @@ export function EditClubModal({ club, isOpen, onClose, allUsers, onSuccess }: Ed
     setIsSubmitting(true);
 
     try {
+      let image_url = currentLogo;
+      let cover_image = currentCover;
+
+      if (logoFile) {
+        const logoData = new FormData();
+        logoData.append("image", logoFile);
+        logoData.append("type", "logo");
+        const logoRes = await import("@/app/actions/clubs").then(m => m.uploadClubImageAction(logoData));
+        image_url = logoRes.url;
+      }
+
+      if (coverFile) {
+        const coverData = new FormData();
+        coverData.append("image", coverFile);
+        coverData.append("type", "cover");
+        const coverRes = await import("@/app/actions/clubs").then(m => m.uploadClubImageAction(coverData));
+        cover_image = coverRes.url;
+      }
+
       await updateClubAction(club.id, {
         name,
         description,
         category: category || undefined,
         leadUserId: leadUserId || undefined,
         is_active: isActive,
+        image_url: image_url || undefined,
+        cover_image: cover_image || undefined,
       });
       onSuccess();
     } catch (err: any) {
@@ -95,7 +125,7 @@ export function EditClubModal({ club, isOpen, onClose, allUsers, onSuccess }: Ed
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="p-6">
+          <form onSubmit={handleSubmit} className="p-6 max-h-[75vh] overflow-y-auto">
             {error && (
               <div className="mb-6 p-3 bg-red-50 text-red-600 text-sm font-medium rounded-xl border border-red-100">
                 {error}
@@ -103,6 +133,36 @@ export function EditClubModal({ club, isOpen, onClose, allUsers, onSuccess }: Ed
             )}
 
             <div className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Club Logo (Square)</label>
+                {currentLogo && !logoFile && (
+                  <div className="mb-2 w-12 h-12 rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
+                    <img src={currentLogo} alt="Current Logo" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+                  className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-[#A93C40]/10 file:text-[#A93C40] hover:file:bg-[#A93C40]/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cover Image (Wide Banner)</label>
+                {currentCover && !coverFile && (
+                  <div className="mb-2 w-full h-24 rounded-xl overflow-hidden bg-gray-100 border border-gray-200">
+                    <img src={currentCover} alt="Current Cover" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setCoverFile(e.target.files?.[0] || null)}
+                  className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-[#A93C40]/10 file:text-[#A93C40] hover:file:bg-[#A93C40]/20"
+                />
+              </div>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Club Name <span className="text-red-500">*</span></label>
                 <input
