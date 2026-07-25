@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { GraduationCap, Users, TrendingUp, Sparkles, CheckCircle2, ChevronRight, Activity } from "lucide-react";
+import { GraduationCap, Users, TrendingUp, BadgeCheck, CheckCircle2, ChevronRight, Activity } from "lucide-react";
 import { AnimatedPage, AnimatedSection } from "@/components/ui/animated-container";
 import { PageHeader } from "@/components/ui/page-header";
 import { ConfidentialityBanner } from "@/components/ui/confidentiality-banner";
@@ -167,7 +167,7 @@ export function CoachingClient({ summary, coaches }: CoachingClientProps) {
               <p className="text-sm font-medium text-[#6B7280]">Coaches with the highest session completion rates</p>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-100 to-amber-50 text-amber-500 shadow-sm border border-amber-200/50">
-              <Sparkles className="h-6 w-6" />
+              <BadgeCheck className="h-6 w-6" />
             </div>
           </div>
           <div className="h-[300px] w-full">
