@@ -23,4 +23,21 @@ const triggerBuddyUpSync = async (triggeredBy, academicYearId) => {
   return result;
 };
 
-module.exports = { getCoachingSummary, getCoachingCoaches, getCounsellingSummary, getAdvisingSummary, getBuddyUpSummary, triggerBuddyUpSync, getSyncStatus };
+const getCounsellingCases   = (ay, status) => adminUnitsRepository.getCounsellingCases(ay, status);
+const getCounsellors        = (ay) => adminUnitsRepository.getCounsellors(ay);
+const assignCounsellingCase = (data) => adminUnitsRepository.assignCounsellingCase(data);
+const resolveCounsellingCase= (id) => adminUnitsRepository.resolveCounsellingCase(id);
+
+module.exports = { 
+  getCoachingSummary, 
+  getCoachingCoaches, 
+  getCounsellingSummary, 
+  getCounsellingCases,
+  getCounsellors,
+  assignCounsellingCase,
+  resolveCounsellingCase,
+  getAdvisingSummary, 
+  getBuddyUpSummary, 
+  triggerBuddyUpSync, 
+  getSyncStatus 
+};
