@@ -17,7 +17,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 
 import { useAuth } from "@/context/auth-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { apiRequest } from "@/lib/api";
+import { apiRequest, API_URL } from "@/lib/api";
 import { hasRole } from "@/lib/permissions";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
@@ -61,6 +61,12 @@ type AdminStats = {
   upcoming_sessions_count?: number;
   completed_mandatory_sessions?: number;
   active_coaches?: number;
+};
+
+const resolveImageUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return `${API_URL}${url}`;
 };
 
 function NotificationBell() {
@@ -311,8 +317,8 @@ export default function FeedScreen() {
                 {myGroups.filter(g => !g.isLeader).map(club => (
                   <Pressable key={club.id} style={[styles.joinedClubCard, { width: 280 }]} onPress={() => router.push("/(tabs)/clubs")}>
                     <View style={styles.clubRow}>
-                      {club.image_url ? (
-                        <Image source={{uri: club.image_url}} style={styles.clubAvatarImage} />
+                      {resolveImageUrl(club.image_url) ? (
+                        <Image source={{uri: resolveImageUrl(club.image_url)!}} style={styles.clubAvatarImage} />
                       ) : (
                         <View style={styles.clubAvatarMock}><Text style={styles.clubAvatarText}>{club.name.charAt(0)}</Text></View>
                       )}
