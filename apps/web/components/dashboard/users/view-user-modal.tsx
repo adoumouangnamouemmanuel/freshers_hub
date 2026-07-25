@@ -25,6 +25,8 @@ function initials(name: string) {
 export function ViewUserModal({ isOpen, onClose, user }: ViewUserModalProps) {
   if (!isOpen || !user) return null;
 
+  const isStudent = user.roles?.some((r: string) => r.toLowerCase() === "student") || false;
+
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1A2B4A]/20 p-4 backdrop-blur-sm">
@@ -91,25 +93,29 @@ export function ViewUserModal({ isOpen, onClose, user }: ViewUserModalProps) {
                 </p>
               </div>
 
-              <div>
-                <p className="flex items-center gap-1.5 text-xs font-semibold text-[#6B7280] uppercase tracking-wider mb-1">
-                  <GraduationCap className="h-3.5 w-3.5" />
-                  Class Year
-                </p>
-                <p className="text-sm font-medium text-[#1A2B4A]">
-                  {user.class_year || "—"}
-                </p>
-              </div>
+              {isStudent && (
+                <>
+                  <div>
+                    <p className="flex items-center gap-1.5 text-xs font-semibold text-[#6B7280] uppercase tracking-wider mb-1">
+                      <GraduationCap className="h-3.5 w-3.5" />
+                      Class Year
+                    </p>
+                    <p className="text-sm font-medium text-[#1A2B4A]">
+                      {user.class_year || "—"}
+                    </p>
+                  </div>
 
-              <div>
-                <p className="flex items-center gap-1.5 text-xs font-semibold text-[#6B7280] uppercase tracking-wider mb-1">
-                  <Briefcase className="h-3.5 w-3.5" />
-                  Major
-                </p>
-                <p className="text-sm font-medium text-[#1A2B4A]">
-                  {user.major || "—"}
-                </p>
-              </div>
+                  <div>
+                    <p className="flex items-center gap-1.5 text-xs font-semibold text-[#6B7280] uppercase tracking-wider mb-1">
+                      <Briefcase className="h-3.5 w-3.5" />
+                      Major
+                    </p>
+                    <p className="text-sm font-medium text-[#1A2B4A]">
+                      {user.major || "—"}
+                    </p>
+                  </div>
+                </>
+              )}
 
               <div>
                 <p className="flex items-center gap-1.5 text-xs font-semibold text-[#6B7280] uppercase tracking-wider mb-1">
@@ -120,6 +126,30 @@ export function ViewUserModal({ isOpen, onClose, user }: ViewUserModalProps) {
                   {user.country || "—"}
                 </p>
               </div>
+
+              {isStudent && (
+                <>
+                  <div>
+                    <p className="flex items-center gap-1.5 text-xs font-semibold text-[#6B7280] uppercase tracking-wider mb-1">
+                      <Hash className="h-3.5 w-3.5" />
+                      Student ID
+                    </p>
+                    <p className="text-sm font-medium text-[#1A2B4A]">
+                      {user.school_id || "—"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="flex items-center gap-1.5 text-xs font-semibold text-[#6B7280] uppercase tracking-wider mb-1">
+                      <ArrowRightToLine className="h-3.5 w-3.5" />
+                      Intake
+                    </p>
+                    <p className="text-sm font-medium text-[#1A2B4A] capitalize">
+                      {user.intake || "—"}
+                    </p>
+                  </div>
+                </>
+              )}
 
               <div>
                 <p className="flex items-center gap-1.5 text-xs font-semibold text-[#6B7280] uppercase tracking-wider mb-1">
