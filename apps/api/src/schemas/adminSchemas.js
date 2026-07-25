@@ -52,6 +52,14 @@ const createAcademicYearSchema = z.object({
   }),
 });
 
+const updateAcademicYearSchema = z.object({
+  body: z.object({
+    label:      z.string().min(1).optional(),
+    start_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    end_date:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  }),
+});
+
 // ── Clubs ─────────────────────────────────────────────────────────────────────
 
 const createClubSchema = z.object({
@@ -202,6 +210,7 @@ module.exports = {
   bulkRolesSchema,
   bulkDeactivateSchema,
   createAcademicYearSchema,
+  updateAcademicYearSchema,
   createClubSchema,
   updateClubSchema,
   reassignLeadSchema,

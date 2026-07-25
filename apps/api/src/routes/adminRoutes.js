@@ -45,6 +45,7 @@ const {
   updateNotifCategorySchema,
   updateSettingSchema,
   grantAdminSchema,
+  updateAcademicYearSchema,
 } = require('../schemas/adminSchemas');
 
 const router = express.Router();
@@ -85,6 +86,7 @@ router.get('/roles',                       c.listRoles);
 
 router.get('/academic-years',                  c.listAcademicYears);
 router.post('/academic-years',                 validate(createAcademicYearSchema), auditAction('academic_year.created', 'academic_year'),  c.createAcademicYear);
+router.patch('/academic-years/:id',            validate(updateAcademicYearSchema), auditAction('academic_year.updated', 'academic_year'),  c.updateAcademicYear);
 router.patch('/academic-years/:id/activate',                                       auditAction('academic_year.activated', 'academic_year'), c.activateAcademicYear);
 
 // ═══════════════════════════════════════════════════════════════════════════

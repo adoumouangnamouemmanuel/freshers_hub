@@ -3,7 +3,7 @@ const { pool } = require('../services/db');
 class AdminAcademicYearsRepository {
   async list() {
     const { rows } = await pool.query(
-      `SELECT id, label, start_date, end_date, is_current, created_at
+      `SELECT id, label, start_date, end_date, is_current
        FROM academic_years
        ORDER BY start_date DESC`
     );
@@ -18,6 +18,19 @@ class AdminAcademicYearsRepository {
       [label, startDate, endDate]
     );
     return rows[0];
+  }
+
+  async update(id, label, startDate, endDate) {
+    const { rows } = await pool.query(
+      `UPDATE academic_years 
+       SET label = COALESCE($2, label),
+           start_date = COALESCE($3, start_date),
+           end_date = COALESCE($4, end_date)
+       WHERE id = $1
+       RETURNING *`,
+      [id, label, startDate, endDate]
+    );
+    return rows[0] || null;
   }
 
   async getById(id) {

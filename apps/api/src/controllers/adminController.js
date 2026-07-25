@@ -128,6 +128,14 @@ const createAcademicYear = asyncHandler(async (req, res) => {
   res.status(201).json(year);
 });
 
+const updateAcademicYear = asyncHandler(async (req, res) => {
+  const { label, start_date, end_date } = req.body;
+  const year = await adminAcademicYearsService.update(req.params.id, label, start_date, end_date);
+  res.locals.auditEntityId = year.id;
+  res.locals.auditMetadata = { label };
+  res.json(year);
+});
+
 const activateAcademicYear = asyncHandler(async (req, res) => {
   const year = await adminAcademicYearsService.activate(req.params.id);
   res.locals.auditEntityId = year.id;
@@ -419,7 +427,7 @@ module.exports = {
   listUsers, getUserById, createUser, updateUser, assignRole, removeRole,
   bulkAssignRoles, bulkDeactivate, importUsers, listRoles, csvUpload,
   // Academic Years
-  listAcademicYears, createAcademicYear, activateAcademicYear,
+  listAcademicYears, createAcademicYear, updateAcademicYear, activateAcademicYear,
   // Units
   getCoachingSummary, getCoachingCoaches, getCounsellingSummary,
   getAdvisingSummary, getBuddyUpSummary, triggerBuddyUpSync, getBuddyUpSyncStatus,

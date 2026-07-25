@@ -10,6 +10,15 @@ const create = async (label, startDate, endDate) => {
   return adminAcademicYearsRepository.create(label, startDate, endDate);
 };
 
+const update = async (id, label, startDate, endDate) => {
+  if (startDate && endDate && new Date(endDate) <= new Date(startDate)) {
+    throw new AppError('end_date must be after start_date', 400);
+  }
+  const updated = await adminAcademicYearsRepository.update(id, label, startDate, endDate);
+  if (!updated) throw new AppError('Academic year not found', 404);
+  return updated;
+};
+
 const activate = async (id) => {
   const year = await adminAcademicYearsRepository.getById(id);
   if (!year) throw new AppError('Academic year not found', 404);
@@ -19,4 +28,4 @@ const activate = async (id) => {
 
 const getCurrent = async () => adminAcademicYearsRepository.getCurrent();
 
-module.exports = { list, create, activate, getCurrent };
+module.exports = { list, create, update, activate, getCurrent };
