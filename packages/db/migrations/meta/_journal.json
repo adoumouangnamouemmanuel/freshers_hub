@@ -43,6 +43,13 @@
       "when": 1784150604389,
       "tag": "0005_jittery_redwing",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1785011668323,
+      "tag": "0006_wealthy_randall",
+      "breakpoints": true
     }
   ]
 }
