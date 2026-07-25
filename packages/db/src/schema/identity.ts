@@ -79,6 +79,7 @@ export const studentProfiles = pgTable("student_profiles", {
   schoolId: text("school_id").notNull().unique(),
   identifier: text("identifier").notNull(),
   graduationYear: integer("graduation_year").notNull(),
+  intake: text("intake").notNull().default("SEPTEMBER"),
 });
 
 export const rolesRelations = relations(roles, ({ many }) => ({
