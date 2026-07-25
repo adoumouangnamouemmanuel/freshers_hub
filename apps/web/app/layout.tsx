@@ -28,7 +28,7 @@ export default function RootLayout({
       className={`${jakarta.variable} ${outfit.variable} h-full antialiased`}
     >
       {/* Background layer for mesh/gradient aesthetic */}
-      <body className="min-h-full flex flex-col relative bg-background text-foreground overflow-hidden">
+      <body suppressHydrationWarning className="min-h-full flex flex-col relative bg-background text-foreground overflow-hidden">
         {/* Animated background mesh */}
         <div className="fixed inset-0 z-[-1] bg-mesh opacity-40 pointer-events-none" />
         
