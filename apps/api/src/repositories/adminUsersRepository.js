@@ -41,14 +41,16 @@ class AdminUsersRepository {
       `SELECT
          u.id, u.full_name, u.email, u.phone, u.avatar_url,
          u.country, u.major, u.class_year, u.is_active, u.created_at,
+         sp.school_id, sp.intake,
          COALESCE(ARRAY_AGG(DISTINCT r.name) FILTER (WHERE r.name IS NOT NULL), '{}') AS roles,
          COALESCE(ARRAY_AGG(DISTINCT un.name) FILTER (WHERE un.name IS NOT NULL), '{}') AS units
        FROM users u
+       LEFT JOIN student_profiles sp ON sp.user_id = u.id
        LEFT JOIN user_roles ur ON ur.user_id = u.id
        LEFT JOIN roles r ON r.id = ur.role_id
        LEFT JOIN units un ON un.id = ur.unit_id
        ${where}
-       GROUP BY u.id
+       GROUP BY u.id, sp.school_id, sp.intake
        ORDER BY u.full_name ASC
        LIMIT $${p} OFFSET $${p + 1}`,
       [...params, pageSize, offset]
@@ -73,14 +75,14 @@ class AdminUsersRepository {
       `SELECT
          u.id, u.full_name, u.email, u.phone, u.avatar_url,
          u.country, u.major, u.class_year, u.is_active, u.created_at,
-         sp.school_id, sp.graduation_year,
+         sp.school_id, sp.graduation_year, sp.intake,
          COALESCE(ARRAY_AGG(DISTINCT r.name) FILTER (WHERE r.name IS NOT NULL), '{}') AS roles
        FROM users u
        LEFT JOIN student_profiles sp ON sp.user_id = u.id
        LEFT JOIN user_roles ur ON ur.user_id = u.id
        LEFT JOIN roles r ON r.id = ur.role_id
        WHERE u.id = $1
-       GROUP BY u.id, sp.school_id, sp.graduation_year`,
+       GROUP BY u.id, sp.school_id, sp.graduation_year, sp.intake`,
       [id]
     );
     return rows[0] || null;
