@@ -55,10 +55,17 @@ exports.processAndSaveImage = asyncHandler(async (req, res, next) => {
     .toFormat('webp', { quality: 85 })
     .toFile(filepath);
 
-  const url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000'}/uploads/clubs/${filename}`;
+  // Store a relative path so both web and mobile can prefix with their own API base URL.
+  // e.g. mobile uses http://10.x.x.x:4000, web uses http://localhost:4000 — both work.
+  const relativePath = `/uploads/clubs/${filename}`;
+
+  // Also return a full URL usable by the caller (web dashboard) for immediate preview
+  const baseUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+  const url = `${baseUrl}${relativePath}`;
 
   res.status(200).json({
     success: true,
-    url,
+    url,           // absolute URL for immediate web preview
+    path: relativePath, // relative path to store in DB
   });
 });
