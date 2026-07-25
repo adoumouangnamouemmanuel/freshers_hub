@@ -61,6 +61,16 @@ export async function assignCounsellingCaseAction(data: { academicYearId: number
   });
 }
 
+export async function getAdvisingSummaryAction(academicYearId?: string) {
+  const params = academicYearId ? `?academicYearId=${academicYearId}` : "";
+  return fetchWithAuth(`/admin/units/advising/summary${params}`, { cache: "no-store" });
+}
+
+export async function getAdvisingAdvisorsAction(academicYearId?: string) {
+  const params = academicYearId ? `?academicYearId=${academicYearId}` : "";
+  return fetchWithAuth(`/admin/units/advising/advisors${params}`, { cache: "no-store" });
+}
+
 export async function resolveCounsellingCaseAction(assignmentId: string) {
   return fetchWithAuth(`/admin/units/counselling/cases/${assignmentId}/resolve`, {
     method: "PATCH",
