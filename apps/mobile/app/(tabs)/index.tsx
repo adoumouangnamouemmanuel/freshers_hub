@@ -104,9 +104,9 @@ export default function FeedScreen() {
   const [activeCategory, setActiveCategory] = useState("All");
 
   // Role Checks
-  const currentYear = new Date().getFullYear();
   const userClassYear = Number(session?.user?.classYear || session?.user?.studentProfile?.graduationYear);
-  const isFresher = userClassYear === currentYear + 4;
+  const { isUserFresher } = require("@/lib/fresherUtils");
+  const isFresher = isUserFresher(userClassYear);
   
   const roles = session?.user.roles || [];
   

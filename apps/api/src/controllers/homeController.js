@@ -6,9 +6,9 @@ const getHomeDashboard = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const roles = req.user.roles || [];
   
-  const currentYear = new Date().getFullYear();
   const classYear = req.user.studentProfile?.graduationYear || req.user.classYear;
-  const isFresher = Number(classYear) === currentYear + 4;
+  const { isUserFresher } = require("../utils/fresherUtils");
+  const isFresher = isUserFresher(classYear);
 
   const isPeerCoach = roles.includes("peer_coach");
   const isPeerCounsellor = roles.includes("peer_counsellor");
