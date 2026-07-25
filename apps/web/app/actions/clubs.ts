@@ -66,6 +66,16 @@ export async function deleteClubAction(id: string) {
   });
 }
 
+export async function getClubMembersAction(id: string, query?: any) {
+  const qs = new URLSearchParams(query || {}).toString();
+  return fetchWithAuth(`/admin/clubs/${id}/members?${qs}`);
+}
+
+export async function getClubPostsAction(id: string, query?: any) {
+  const qs = new URLSearchParams(query || {}).toString();
+  return fetchWithAuth(`/admin/clubs/${id}/posts?${qs}`);
+}
+
 export async function listUsersAction() {
   return fetchWithAuth("/admin/users?pageSize=1000", {
     next: { tags: ['users'] }
