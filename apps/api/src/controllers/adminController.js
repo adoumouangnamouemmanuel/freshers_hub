@@ -351,11 +351,8 @@ const getTopClubs = asyncHandler(async (req, res) => {
 });
 
 const exportAnalytics = asyncHandler(async (req, res) => {
-  const format = req.query.format || 'json';
-  const { contentType, filename, body } = await adminAnalyticsService.exportData(format, req.query.academicYearId);
-  res.setHeader('Content-Type', contentType);
-  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-  res.send(body);
+  // Pass the Express response object directly to the service for streaming
+  await adminAnalyticsService.exportData(res, req.query.academicYearId);
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
