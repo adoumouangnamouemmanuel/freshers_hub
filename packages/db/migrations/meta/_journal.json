@@ -50,6 +50,13 @@
       "when": 1785011668323,
       "tag": "0006_wealthy_randall",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1785016941305,
+      "tag": "0007_public_scourge",
+      "breakpoints": true
     }
   ]
 }
