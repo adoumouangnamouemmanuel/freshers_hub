@@ -18,9 +18,10 @@ import { ViewUserModal } from "./view-user-modal";
 interface UsersClientProps {
   initialData: { data: any[]; total: number; page: number; pageSize: number };
   allRoles: { id: string; name: string }[];
+  overview?: any;
 }
 
-export default function UsersClient({ initialData, allRoles }: UsersClientProps) {
+export default function UsersClient({ initialData, allRoles, overview }: UsersClientProps) {
   const router = useRouter();
   
   const [users, setUsers] = useState(initialData.data);
@@ -29,7 +30,11 @@ export default function UsersClient({ initialData, allRoles }: UsersClientProps)
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [classYearFilter, setClassYearFilter] = useState("");
   const [showFilters, setShowFilters] = useState(false);
+  
+  const [page, setPage] = useState(initialData.page || 1);
+  const pageSize = initialData.pageSize || 20;
   
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [isPending, startTransition] = useTransition();
@@ -60,27 +65,41 @@ export default function UsersClient({ initialData, allRoles }: UsersClientProps)
     setConfirmModal((prev) => ({ ...prev, isOpen: false }));
   }
 
-  async function refetch() {
-    const res = await getUsersAction({ search, role: roleFilter, status: statusFilter });
+  async function refetch(currentPage = page) {
+    const res = await getUsersAction({ search, role: roleFilter, status: statusFilter, classYear: classYearFilter, page: currentPage, pageSize });
     setUsers(res.data || []);
     setTotal(res.total || 0);
+    setPage(res.page || 1);
     router.refresh();
   }
 
-  // Debounce search and refetch
+  // Debounce search and refetch on filter change
   useEffect(() => {
+    setPage(1); // Reset to page 1 on filter change
     const timer = setTimeout(() => {
       startTransition(async () => {
         try {
-          await refetch();
+          await refetch(1);
           setSelected(new Set());
         } catch (error) {
           console.error("Failed to fetch users", error);
         }
       });
-    }, 300); // 300ms debounce
+    }, 300);
     return () => clearTimeout(timer);
-  }, [search, roleFilter, statusFilter]);
+  }, [search, roleFilter, statusFilter, classYearFilter]);
+
+  function handlePageChange(newPage: number) {
+    if (newPage < 1 || newPage > Math.ceil(total / pageSize)) return;
+    startTransition(async () => {
+      try {
+        await refetch(newPage);
+        setSelected(new Set());
+      } catch (error) {
+        console.error("Failed to paginate", error);
+      }
+    });
+  }
 
   const allVisibleSelected = users.length > 0 && users.every((u) => selected.has(u.id));
 
@@ -128,6 +147,13 @@ export default function UsersClient({ initialData, allRoles }: UsersClientProps)
     });
   }
 
+  // Calculate role breakdown for the progress bar
+  const usersStats = overview?.users || { total_users: 0, total_students: 0, total_coaches: 0, inactive_users: 0 };
+  const adminCount = Math.max(0, usersStats.total_users - (usersStats.total_students + usersStats.total_coaches));
+  const studentPct = usersStats.total_users > 0 ? (usersStats.total_students / usersStats.total_users) * 100 : 0;
+  const coachPct = usersStats.total_users > 0 ? (usersStats.total_coaches / usersStats.total_users) * 100 : 0;
+  const adminPct = usersStats.total_users > 0 ? (adminCount / usersStats.total_users) * 100 : 0;
+
   return (
     <AnimatedPage>
       <ConfirmModal
@@ -167,15 +193,36 @@ export default function UsersClient({ initialData, allRoles }: UsersClientProps)
         setRoleFilter={setRoleFilter}
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}
+        classYearFilter={classYearFilter}
+        setClassYearFilter={setClassYearFilter}
         allRoles={allRoles}
         showFilters={showFilters}
         setShowFilters={setShowFilters}
       />
 
+      <AnimatedSection className="mb-4">
+        <div className="flex flex-col gap-2 rounded-2xl border border-[#eee8df] bg-[#f8f4ef]/30 p-4 shadow-sm">
+          <div className="flex items-center justify-between text-sm font-semibold">
+            <span className="text-[#1A2B4A]">Platform Roles</span>
+            <span className="text-[#6B7280]">Total Users: {usersStats.total_users}</span>
+          </div>
+          <div className="flex h-3 w-full overflow-hidden rounded-full bg-gray-200">
+            <div style={{ width: `${studentPct}%` }} className="bg-blue-500 transition-all duration-1000" title="Students" />
+            <div style={{ width: `${coachPct}%` }} className="bg-orange-500 transition-all duration-1000" title="Coaches" />
+            <div style={{ width: `${adminPct}%` }} className="bg-purple-500 transition-all duration-1000" title="Admins" />
+          </div>
+          <div className="flex items-center gap-4 text-xs font-medium text-[#6B7280]">
+            <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-blue-500"/> Students ({usersStats.total_students})</div>
+            <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-orange-500"/> Coaches ({usersStats.total_coaches})</div>
+            <div className="flex items-center gap-1.5"><div className="h-2 w-2 rounded-full bg-purple-500"/> Admins ({adminCount})</div>
+          </div>
+        </div>
+      </AnimatedSection>
+
       <div className="mb-4 flex items-center justify-between">
         <p className="text-sm text-[#6B7280]">
-          Showing <span className="font-semibold text-[#1A2B4A]">{users.length}</span> of{" "}
-          <span className="font-semibold text-[#1A2B4A]">{total}</span> accounts
+          Showing page <span className="font-semibold text-[#1A2B4A]">{page}</span> of{" "}
+          <span className="font-semibold text-[#1A2B4A]">{Math.ceil(total / pageSize) || 1}</span>
           {isPending && <Loader2 className="inline ml-2 h-4 w-4 animate-spin text-[#9CA3AF]" />}
         </p>
         {selected.size > 0 && (
@@ -195,6 +242,34 @@ export default function UsersClient({ initialData, allRoles }: UsersClientProps)
         onEditUser={(u) => setEditingUser(u)}
         onViewUser={(u) => setViewingUser(u)}
       />
+
+      {/* Pagination Controls */}
+      {total > 0 && (
+        <div className="mt-4 flex items-center justify-between rounded-2xl border border-[#eee8df] bg-white px-4 py-3 shadow-sm">
+          <p className="text-sm text-[#6B7280]">
+            Total: <span className="font-semibold text-[#1A2B4A]">{total}</span> accounts
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => handlePageChange(page - 1)}
+              disabled={page === 1 || isPending}
+              className="rounded-lg border border-[#e5e1d8] px-3 py-1.5 text-sm font-semibold text-[#6B7280] hover:bg-[#f8f4ef] disabled:opacity-50 cursor-pointer"
+            >
+              Previous
+            </button>
+            <div className="flex items-center justify-center rounded-lg bg-[#f8f4ef] px-3 py-1.5 text-sm font-semibold text-[#1A2B4A] min-w-[2.5rem]">
+              {page}
+            </div>
+            <button
+              onClick={() => handlePageChange(page + 1)}
+              disabled={page >= Math.ceil(total / pageSize) || isPending}
+              className="rounded-lg border border-[#e5e1d8] px-3 py-1.5 text-sm font-semibold text-[#6B7280] hover:bg-[#f8f4ef] disabled:opacity-50 cursor-pointer"
+            >
+              Next
+            </button>
+          </div>
+        </div>
+      )}
 
       <UsersBulkActions
         selectedUserIds={selected}
