@@ -106,11 +106,14 @@ router.get('/units/buddy-up/summary',     c.getBuddyUpSummary);
 router.post('/units/buddy-up/sync',       auditAction('buddy_up.sync_triggered', 'buddy_pairing'), c.triggerBuddyUpSync);
 router.get('/units/buddy-up/sync-status', c.getBuddyUpSyncStatus);
 
+const uploadController = require('../controllers/uploadController');
+
 // ═══════════════════════════════════════════════════════════════════════════
 // CLUBS
 // ═══════════════════════════════════════════════════════════════════════════
 
 router.get('/clubs',                      c.listClubs);
+router.post('/clubs/upload-image',        uploadController.uploadImageMulter, uploadController.processAndSaveImage);
 router.post('/clubs',                     validate(createClubSchema),    auditAction('club.created', 'club'),       c.createClub);
 router.patch('/clubs/:id',                validate(updateClubSchema),    auditAction('club.updated', 'club'),       c.updateClub);
 router.delete('/clubs/:id',                                               auditAction('club.deactivated', 'club'),   c.deleteClub);
