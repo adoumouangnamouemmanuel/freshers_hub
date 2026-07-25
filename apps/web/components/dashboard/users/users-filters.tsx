@@ -10,6 +10,8 @@ interface UsersFiltersProps {
   setRoleFilter: (val: string) => void;
   statusFilter: string;
   setStatusFilter: (val: string) => void;
+  classYearFilter: string;
+  setClassYearFilter: (val: string) => void;
   allRoles: { id: string; name: string }[];
   showFilters: boolean;
   setShowFilters: (val: boolean) => void;
@@ -22,11 +24,22 @@ export function UsersFilters({
   setRoleFilter,
   statusFilter,
   setStatusFilter,
+  classYearFilter,
+  setClassYearFilter,
   allRoles,
   showFilters,
   setShowFilters,
 }: UsersFiltersProps) {
-  const activeFiltersCount = [roleFilter !== "all", statusFilter !== "all"].filter(Boolean).length;
+  const activeFiltersCount = [roleFilter !== "all", statusFilter !== "all", classYearFilter !== ""].filter(Boolean).length;
+
+  const currentYear = new Date().getFullYear();
+  const yearOptions = [
+    { value: "", label: "All class years" },
+    ...Array.from({ length: 6 }, (_, i) => {
+      const year = currentYear + i - 1; // E.g. last year, this year, next 4 years
+      return { value: String(year), label: `Class of ${year}` };
+    })
+  ];
 
   return (
     <div className="mb-6 rounded-2xl border border-[#eee8df] bg-white/70 p-4 shadow-sm backdrop-blur-md">
@@ -73,6 +86,11 @@ export function UsersFilters({
             { value: "active", label: "Active" },
             { value: "inactive", label: "Inactive" },
           ]}
+        />
+        <SelectFilter
+          value={classYearFilter}
+          onChange={setClassYearFilter}
+          options={yearOptions}
         />
       </div>
 
