@@ -20,7 +20,7 @@ class AdminClubsRepository {
 
     const { rows } = await pool.query(
       `SELECT
-         c.id, c.name, c.description, c.category, c.is_active, c.created_at,
+         c.id, c.name, c.description, c.category, c.is_active, c.created_at, c.image_url, c.cover_image,
          u.full_name AS lead_name, u.id AS lead_id,
          COUNT(cm.user_id) AS member_count
        FROM groups c
@@ -52,18 +52,18 @@ class AdminClubsRepository {
     return rows[0] || null;
   }
 
-  async create({ name, description, category, leadUserId }) {
+  async create({ name, description, category, leadUserId, image_url, cover_image }) {
     const { rows } = await pool.query(
-      `INSERT INTO groups (name, type, description, category, lead_user_id)
-       VALUES ($1, 'club', $2, $3, $4)
+      `INSERT INTO groups (name, type, description, category, lead_user_id, image_url, cover_image)
+       VALUES ($1, 'club', $2, $3, $4, $5, $6)
        RETURNING *`,
-      [name, description || null, category || null, leadUserId || null]
+      [name, description || null, category || null, leadUserId || null, image_url || null, cover_image || null]
     );
     return rows[0];
   }
 
   async update(id, fields) {
-    const allowed = ['name', 'description', 'category', 'lead_user_id', 'is_active'];
+    const allowed = ['name', 'description', 'category', 'lead_user_id', 'is_active', 'image_url', 'cover_image'];
     const sets = [];
     const params = [];
     let p = 1;
@@ -74,7 +74,7 @@ class AdminClubsRepository {
     for (const key of allowed) {
       if (mapped[key] !== undefined) {
         sets.push(`${key} = $${p++}`);
-        params.push(mapped[key]);
+        params.push(mapped[key] === '' ? null : mapped[key]);
       }
     }
     if (sets.length === 0) return null;
