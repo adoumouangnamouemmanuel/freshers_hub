@@ -161,6 +161,36 @@ class AdminUnitsRepository {
     return rows[0] || null;
   }
 
+  async getAdvisors(academicYearId) {
+    const params = [];
+    let yearFilter = '';
+    
+    if (academicYearId) {
+      params.push(academicYearId);
+      yearFilter = `AND s.academic_year_id = $1`;
+    }
+
+    const { rows } = await pool.query(`
+      SELECT 
+        u.id, 
+        u.full_name, 
+        u.avatar_url, 
+        u.email,
+        COUNT(DISTINCT s.id)::int AS total_sessions,
+        COUNT(DISTINCT s.student_id)::int AS total_students_seen,
+        COUNT(s.id) FILTER (WHERE s.status = 'completed')::int AS completed_sessions
+      FROM users u
+      JOIN user_roles ur ON u.id = ur.user_id
+      JOIN roles r ON ur.role_id = r.id
+      LEFT JOIN sessions s ON u.id = s.provider_id ${yearFilter}
+      WHERE r.name = 'advisor'
+      GROUP BY u.id
+      ORDER BY total_sessions DESC, u.full_name ASC
+    `, params);
+    
+    return rows;
+  }
+
   // ── Buddy Up ───────────────────────────────────────────────────────────────
 
   async getBuddyUpSummary(academicYearId) {
