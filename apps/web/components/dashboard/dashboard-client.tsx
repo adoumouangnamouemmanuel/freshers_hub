@@ -27,7 +27,6 @@ import {
 } from "@/components/ui/animated-container";
 import { AreaChart, Area, ResponsiveContainer, YAxis } from "recharts";
 import { useState, useEffect } from "react";
-import { exportAnalyticsAction } from "@/app/actions/export";
 import { useSearchParams } from "next/navigation";
 
 const itemVariants = {
@@ -83,23 +82,21 @@ export default function DashboardClient({
     setGreeting(getGreeting(user?.fullName));
   }, [user]);
 
-  const handleExport = async () => {
+  const handleExport = () => {
     try {
       setIsExporting(true);
-      const csv = await exportAnalyticsAction(searchParams.get("academicYearId") || undefined);
-      const blob = new Blob([csv], { type: "text/csv" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `fresherhub_export_${new Date().toISOString().split('T')[0]}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      const ayId = searchParams.get("academicYearId") || "";
+      const query = ayId ? `?academicYearId=${ayId}` : "";
+      
+      // Navigate to our API route which proxies the streaming download natively
+      window.location.href = `/api/export${query}`;
+      
+      // The browser handles the download without leaving the page. 
+      // Stop the loading spinner after 2 seconds since we can't easily track native download completion
+      setTimeout(() => setIsExporting(false), 2000);
     } catch (e) {
       console.error("Failed to export", e);
       alert("Failed to export data");
-    } finally {
       setIsExporting(false);
     }
   };
