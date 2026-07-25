@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Mail, Phone, GraduationCap, MapPin, Calendar, Briefcase, Layers } from "lucide-react";
+import { X, Mail, Phone, GraduationCap, MapPin, Calendar, Briefcase, Layers, Hash, ArrowRightToLine } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { RoleBadge } from "@/components/ui/status-badge";
 
@@ -139,6 +139,26 @@ export function ViewUserModal({ isOpen, onClose, user }: ViewUserModalProps) {
                 </div>
               </div>
               
+              <div>
+                <p className="flex items-center gap-1.5 text-xs font-semibold text-[#6B7280] uppercase tracking-wider mb-1">
+                  <Hash className="h-3.5 w-3.5" />
+                  Student ID
+                </p>
+                <p className="text-sm font-medium text-[#1A2B4A]">
+                  {user.school_id || "—"}
+                </p>
+              </div>
+
+              <div>
+                <p className="flex items-center gap-1.5 text-xs font-semibold text-[#6B7280] uppercase tracking-wider mb-1">
+                  <ArrowRightToLine className="h-3.5 w-3.5" />
+                  Intake
+                </p>
+                <p className="text-sm font-medium text-[#1A2B4A] capitalize">
+                  {user.intake || "—"}
+                </p>
+              </div>
+
               <div className="col-span-2">
                 <p className="flex items-center gap-1.5 text-xs font-semibold text-[#6B7280] uppercase tracking-wider mb-1">
                   <Calendar className="h-3.5 w-3.5" />
