@@ -123,7 +123,14 @@ class AdminUnitsRepository {
     return rows;
   }
 
-  async assignCounsellingCase({ academicYearId, studentId, peerCounsellorId, assignedBy, notes }) {
+  async assignCounsellingCase({ academicYearId, studentSchoolId, peerCounsellorId, assignedBy, notes }) {
+    // Lookup student by school_id
+    const userRes = await pool.query(`SELECT id FROM users WHERE school_id = $1`, [studentSchoolId]);
+    if (userRes.rows.length === 0) {
+      throw new Error("Student not found with the provided School ID.");
+    }
+    const studentId = userRes.rows[0].id;
+
     const { rows } = await pool.query(`
       INSERT INTO counsellor_assignments (academic_year_id, student_id, peer_counsellor_id, assigned_by, notes, status, created_at)
       VALUES ($1, $2, $3, $4, $5, 'active', NOW())
