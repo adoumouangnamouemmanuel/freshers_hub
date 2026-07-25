@@ -1,11 +1,18 @@
 import { getCoachingSummaryAction, getCoachingCoachesAction } from "@/app/actions/units";
 import { CoachingClient } from "@/components/dashboard/coaching/coaching-client";
 
-export default async function CoachingPage() {
+interface PageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}
+
+export default async function CoachingPage({ searchParams }: PageProps) {
   try {
+    const params = await searchParams;
+    const academicYearId = typeof params.academicYearId === 'string' ? params.academicYearId : undefined;
+
     const [summary, coaches] = await Promise.all([
-      getCoachingSummaryAction(),
-      getCoachingCoachesAction()
+      getCoachingSummaryAction(academicYearId),
+      getCoachingCoachesAction(academicYearId)
     ]);
     
     return <CoachingClient summary={summary} coaches={coaches} />;
