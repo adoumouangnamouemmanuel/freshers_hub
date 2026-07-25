@@ -187,6 +187,10 @@ const getAdvisingSummary = asyncHandler(async (req, res) => {
   res.json(await adminUnitsService.getAdvisingSummary(req.query.academicYearId));
 });
 
+const getAdvisingAdvisors = asyncHandler(async (req, res) => {
+  res.json(await adminUnitsService.getAdvisors(req.query.academicYearId));
+});
+
 const getBuddyUpSummary = asyncHandler(async (req, res) => {
   res.json(await adminUnitsService.getBuddyUpSummary(req.query.academicYearId));
 });
@@ -452,7 +456,7 @@ module.exports = {
   // Units
   getCoachingSummary, getCoachingCoaches, getCounsellingSummary,
   getCounsellingCases, getCounsellors, assignCounsellingCase, resolveCounsellingCase,
-  getAdvisingSummary, getBuddyUpSummary, triggerBuddyUpSync, getBuddyUpSyncStatus,
+  getAdvisingSummary, getAdvisingAdvisors, getBuddyUpSummary, triggerBuddyUpSync, getBuddyUpSyncStatus,
   // Clubs
   listClubs, createClub, updateClub, deleteClub, getClubMembers, getClubPosts, reassignClubLead,
   // Offices
