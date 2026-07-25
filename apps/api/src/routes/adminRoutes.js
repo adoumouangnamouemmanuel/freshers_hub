@@ -96,6 +96,10 @@ router.patch('/academic-years/:id/activate',                                    
 router.get('/units/coaching/summary',     c.getCoachingSummary);
 router.get('/units/coaching/coaches',     c.getCoachingCoaches);
 router.get('/units/counselling/summary',  c.getCounsellingSummary);
+router.get('/units/counselling/cases',    c.getCounsellingCases);
+router.get('/units/counselling/counsellors', c.getCounsellors);
+router.post('/units/counselling/cases',   auditAction('counselling.case_assigned', 'counsellor_assignment'), c.assignCounsellingCase);
+router.patch('/units/counselling/cases/:id/resolve', auditAction('counselling.case_resolved', 'counsellor_assignment'), c.resolveCounsellingCase);
 router.get('/units/advising/summary',     c.getAdvisingSummary);
 router.get('/units/buddy-up/summary',     c.getBuddyUpSummary);
 router.post('/units/buddy-up/sync',       auditAction('buddy_up.sync_triggered', 'buddy_pairing'), c.triggerBuddyUpSync);
