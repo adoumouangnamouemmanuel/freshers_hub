@@ -54,7 +54,7 @@ export async function getCounsellorsAction(academicYearId?: string) {
   return fetchWithAuth(`/admin/units/counselling/counsellors${params}`, { cache: "no-store" });
 }
 
-export async function assignCounsellingCaseAction(data: { academicYearId: number; studentId: string; peerCounsellorId: string; notes?: string }) {
+export async function assignCounsellingCaseAction(data: { academicYearId: number; studentSchoolId: string; peerCounsellorId: string; notes?: string }) {
   return fetchWithAuth(`/admin/units/counselling/cases`, {
     method: "POST",
     body: JSON.stringify(data),
