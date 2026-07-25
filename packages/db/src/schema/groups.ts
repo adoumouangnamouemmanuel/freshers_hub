@@ -7,6 +7,8 @@ export const groups = pgTable("groups", {
   name: text("name").notNull(),
   description: text("description"),
   type: text("type").notNull().default("general"),
+  image_url: text("image_url"),
+  cover_image: text("cover_image"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
