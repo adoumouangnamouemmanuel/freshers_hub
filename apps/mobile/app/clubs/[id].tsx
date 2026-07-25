@@ -4,8 +4,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from '@expo/vector-icons';
-import { apiRequest } from "@/lib/api";
+import { apiRequest, API_URL } from "@/lib/api";
 import { useAuth } from "@/context/auth-context";
+
+const resolveImageUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return `${API_URL}${url}`;
+};
 
 type Member = {
   id: string;
@@ -141,8 +147,8 @@ export default function ClubDetailsScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
           <View style={styles.coverWrapper}>
-            {club.image_url ? (
-              <Image source={{ uri: club.image_url }} style={styles.coverImage} />
+            {resolveImageUrl(club.image_url) ? (
+              <Image source={{ uri: resolveImageUrl(club.image_url)! }} style={styles.coverImage} />
             ) : (
               <View style={styles.coverPlaceholder}>
                 <Ionicons name="images-outline" size={48} color="#9CA3AF" />
