@@ -22,10 +22,14 @@ class AdminClubsRepository {
       `SELECT
          c.id, c.name, c.description, c.category, c.is_active, c.created_at, c.image_url, c.cover_image,
          u.full_name AS lead_name, u.id AS lead_id,
-         COUNT(cm.user_id) AS member_count
+         COUNT(DISTINCT cm.user_id) AS member_count,
+         COUNT(DISTINCT p.id) FILTER (WHERE p.category IN ('announcement', 'discussion', 'alert')) AS post_count,
+         COUNT(DISTINCT p.id) FILTER (WHERE p.category = 'event') AS event_count
        FROM groups c
        LEFT JOIN users u ON u.id = c.lead_user_id
        LEFT JOIN group_members cm ON cm.group_id = c.id
+       LEFT JOIN post_targets pt ON pt.target_id = c.id AND pt.target_type = 'group'
+       LEFT JOIN posts p ON p.id = pt.post_id
        ${where}
        GROUP BY c.id, u.full_name, u.id
        ORDER BY c.name ASC
