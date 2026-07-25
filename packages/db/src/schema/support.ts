@@ -24,6 +24,8 @@ export const sessionStatusEnum = pgEnum("session_status", [
 export const sessionWithEnum = pgEnum("session_with", [
   "peer_coach",
   "unit_head",
+  "counsellor",
+  "peer_counsellor",
 ]);
 
 export const coachAssignments = pgTable(
@@ -51,6 +53,36 @@ export const coachAssignments = pgTable(
       table.academicYearId,
       table.fresherId,
       table.peerCoachId,
+    ),
+  }),
+);
+
+export const counsellorAssignments = pgTable(
+  "counsellor_assignments",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    academicYearId: integer("academic_year_id")
+      .notNull()
+      .references(() => academicYears.id),
+    studentId: uuid("student_id")
+      .notNull()
+      .references(() => users.id),
+    peerCounsellorId: uuid("peer_counsellor_id")
+      .notNull()
+      .references(() => users.id),
+    assignedBy: uuid("assigned_by").references(() => users.id),
+    status: text("status").notNull().default("active"),
+    notes: text("notes"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  },
+  (table) => ({
+    assignmentUnique: uniqueIndex("counsellor_assignments_year_student_counsellor_unique").on(
+      table.academicYearId,
+      table.studentId,
+      table.peerCounsellorId,
     ),
   }),
 );
