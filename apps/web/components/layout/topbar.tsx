@@ -176,7 +176,8 @@ export default function Topbar({ user }: { user?: any }) {
                           onClick={() => {
                             setShowSearchResults(false);
                             if (category === 'users') {
-                              router.push(`/dashboard/users/${item.id}`);
+                              // Send the user to the main users table, filtering by their name so they are the only result
+                              router.push(`/dashboard/users?search=${encodeURIComponent(item.full_name || item.name || "")}`);
                             } else if (category === 'clubs' || category === 'groups') {
                                router.push(`/dashboard/clubs/${item.id}`);
                             } else {
