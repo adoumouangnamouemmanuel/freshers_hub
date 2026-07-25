@@ -16,6 +16,26 @@ export function ImportCohortModal({ isOpen, onClose, onSuccess }: ImportCohortMo
   const [error, setError] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [result, setResult] = useState<any>(null);
+  const [previewRows, setPreviewRows] = useState<string[][]>([]);
+
+  // Function to generate preview
+  async function handleFileSelect(selectedFile: File | null) {
+    setFile(selectedFile);
+    setPreviewRows([]);
+    if (!selectedFile) return;
+
+    try {
+      const text = await selectedFile.text();
+      // Simple CSV split for preview only, handles basic commas
+      const lines = text.split('\n').filter(l => l.trim().length > 0).slice(0, 4);
+      if (lines.length > 0) {
+        const rows = lines.map(l => l.split(',').map(c => c.trim()));
+        setPreviewRows(rows);
+      }
+    } catch (err) {
+      console.error("Failed to read file preview", err);
+    }
+  }
 
   if (!isOpen) return null;
 
@@ -41,6 +61,7 @@ export function ImportCohortModal({ isOpen, onClose, onSuccess }: ImportCohortMo
   function closeAndReset() {
     setFile(null);
     setResult(null);
+    setPreviewRows([]);
     setError("");
     if (result) onSuccess(); // Only refresh list if something was imported
     onClose();
@@ -97,7 +118,7 @@ export function ImportCohortModal({ isOpen, onClose, onSuccess }: ImportCohortMo
                     Upload CSV File
                   </label>
                   <p className="mb-4 text-xs text-[#6B7280]">
-                    File must contain headers: <code>school_id</code>, <code>email</code>, <code>full_name</code>, <code>class_year</code>, <code>country</code>, <code>major</code>.
+                    File must contain headers: <code>school_id</code>, <code>email</code>, <code>full_name</code>. Optional: <code>class_year</code>, <code>country</code>, <code>major</code>, <code>intake</code> (september or january).
                   </p>
                   <div className="flex w-full items-center justify-center">
                     <label className="dark:hover:bg-bray-800 flex h-48 w-full cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-[#e5e1d8] bg-[#f8f4ef]/50 hover:bg-[#f8f4ef]">
@@ -120,10 +141,38 @@ export function ImportCohortModal({ isOpen, onClose, onSuccess }: ImportCohortMo
                         type="file" 
                         accept=".csv"
                         className="hidden" 
-                        onChange={(e) => setFile(e.target.files?.[0] || null)}
+                        onChange={(e) => handleFileSelect(e.target.files?.[0] || null)}
                       />
                     </label>
                   </div>
+                  
+                  {previewRows.length > 1 && (
+                    <div className="mt-4 overflow-hidden rounded-lg border border-[#e5e1d8]">
+                      <div className="bg-[#f8f4ef] px-3 py-2 text-xs font-semibold text-[#1A2B4A]">
+                        Preview (First 3 Rows)
+                      </div>
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-xs">
+                          <thead className="bg-[#f3f4f6]">
+                            <tr>
+                              {previewRows[0].map((header, i) => (
+                                <th key={i} className="whitespace-nowrap px-3 py-2 text-left font-medium text-[#6B7280]">{header}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#f3f4f6] bg-white">
+                            {previewRows.slice(1).map((row, i) => (
+                              <tr key={i}>
+                                {row.map((cell, j) => (
+                                  <td key={j} className="whitespace-nowrap px-3 py-2 text-[#1A2B4A]">{cell}</td>
+                                ))}
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {error && <p className="mb-4 text-sm text-red-500">{error}</p>}
