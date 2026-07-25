@@ -6,6 +6,7 @@ const getCoachingCoaches    = (ay) => adminUnitsRepository.getCoachingCoaches(ay
 const getCounsellingSummary = (ay) => adminUnitsRepository.getCounsellingSummary(ay);
 const getAdvisingSummary    = (ay) => adminUnitsRepository.getAdvisingSummary(ay);
 const getBuddyUpSummary     = (ay) => adminUnitsRepository.getBuddyUpSummary(ay);
+const getAdvisors           = (ay) => adminUnitsRepository.getAdvisors(ay);
 const getSyncStatus         = ()   => adminUnitsRepository.getSyncStatus();
 
 /**
@@ -37,6 +38,7 @@ module.exports = {
   assignCounsellingCase,
   resolveCounsellingCase,
   getAdvisingSummary, 
+  getAdvisors,
   getBuddyUpSummary, 
   triggerBuddyUpSync, 
   getSyncStatus 
