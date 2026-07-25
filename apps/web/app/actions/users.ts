@@ -55,6 +55,10 @@ export async function getRolesAction() {
   return fetchWithAuth("/admin/roles", { cache: "no-store" });
 }
 
+export async function getUserByIdAction(id: string) {
+  return fetchWithAuth(`/admin/users/${id}`, { cache: "no-store" });
+}
+
 export async function deactivateUsersAction(userIds: string[]) {
   return fetchWithAuth("/admin/users/bulk-deactivate", {
     method: "POST",
