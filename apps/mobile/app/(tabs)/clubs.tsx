@@ -2,7 +2,7 @@ import { StyleSheet, Text, View, Pressable, ScrollView, ActivityIndicator, TextI
 import globalStyles from '../../styles';
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState, useEffect } from "react";
-import { apiRequest } from "@/lib/api";
+import { API_URL, apiRequest } from "@/lib/api";
 import { useAuth } from "@/context/auth-context";
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
@@ -10,6 +10,14 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { StatusBar } from "expo-status-bar";
 
 import { useQuery } from "@tanstack/react-query";
+
+// Resolve relative /uploads/... paths to absolute URL using the device-reachable API_URL.
+// Older records may already have an absolute URL — keep those intact.
+const resolveImageUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return `${API_URL}${url}`;
+};
 
 type Club = {
   id: string;
@@ -126,8 +134,8 @@ export default function ClubsScreen() {
                   onPress={() => router.push(`/clubs/${club.id}` as any)}
                 >
                   <View style={styles.myClubImageWrapper}>
-                    {club.image_url ? (
-                      <Image source={{ uri: club.image_url }} style={styles.myClubImage} />
+                    {resolveImageUrl(club.image_url) ? (
+                      <Image source={{ uri: resolveImageUrl(club.image_url)! }} style={styles.myClubImage} />
                     ) : (
                       <View style={styles.myClubIconPlaceholder}>
                         <Text style={styles.myClubInitials}>{club.name.substring(0, 2).toUpperCase()}</Text>
@@ -165,8 +173,8 @@ export default function ClubsScreen() {
                 style={styles.clubCard}
                 onPress={() => router.push(`/clubs/${club.id}` as any)}
               >
-                {club.image_url ? (
-                  <Image source={{ uri: club.image_url }} style={styles.clubCardImage} />
+                {resolveImageUrl(club.image_url) ? (
+                  <Image source={{ uri: resolveImageUrl(club.image_url)! }} style={styles.clubCardImage} />
                 ) : (
                   <View style={styles.clubCardImagePlaceholder}>
                     <Ionicons name="images-outline" size={32} color="#9CA3AF" />
