@@ -88,6 +88,7 @@ app.use(express.json());
 
 const path = require("path");
 app.use("/assets", express.static(path.join(__dirname, "public/assets")));
+app.use("/uploads", express.static(path.join(__dirname, "public/uploads")));
 
 app.get("/health", (req, res) => {
   res.json({ ok: true, service: "fresher-hub-api" });
