@@ -173,7 +173,7 @@ const assignCounsellingCase = asyncHandler(async (req, res) => {
     assignedBy: req.user.id
   });
   res.locals.auditEntityId = result.id;
-  res.locals.auditMetadata = { studentId: req.body.studentId, peerCounsellorId: req.body.peerCounsellorId };
+  res.locals.auditMetadata = { studentSchoolId: req.body.studentSchoolId, peerCounsellorId: req.body.peerCounsellorId };
   res.status(201).json(result);
 });
 
