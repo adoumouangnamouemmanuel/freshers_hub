@@ -60,7 +60,7 @@ export function EditClubModal({ club, isOpen, onClose, allUsers, onSuccess }: Ed
         logoData.append("image", logoFile);
         logoData.append("type", "logo");
         const logoRes = await import("@/app/actions/clubs").then(m => m.uploadClubImageAction(logoData));
-        image_url = logoRes.url;
+        image_url = logoRes.path || logoRes.url; // use relative path for mobile compatibility
       }
 
       if (coverFile) {
@@ -68,7 +68,7 @@ export function EditClubModal({ club, isOpen, onClose, allUsers, onSuccess }: Ed
         coverData.append("image", coverFile);
         coverData.append("type", "cover");
         const coverRes = await import("@/app/actions/clubs").then(m => m.uploadClubImageAction(coverData));
-        cover_image = coverRes.url;
+        cover_image = coverRes.path || coverRes.url; // use relative path for mobile compatibility
       }
 
       await updateClubAction(club.id, {
