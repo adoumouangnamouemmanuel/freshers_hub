@@ -10,6 +10,13 @@ interface ClubDetailsDrawerProps {
   onEdit: () => void;
 }
 
+const resolveImageUrl = (url: string | null | undefined) => {
+  if (!url) return null;
+  if (url.startsWith("http")) return url;
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  return `${baseUrl}${url}`;
+};
+
 export function ClubDetailsDrawer({ club, isOpen, onClose, onEdit }: ClubDetailsDrawerProps) {
   const [members, setMembers] = useState<any[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
@@ -48,8 +55,8 @@ export function ClubDetailsDrawer({ club, isOpen, onClose, onEdit }: ClubDetails
         >
           {/* Header Image/Cover */}
           <div className="h-48 relative shrink-0">
-            {club.cover_image ? (
-              <img src={club.cover_image} alt="Cover" className="w-full h-full object-cover" />
+            {resolveImageUrl(club.cover_image) ? (
+              <img src={resolveImageUrl(club.cover_image)!} alt="Cover" className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-[#1A2B4A] to-[#A93C40]" />
             )}
@@ -62,8 +69,8 @@ export function ClubDetailsDrawer({ club, isOpen, onClose, onEdit }: ClubDetails
             </button>
             <div className="absolute -bottom-10 left-6">
               <div className="w-20 h-20 rounded-2xl bg-white p-1 shadow-lg border border-gray-100">
-                {club.image_url ? (
-                  <img src={club.image_url} alt="Logo" className="w-full h-full rounded-xl object-cover" />
+                {resolveImageUrl(club.image_url) ? (
+                  <img src={resolveImageUrl(club.image_url)!} alt="Logo" className="w-full h-full rounded-xl object-cover" />
                 ) : (
                   <div className="w-full h-full rounded-xl bg-gradient-to-br from-[#1A2B4A] to-[#33507f] flex items-center justify-center text-2xl font-bold text-white shadow-inner">
                     {club.name?.substring(0, 2).toUpperCase()}
@@ -158,8 +165,8 @@ export function ClubDetailsDrawer({ club, isOpen, onClose, onEdit }: ClubDetails
                   ) : members.length > 0 ? (
                     members.map((m: any, i: number) => (
                       <div key={i} className="p-3 flex items-center gap-3">
-                        {m.avatar_url ? (
-                          <img src={m.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" />
+                        {resolveImageUrl(m.avatar_url) ? (
+                          <img src={resolveImageUrl(m.avatar_url)!} alt="" className="w-8 h-8 rounded-full object-cover" />
                         ) : (
                           <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
                             {m.full_name?.charAt(0)}
