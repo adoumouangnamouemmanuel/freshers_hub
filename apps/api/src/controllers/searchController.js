@@ -14,7 +14,7 @@ const searchController = {
       const userRoles = req.user?.roles || [];
 
       // Determine if user can search other users (and consequently, not search campus entities)
-      const staffRoles = ['coach_admin', 'advisor', 'counsellor', 'staff', 'faculty', 'oipcc_admin'];
+      const staffRoles = ['coach_admin', 'advisor', 'counsellor', 'staff', 'faculty', 'oipcc_admin', 'platform_admin'];
       const isStaffOrAdmin = userRoles.some(r => staffRoles.includes(r));
 
       // Execute all searches concurrently
