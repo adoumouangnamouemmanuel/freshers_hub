@@ -14,7 +14,7 @@ import {
   Line,
 } from "recharts";
 import {
-  Sparkles,
+  BadgeCheck,
   TrendingUp,
   Download,
   Lightbulb,
@@ -301,7 +301,7 @@ export default function AnalyticsClient({
             </p>
           </div>
           <div className="rounded-full bg-rose-100 p-2 text-rose-500">
-            <Sparkles className="h-5 w-5" />
+            <BadgeCheck className="h-5 w-5" />
           </div>
         </div>
         
