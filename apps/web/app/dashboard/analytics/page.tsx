@@ -82,7 +82,7 @@ export default async function AnalyticsPage() {
       monthlySessions={data.monthlySessions}
       topClubs={data.topClubs}
       exportUrl={exportUrl}
-      token={data.token} // We will pass token for fetch-based download
+      token={data.token || ""} // We will pass token for fetch-based download
     />
   );
 }
