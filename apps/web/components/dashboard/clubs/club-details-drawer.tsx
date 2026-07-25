@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Users, MapPin, Calendar, ExternalLink, Mail, Trash2, Edit3, ShieldAlert, BadgeCheck } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getClubMembersAction } from "@/app/actions/clubs";
 
 interface ClubDetailsDrawerProps {
   club: any;
@@ -10,6 +11,19 @@ interface ClubDetailsDrawerProps {
 }
 
 export function ClubDetailsDrawer({ club, isOpen, onClose, onEdit }: ClubDetailsDrawerProps) {
+  const [members, setMembers] = useState<any[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && club?.id) {
+      setLoadingMembers(true);
+      getClubMembersAction(club.id, { pageSize: 5 })
+        .then(res => setMembers(res.data || []))
+        .catch(console.error)
+        .finally(() => setLoadingMembers(false));
+    }
+  }, [isOpen, club?.id]);
+
   if (!isOpen || !club) return null;
 
   return (
@@ -20,7 +34,7 @@ export function ClubDetailsDrawer({ club, isOpen, onClose, onEdit }: ClubDetails
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="absolute inset-0 bg-black/30 backdrop-blur-sm"
+          className="absolute inset-0 bg-black/30 backdrop-blur-sm cursor-pointer"
           onClick={onClose}
         />
 
@@ -42,7 +56,7 @@ export function ClubDetailsDrawer({ club, isOpen, onClose, onEdit }: ClubDetails
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full backdrop-blur-md transition-colors"
+              className="absolute top-4 right-4 p-2 bg-black/20 hover:bg-black/40 text-white rounded-full backdrop-blur-md transition-colors cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -81,7 +95,7 @@ export function ClubDetailsDrawer({ club, isOpen, onClose, onEdit }: ClubDetails
               </div>
               <button
                 onClick={onEdit}
-                className="p-2 text-gray-400 hover:text-[#A93C40] hover:bg-[#A93C40]/10 rounded-xl transition-colors"
+                className="p-2 text-gray-400 hover:text-[#A93C40] hover:bg-[#A93C40]/10 rounded-xl transition-colors cursor-pointer"
               >
                 <Edit3 className="w-5 h-5" />
               </button>
@@ -93,16 +107,21 @@ export function ClubDetailsDrawer({ club, isOpen, onClose, onEdit }: ClubDetails
 
             <div className="space-y-6">
               {/* Quick Stats */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white p-4 rounded-2xl border border-[#e5e1d8] shadow-sm">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-white p-4 rounded-2xl border border-[#e5e1d8] shadow-sm flex flex-col items-center justify-center text-center">
                   <Users className="w-5 h-5 text-blue-500 mb-2" />
                   <p className="text-2xl font-bold text-[#1A2B4A]">{club.memberCount || 0}</p>
-                  <p className="text-xs text-gray-500 font-medium">Total Members</p>
+                  <p className="text-xs text-gray-500 font-medium mt-1">Members</p>
                 </div>
-                <div className="bg-white p-4 rounded-2xl border border-[#e5e1d8] shadow-sm">
+                <div className="bg-white p-4 rounded-2xl border border-[#e5e1d8] shadow-sm flex flex-col items-center justify-center text-center">
                   <Calendar className="w-5 h-5 text-orange-500 mb-2" />
-                  <p className="text-2xl font-bold text-[#1A2B4A]">12</p>
-                  <p className="text-xs text-gray-500 font-medium">Events Hosted</p>
+                  <p className="text-2xl font-bold text-[#1A2B4A]">{club.eventCount || 0}</p>
+                  <p className="text-xs text-gray-500 font-medium mt-1">Events</p>
+                </div>
+                <div className="bg-white p-4 rounded-2xl border border-[#e5e1d8] shadow-sm flex flex-col items-center justify-center text-center">
+                  <Mail className="w-5 h-5 text-purple-500 mb-2" />
+                  <p className="text-2xl font-bold text-[#1A2B4A]">{club.postCount || 0}</p>
+                  <p className="text-xs text-gray-500 font-medium mt-1">Posts</p>
                 </div>
               </div>
 
@@ -120,7 +139,7 @@ export function ClubDetailsDrawer({ club, isOpen, onClose, onEdit }: ClubDetails
                     </div>
                   </div>
                   {club.lead_name && (
-                    <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors">
+                    <button className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl transition-colors cursor-pointer">
                       <Mail className="w-4 h-4" />
                     </button>
                   )}
@@ -131,21 +150,32 @@ export function ClubDetailsDrawer({ club, isOpen, onClose, onEdit }: ClubDetails
               <div>
                 <div className="flex justify-between items-center mb-3">
                   <h3 className="text-sm font-bold text-[#1A2B4A] uppercase tracking-wider">Recent Members</h3>
-                  <button className="text-xs font-medium text-blue-600 hover:underline">View All</button>
+                  <button className="text-xs font-medium text-blue-600 hover:underline cursor-pointer">View All</button>
                 </div>
                 <div className="bg-white rounded-2xl border border-[#e5e1d8] shadow-sm overflow-hidden divide-y divide-[#e5e1d8]">
-                  {[1, 2, 3].map((_, i) => (
-                    <div key={i} className="p-3 flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-gray-100" />
-                      <div className="flex-1">
-                        <div className="h-3 w-24 bg-gray-200 rounded animate-pulse mb-1" />
-                        <div className="h-2 w-16 bg-gray-100 rounded animate-pulse" />
+                  {loadingMembers ? (
+                    <div className="p-3 text-center text-sm text-gray-500">Loading members...</div>
+                  ) : members.length > 0 ? (
+                    members.map((m: any, i: number) => (
+                      <div key={i} className="p-3 flex items-center gap-3">
+                        {m.avatar_url ? (
+                          <img src={m.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">
+                            {m.full_name?.charAt(0)}
+                          </div>
+                        )}
+                        <div className="flex-1">
+                          <p className="text-sm font-medium text-gray-900">{m.full_name}</p>
+                          <p className="text-xs text-gray-500">{m.role}</p>
+                        </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="p-3 text-center bg-gray-50 text-xs text-gray-500 font-medium">
+                      No members found
                     </div>
-                  ))}
-                  <div className="p-3 text-center bg-gray-50 text-xs text-gray-500 font-medium">
-                    Members data requires separate fetch
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
