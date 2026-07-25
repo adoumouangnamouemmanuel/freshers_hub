@@ -159,6 +159,30 @@ const getCounsellingSummary = asyncHandler(async (req, res) => {
   res.json(await adminUnitsService.getCounsellingSummary(req.query.academicYearId));
 });
 
+const getCounsellingCases = asyncHandler(async (req, res) => {
+  res.json(await adminUnitsService.getCounsellingCases(req.query.academicYearId, req.query.status));
+});
+
+const getCounsellors = asyncHandler(async (req, res) => {
+  res.json(await adminUnitsService.getCounsellors(req.query.academicYearId));
+});
+
+const assignCounsellingCase = asyncHandler(async (req, res) => {
+  const result = await adminUnitsService.assignCounsellingCase({
+    ...req.body,
+    assignedBy: req.user.id
+  });
+  res.locals.auditEntityId = result.id;
+  res.locals.auditMetadata = { studentId: req.body.studentId, peerCounsellorId: req.body.peerCounsellorId };
+  res.status(201).json(result);
+});
+
+const resolveCounsellingCase = asyncHandler(async (req, res) => {
+  const result = await adminUnitsService.resolveCounsellingCase(req.params.id);
+  res.locals.auditEntityId = req.params.id;
+  res.json(result);
+});
+
 const getAdvisingSummary = asyncHandler(async (req, res) => {
   res.json(await adminUnitsService.getAdvisingSummary(req.query.academicYearId));
 });
@@ -427,6 +451,7 @@ module.exports = {
   listAcademicYears, createAcademicYear, updateAcademicYear, activateAcademicYear,
   // Units
   getCoachingSummary, getCoachingCoaches, getCounsellingSummary,
+  getCounsellingCases, getCounsellors, assignCounsellingCase, resolveCounsellingCase,
   getAdvisingSummary, getBuddyUpSummary, triggerBuddyUpSync, getBuddyUpSyncStatus,
   // Clubs
   listClubs, createClub, updateClub, deleteClub, getClubMembers, getClubPosts, reassignClubLead,
