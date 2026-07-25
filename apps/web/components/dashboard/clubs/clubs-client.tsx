@@ -35,6 +35,13 @@ function initials(name: string) {
   return ((parts[0]?.[0] ?? "") + (parts[parts.length - 1]?.[0] ?? "")).toUpperCase();
 }
 
+const resolveImageUrl = (url: string | null | undefined) => {
+  if (!url) return null;
+  if (url.startsWith("http")) return url;
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  return `${baseUrl}${url}`;
+};
+
 export default function ClubsClient({ initialData, allUsers }: { initialData: any, allUsers: any[] }) {
   const router = useRouter();
   
@@ -181,8 +188,8 @@ export default function ClubsClient({ initialData, allUsers }: { initialData: an
               {trending.map((c, i) => (
                 <div key={c.id} className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold text-white shadow-sm shrink-0" style={{ background: coverGradient(c.name) }}>
-                    {c.image_url ? (
-                      <img src={c.image_url} alt={c.name} className="w-full h-full object-cover rounded-xl" />
+                    {resolveImageUrl(c.image_url) ? (
+                      <img src={resolveImageUrl(c.image_url)!} alt={c.name} className="w-full h-full object-cover rounded-xl" />
                     ) : (
                       initials(c.name)
                     )}
@@ -296,8 +303,8 @@ export default function ClubsClient({ initialData, allUsers }: { initialData: an
                 className="group flex flex-col bg-white rounded-2xl border border-[#e5e1d8] overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer"
               >
                 <div className="h-24 w-full relative shrink-0" style={{ background: coverGradient(club.name) }}>
-                  {club.cover_image && (
-                    <img src={club.cover_image} alt={club.name} className="absolute inset-0 w-full h-full object-cover" />
+                  {resolveImageUrl(club.cover_image) && (
+                    <img src={resolveImageUrl(club.cover_image)!} alt={club.name} className="absolute inset-0 w-full h-full object-cover" />
                   )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                   <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -310,8 +317,8 @@ export default function ClubsClient({ initialData, allUsers }: { initialData: an
                   </div>
                   <div className="absolute -bottom-8 left-6">
                     <div className="w-16 h-16 rounded-2xl bg-white p-1 shadow-lg border border-gray-100">
-                      {club.image_url ? (
-                        <img src={club.image_url} alt="Logo" className="w-full h-full rounded-xl object-cover" />
+                      {resolveImageUrl(club.image_url) ? (
+                        <img src={resolveImageUrl(club.image_url)!} alt="Logo" className="w-full h-full rounded-xl object-cover" />
                       ) : (
                         <div className="w-full h-full rounded-xl flex items-center justify-center text-xl font-bold text-white shadow-inner" style={{ background: coverGradient(club.name) }}>
                           {initials(club.name)}
@@ -379,8 +386,8 @@ export default function ClubsClient({ initialData, allUsers }: { initialData: an
                   render: (club: any) => (
                     <div className="flex items-center gap-3 py-2 cursor-pointer" onClick={() => setSelectedClub(club)}>
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold text-white shadow-sm overflow-hidden" style={{ background: coverGradient(club.name) }}>
-                        {club.image_url ? (
-                          <img src={club.image_url} alt="Logo" className="w-full h-full object-cover" />
+                        {resolveImageUrl(club.image_url) ? (
+                          <img src={resolveImageUrl(club.image_url)!} alt="Logo" className="w-full h-full object-cover" />
                         ) : (
                           initials(club.name)
                         )}
