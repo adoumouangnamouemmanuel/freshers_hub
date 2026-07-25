@@ -38,3 +38,31 @@ export async function getCoachingCoachesAction(academicYearId?: string) {
   const params = academicYearId ? `?academicYearId=${academicYearId}` : "";
   return fetchWithAuth(`/admin/units/coaching/coaches${params}`, { cache: "no-store" });
 }
+
+export async function getCounsellingSummaryAction(academicYearId?: string) {
+  const params = academicYearId ? `?academicYearId=${academicYearId}` : "";
+  return fetchWithAuth(`/admin/units/counselling/summary${params}`, { cache: "no-store" });
+}
+
+export async function getCounsellingCasesAction(academicYearId?: string, status: 'active' | 'resolved' = 'active') {
+  const yearParam = academicYearId ? `academicYearId=${academicYearId}&` : "";
+  return fetchWithAuth(`/admin/units/counselling/cases?${yearParam}status=${status}`, { cache: "no-store" });
+}
+
+export async function getCounsellorsAction(academicYearId?: string) {
+  const params = academicYearId ? `?academicYearId=${academicYearId}` : "";
+  return fetchWithAuth(`/admin/units/counselling/counsellors${params}`, { cache: "no-store" });
+}
+
+export async function assignCounsellingCaseAction(data: { academicYearId: number; studentId: string; peerCounsellorId: string; notes?: string }) {
+  return fetchWithAuth(`/admin/units/counselling/cases`, {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function resolveCounsellingCaseAction(assignmentId: string) {
+  return fetchWithAuth(`/admin/units/counselling/cases/${assignmentId}/resolve`, {
+    method: "PATCH",
+  });
+}
