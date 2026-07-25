@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { Users as UsersIcon, Mail, Phone, GraduationCap, Edit3, Trash2, Eye } from "lucide-react";
-import { RoleBadge } from "@/components/ui/status-badge";
+import { RoleBadge, StatusBadge } from "@/components/ui/status-badge";
 import { AnimatedSection } from "@/components/ui/animated-container";
 
 const AVATAR_PALETTE = ["#A93C40", "#1A2B4A", "#C89B3C", "#3E7C6B"];
@@ -136,17 +136,7 @@ export function UsersTable({
                   </div>
                 </td>
                 <td className="p-4">
-                  {u.is_active ? (
-                    <span className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700">
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                      Active
-                    </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-semibold text-gray-700">
-                      <span className="h-1.5 w-1.5 rounded-full bg-gray-400" />
-                      Inactive
-                    </span>
-                  )}
+                  <StatusBadge status={u.is_active ? "active" : "inactive"} />
                 </td>
                 <td className="p-4 text-right">
                   <div className="flex items-center justify-end gap-1">
