@@ -14,6 +14,8 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { useRouter } from "next/navigation";
 import { AddClubModal } from "./add-club-modal";
 import { EditClubModal } from "./edit-club-modal";
+import { ClubDetailsDrawer } from "./club-details-drawer";
+import { LineChart, Line, ResponsiveContainer } from "recharts";
 
 const CATEGORIES = ["Sports", "Culture", "Academic", "Faith", "Hobby", "Technology", "Arts"] as const;
 const PALETTE: [string, string][] = [
@@ -38,13 +40,17 @@ export default function ClubsClient({ initialData, allUsers }: { initialData: an
   
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
+  const [sortBy, setSortBy] = useState<"name" | "members" | "newest">("name");
   const [view, setView] = useState<"grid" | "table">("grid");
   const [showFilters, setShowFilters] = useState(false);
   
   const [isAddOpen, setIsAddOpen] = useState(false);
   const [editingClub, setEditingClub] = useState<any>(null);
+  const [selectedClub, setSelectedClub] = useState<any>(null);
 
-  const rawClubs = initialData.data || [];
+  // Pagination logic mock (client side appending could be done here)
+  const [rawClubs, setRawClubs] = useState(initialData.data || []);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const enriched = useMemo(() =>
     rawClubs.map((c: any) => ({
@@ -58,14 +64,33 @@ export default function ClubsClient({ initialData, allUsers }: { initialData: an
     [rawClubs]
   );
 
-  const filtered = enriched.filter((c: any) => {
-    const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase());
-    const matchesCategory = category === "all" || c.category.toLowerCase() === category;
-    return matchesSearch && matchesCategory;
-  });
+  const filtered = useMemo(() => {
+    let result = enriched.filter((c: any) => {
+      const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase());
+      const matchesCategory = category === "all" || c.category.toLowerCase() === category;
+      return matchesSearch && matchesCategory;
+    });
+
+    result.sort((a: any, b: any) => {
+      if (sortBy === "members") return b.memberCount - a.memberCount;
+      if (sortBy === "newest") return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      return a.name.localeCompare(b.name);
+    });
+
+    return result;
+  }, [enriched, search, category, sortBy]);
 
   const trending = useMemo(() => [...enriched].sort((a, b) => b.growth - a.growth).slice(0, 3), [enriched]);
-  const featured = useMemo(() => enriched.filter((c: any) => c.featured).slice(0, 2), [enriched]);
+
+  // Generate fake sparkline data
+  const generateSparklineData = (growth: number) => {
+    let base = 50;
+    const trend = growth > 0 ? 1 : -1;
+    return Array.from({ length: 10 }).map((_, i) => {
+      base = base + (Math.random() * 10 - 3) + trend * 2;
+      return { value: base };
+    });
+  };
 
   const stats = useMemo(() => {
     const totalMembers = enriched.reduce((sum: number, c: any) => sum + (c.memberCount ?? 0), 0);
@@ -74,20 +99,28 @@ export default function ClubsClient({ initialData, allUsers }: { initialData: an
   }, [enriched]);
 
   const EmptyState = () => (
-    <div className="flex flex-col items-center justify-center p-12 text-center border-2 border-dashed border-[#e5e1d8] rounded-2xl bg-gray-50/50">
-      <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center mb-4">
-        <Building2 className="w-8 h-8 text-gray-400" />
+    <div className="flex flex-col items-center justify-center p-16 text-center border border-[#e5e1d8] rounded-3xl bg-white shadow-sm my-8">
+      <div className="w-24 h-24 bg-red-50 rounded-full flex items-center justify-center mb-6 border-8 border-red-50/50">
+        <Building2 className="w-10 h-10 text-[#A93C40]" />
       </div>
-      <h3 className="text-lg font-semibold text-[#1A2B4A] mb-2">No clubs found</h3>
-      <p className="text-gray-500 max-w-sm mb-6">
-        We couldn't find any clubs matching your current filters. Try adjusting your search or category.
+      <h3 className="text-xl font-bold text-[#1A2B4A] mb-2">No clubs found</h3>
+      <p className="text-gray-500 max-w-sm mb-8 leading-relaxed">
+        We couldn't find any clubs matching your current filters. Try adjusting your search or create a new club.
       </p>
-      <button 
-        onClick={() => { setSearch(""); setCategory("all"); }}
-        className="text-[#A93C40] font-medium hover:underline focus:outline-none"
-      >
-        Clear all filters
-      </button>
+      <div className="flex gap-3">
+        <button 
+          onClick={() => { setSearch(""); setCategory("all"); }}
+          className="px-5 py-2.5 text-sm font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-xl transition-colors"
+        >
+          Clear filters
+        </button>
+        <button 
+          onClick={() => setIsAddOpen(true)}
+          className="px-5 py-2.5 text-sm font-medium text-white bg-[#A93C40] hover:bg-[#8B3135] rounded-xl transition-colors shadow-sm"
+        >
+          Create Club
+        </button>
+      </div>
     </div>
   );
 
@@ -111,46 +144,60 @@ export default function ClubsClient({ initialData, allUsers }: { initialData: an
 
       <AnimatedSection delay={0.1}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <div className="col-span-1 lg:col-span-2 bg-gradient-to-br from-[#1A2B4A] to-[#2c4370] rounded-2xl p-6 text-white shadow-md relative overflow-hidden">
+          <div className="col-span-1 lg:col-span-2 bg-gradient-to-br from-[#1A2B4A] to-[#2c4370] rounded-3xl p-8 text-white shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/3 blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/3 -translate-x-1/4 blur-2xl pointer-events-none" />
             <div className="relative z-10 flex flex-col h-full justify-between">
               <div>
-                <h3 className="text-lg font-medium text-white/80 mb-1">Campus Engagement</h3>
-                <p className="text-3xl font-bold mb-4">{stats.totalMembers.toLocaleString()} <span className="text-lg font-normal text-white/60">active members</span></p>
+                <h3 className="text-lg font-medium text-white/80 mb-2 flex items-center gap-2">
+                  <Star className="w-5 h-5 text-yellow-400" /> Campus Engagement
+                </h3>
+                <p className="text-4xl font-bold mb-4">{stats.totalMembers.toLocaleString()} <span className="text-xl font-normal text-white/60">active members</span></p>
               </div>
-              <div className="flex items-center gap-6">
+              <div className="flex items-center gap-8">
                 <div>
                   <p className="text-white/60 text-sm mb-1">Active Clubs</p>
-                  <p className="text-xl font-semibold">{stats.activeClubs}</p>
+                  <p className="text-2xl font-bold">{stats.activeClubs}</p>
                 </div>
-                <div className="w-px h-8 bg-white/20" />
+                <div className="w-px h-10 bg-white/20" />
                 <div>
                   <p className="text-white/60 text-sm mb-1">Categories</p>
-                  <p className="text-xl font-semibold">{CATEGORIES.length}</p>
+                  <p className="text-2xl font-bold">{CATEGORIES.length}</p>
                 </div>
               </div>
             </div>
           </div>
           
-          <div className="bg-white rounded-2xl p-6 border border-[#e5e1d8] shadow-sm flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-[#1A2B4A] flex items-center gap-2">
-                <Flame className="w-4 h-4 text-orange-500" /> Trending Now
+          <div className="bg-white rounded-3xl p-6 border border-[#e5e1d8] shadow-sm flex flex-col relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-orange-400 to-pink-500" />
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-bold text-[#1A2B4A] flex items-center gap-2">
+                <Flame className="w-5 h-5 text-orange-500" /> Trending Now
               </h3>
             </div>
-            <div className="space-y-4 flex-1">
+            <div className="space-y-5 flex-1">
               {trending.map((c, i) => (
                 <div key={c.id} className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-sm" style={{ background: coverGradient(c.name) }}>
-                    {initials(c.name)}
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold text-white shadow-sm shrink-0" style={{ background: coverGradient(c.name) }}>
+                    {c.image_url ? (
+                      <img src={c.image_url} alt={c.name} className="w-full h-full object-cover rounded-xl" />
+                    ) : (
+                      initials(c.name)
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-[#1A2B4A] truncate">{c.name}</p>
+                    <p className="text-sm font-bold text-[#1A2B4A] truncate">{c.name}</p>
                     <p className="text-xs text-gray-500 truncate">{c.memberCount} members</p>
                   </div>
-                  <div className="flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-2 py-1 rounded-full">
-                    <TrendingUp className="w-3 h-3" />
-                    +{c.growth}%
+                  <div className="w-16 h-8 shrink-0">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={generateSparklineData(c.growth)}>
+                        <Line type="monotone" dataKey="value" stroke={c.growth > 0 ? "#10b981" : "#f43f5e"} strokeWidth={2} dot={false} isAnimationActive={false} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg shrink-0 ${c.growth > 0 ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'}`}>
+                    {c.growth > 0 ? '+' : ''}{c.growth}%
                   </div>
                 </div>
               ))}
@@ -182,6 +229,15 @@ export default function ClubsClient({ initialData, allUsers }: { initialData: an
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as any)}
+              className="px-4 py-2 bg-white border border-[#e5e1d8] rounded-xl text-sm font-medium text-[#1A2B4A] focus:outline-none focus:ring-2 focus:ring-[#A93C40]/20 shadow-sm"
+            >
+              <option value="name">Sort by Name</option>
+              <option value="members">Sort by Members</option>
+              <option value="newest">Sort by Newest</option>
+            </select>
             <div className="flex bg-white rounded-xl border border-[#e5e1d8] p-1 shadow-sm">
               <button
                 onClick={() => setView("grid")}
@@ -226,17 +282,21 @@ export default function ClubsClient({ initialData, allUsers }: { initialData: an
         {filtered.length === 0 ? (
           <EmptyState />
         ) : view === "grid" ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
-            {filtered.map((club: any, i: number) => (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
+              {filtered.map((club: any, i: number) => (
               <motion.div
                 key={club.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                onClick={() => setEditingClub(club)}
+                onClick={() => setSelectedClub(club)}
                 className="group flex flex-col bg-white rounded-2xl border border-[#e5e1d8] overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 cursor-pointer"
               >
-                <div className="h-24 w-full relative" style={{ background: coverGradient(club.name) }}>
+                <div className="h-24 w-full relative shrink-0" style={{ background: coverGradient(club.name) }}>
+                  {club.cover_image && (
+                    <img src={club.cover_image} alt={club.name} className="absolute inset-0 w-full h-full object-cover" />
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
                   <div className="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button 
@@ -248,9 +308,13 @@ export default function ClubsClient({ initialData, allUsers }: { initialData: an
                   </div>
                   <div className="absolute -bottom-8 left-6">
                     <div className="w-16 h-16 rounded-2xl bg-white p-1 shadow-lg border border-gray-100">
-                       <div className="w-full h-full rounded-xl flex items-center justify-center text-xl font-bold text-white shadow-inner" style={{ background: coverGradient(club.name) }}>
-                        {initials(club.name)}
-                      </div>
+                      {club.image_url ? (
+                        <img src={club.image_url} alt="Logo" className="w-full h-full rounded-xl object-cover" />
+                      ) : (
+                        <div className="w-full h-full rounded-xl flex items-center justify-center text-xl font-bold text-white shadow-inner" style={{ background: coverGradient(club.name) }}>
+                          {initials(club.name)}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -272,14 +336,37 @@ export default function ClubsClient({ initialData, allUsers }: { initialData: an
                       <div className="flex items-center gap-1.5 text-gray-600 font-medium">
                         <UsersIcon className="w-4 h-4 text-gray-400" />
                         {club.memberCount} <span className="text-gray-400 font-normal text-xs">members</span>
+                        <StatusBadge status={club.status} />
                       </div>
-                      <StatusBadge status={club.status} />
                     </div>
                   </div>
                 </div>
               </motion.div>
-            ))}
-          </div>
+              ))}
+            </div>
+            
+            {initialData.page * initialData.pageSize < initialData.total && (
+              <div className="mt-8 flex justify-center">
+                <button 
+                  onClick={async () => {
+                    setIsLoadingMore(true);
+                    try {
+                      const nextPage = Math.floor(rawClubs.length / initialData.pageSize) + 1;
+                      const res = await import("@/app/actions/clubs").then(m => m.getClubsAction({ page: nextPage, pageSize: initialData.pageSize }));
+                      setRawClubs((prev: any) => [...prev, ...res.data]);
+                    } catch (e) {
+                      console.error("Failed to load more", e);
+                    }
+                    setIsLoadingMore(false);
+                  }}
+                  disabled={isLoadingMore}
+                  className="px-6 py-3 bg-white border border-[#e5e1d8] rounded-xl text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-50 flex items-center gap-2"
+                >
+                  {isLoadingMore ? "Loading..." : "Load More"}
+                </button>
+              </div>
+            )}
+          </>
         ) : (
           <div className="bg-white rounded-2xl border border-[#e5e1d8] overflow-hidden shadow-sm">
             <DataTable
@@ -288,12 +375,16 @@ export default function ClubsClient({ initialData, allUsers }: { initialData: an
                   key: "name",
                   header: "Club Name",
                   render: (club: any) => (
-                    <div className="flex items-center gap-3 py-2">
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold text-white shadow-sm" style={{ background: coverGradient(club.name) }}>
-                        {initials(club.name)}
+                    <div className="flex items-center gap-3 py-2 cursor-pointer" onClick={() => setSelectedClub(club)}>
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold text-white shadow-sm overflow-hidden" style={{ background: coverGradient(club.name) }}>
+                        {club.image_url ? (
+                          <img src={club.image_url} alt="Logo" className="w-full h-full object-cover" />
+                        ) : (
+                          initials(club.name)
+                        )}
                       </div>
                       <div>
-                        <span className="font-semibold text-gray-900 block">{club.name}</span>
+                        <span className="font-semibold text-gray-900 block hover:text-[#A93C40] transition-colors">{club.name}</span>
                         <span className="text-xs text-gray-500">{club.category}</span>
                       </div>
                     </div>
@@ -357,8 +448,16 @@ export default function ClubsClient({ initialData, allUsers }: { initialData: an
         allUsers={allUsers}
         onSuccess={() => {
           setEditingClub(null);
+          setSelectedClub(null);
           router.refresh();
         }}
+      />
+
+      <ClubDetailsDrawer
+        club={selectedClub}
+        isOpen={!!selectedClub}
+        onClose={() => setSelectedClub(null)}
+        onEdit={() => setEditingClub(selectedClub)}
       />
     </AnimatedPage>
   );
