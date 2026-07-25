@@ -306,7 +306,7 @@ class AdminUsersRepository {
       const results = { inserted: 0, updated: 0, errors: [] };
 
       for (let i = 0; i < rows.length; i++) {
-        const { school_id, email, full_name, class_year, country, major, phone, role, is_active } = rows[i];
+        const { school_id, email, full_name, class_year, country, major, phone, role, is_active, intake } = rows[i];
         const rowNum = i + 2; // +2 because row 1 is header
 
         // Validate required fields
@@ -344,14 +344,16 @@ class AdminUsersRepository {
           const user = upserted[0];
 
           // Upsert student_profiles keyed by school_id
+          const finalIntake = intake ? intake.toLowerCase() : 'september';
           await client.query(
-            `INSERT INTO student_profiles (user_id, school_id, identifier, graduation_year)
-             VALUES ($1, $2, $3, $4)
+            `INSERT INTO student_profiles (user_id, school_id, identifier, graduation_year, intake)
+             VALUES ($1, $2, $3, $4, $5)
              ON CONFLICT (user_id) DO UPDATE SET 
                school_id = EXCLUDED.school_id,
                identifier = EXCLUDED.identifier,
-               graduation_year = EXCLUDED.graduation_year`,
-            [user.id, school_id, email.split('@')[0], class_year || 0]
+               graduation_year = EXCLUDED.graduation_year,
+               intake = EXCLUDED.intake`,
+            [user.id, school_id, email.split('@')[0], class_year || 0, finalIntake]
           );
 
           // Determine role to assign
