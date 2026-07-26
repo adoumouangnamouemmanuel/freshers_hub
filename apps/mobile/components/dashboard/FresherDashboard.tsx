@@ -5,6 +5,13 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { CoachAssignment, BuddyPairing, Session, Group } from '../../hooks/useDashboardData';
 import { styles } from './DashboardStyles';
 
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
+const resolveImageUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return API_URL + url;
+};
+
 export function FresherDashboard({
   assignedCoaches,
   assignedBuddy,
@@ -27,8 +34,8 @@ export function FresherDashboard({
           <View style={styles.peopleRow}>
             {assignedCoaches.length > 0 && (
               <Pressable style={styles.personItem} onPress={() => router.push("/(tabs)/support")}>
-                {assignedCoaches[0].avatar_url ? (
-                  <Image source={{ uri: assignedCoaches[0].avatar_url }} style={styles.personImage} />
+                {resolveImageUrl(assignedCoaches[0].avatar_url) ? (
+                  <Image source={{ uri: resolveImageUrl(assignedCoaches[0].avatar_url)! }} style={styles.personImage} />
                 ) : (
                   <View style={[styles.personImage, styles.personImagePlaceholder]}>
                     <Text style={styles.personImagePlaceholderText}>{assignedCoaches[0].coach_name.charAt(0)}</Text>
@@ -41,8 +48,8 @@ export function FresherDashboard({
             
             {assignedBuddy && (
               <Pressable style={styles.personItem} onPress={() => router.push("/(tabs)/support")}>
-                {assignedBuddy.avatar_url ? (
-                  <Image source={{ uri: assignedBuddy.avatar_url }} style={styles.personImage} />
+                {resolveImageUrl(assignedBuddy.avatar_url) ? (
+                  <Image source={{ uri: resolveImageUrl(assignedBuddy.avatar_url)! }} style={styles.personImage} />
                 ) : (
                   <View style={[styles.personImage, styles.personImagePlaceholder]}>
                     <Text style={styles.personImagePlaceholderText}>{assignedBuddy.buddy_name.charAt(0)}</Text>
