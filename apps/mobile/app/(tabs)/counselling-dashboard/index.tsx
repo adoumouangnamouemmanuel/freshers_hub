@@ -182,6 +182,13 @@ export default function counsellingDashboard() {
                 color: "#10B981",
                 bg: "#D1FAE5",
               },
+              {
+                label: "Manage Cases",
+                icon: "folder-open-outline" as const,
+                route: "/(tabs)/counselling-dashboard/cases",
+                color: "#F59E0B",
+                bg: "#FEF3C7",
+              },
             ].map((item) => (
               <TouchableOpacity
                 key={item.label}

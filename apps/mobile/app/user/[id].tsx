@@ -199,8 +199,8 @@ export default function UserProfileScreen() {
           </View>
         </Animated.View>
 
-        {/* Sessions Overview Card - Hidden for Advisors */}
-        {!isAdvisorUser && (
+        {/* Sessions Overview Card - Hidden for Advisors and Counsellors */}
+        {!isAdvisorUser && !isCounsellorUser && (
           <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.detailsCard}>
             <Text style={styles.cardTitle}>Sessions Overview</Text>
             <View style={styles.overviewRow}>
@@ -222,11 +222,29 @@ export default function UserProfileScreen() {
           </Animated.View>
         )}
 
-        {((roles.includes("peer_coach")) || (roles.includes("peer_counsellor") && isCounsellorUser)) && assignedFreshers.length > 0 && (
+        {/* Counsellor Specific View for Peer Counsellors */}
+        {isCounsellorUser && roles.includes("peer_counsellor") && (
+          <Animated.View entering={FadeInDown.delay(200).duration(500)} style={styles.detailsCard}>
+            <Text style={styles.cardTitle}>Peer Counsellor Metrics</Text>
+            <View style={styles.overviewRow}>
+              <View style={styles.overviewItem}>
+                <Text style={styles.overviewLabel}>Active Cases</Text>
+                <Text style={styles.overviewValue}>{assignedFreshers.length}</Text>
+              </View>
+              <View style={styles.overviewItem}>
+                <Text style={styles.overviewLabel}>Sessions Held</Text>
+                <Text style={styles.overviewValue}>{completedSessions}</Text>
+              </View>
+            </View>
+          </Animated.View>
+        )}
+
+        {/* Assigned Freshers / Students */}
+        {((roles.includes("peer_coach") && !isCounsellorUser) || (roles.includes("peer_counsellor") && isCounsellorUser)) && assignedFreshers.length > 0 && (
           <Animated.View entering={FadeInDown.delay(220).duration(500)} style={styles.detailsCard}>
-            <Text style={styles.cardTitle}>{roles.includes("peer_counsellor") ? "Assigned Students" : "Assigned Freshers"}</Text>
+            <Text style={styles.cardTitle}>{roles.includes("peer_counsellor") ? "Managed Students" : "Assigned Freshers"}</Text>
             {assignedFreshers.map((fresher: any, idx: number) => {
-              const fresherProgressPct = (fresher.sessionsCompleted / fresher.totalAssigned) * 100;
+              const fresherProgressPct = isCounsellorUser ? 100 : (fresher.sessionsCompleted / fresher.totalAssigned) * 100;
               return (
                 <View key={fresher.id}>
                   <View style={styles.infoRow}>
@@ -235,13 +253,17 @@ export default function UserProfileScreen() {
                     </View>
                     <View style={styles.infoTextContainer}>
                       <Text style={styles.infoLabel}>{fresher.name}</Text>
-                      <View style={[styles.progressContainer, { marginTop: 4 }]}>
-                        <View style={styles.progressBarBg}>
-                          <View style={[styles.progressBarFill, { width: `${fresherProgressPct}%`, backgroundColor: fresher.sessionsCompleted === 0 ? '#EF4444' : fresher.sessionsCompleted < fresher.totalAssigned ? '#F59E0B' : '#10B981' }]} />
+                      {!isCounsellorUser && (
+                        <View style={[styles.progressContainer, { marginTop: 4 }]}>
+                          <View style={styles.progressBarBg}>
+                            <View style={[styles.progressBarFill, { width: `${fresherProgressPct}%`, backgroundColor: fresher.sessionsCompleted === 0 ? '#EF4444' : fresher.sessionsCompleted < fresher.totalAssigned ? '#F59E0B' : '#10B981' }]} />
+                          </View>
                         </View>
-                      </View>
+                      )}
                     </View>
-                    <Text style={[styles.progressText, { marginLeft: 12 }]}>{fresher.sessionsCompleted}/{fresher.totalAssigned}</Text>
+                    {!isCounsellorUser && (
+                      <Text style={[styles.progressText, { marginLeft: 12 }]}>{fresher.sessionsCompleted}/{fresher.totalAssigned}</Text>
+                    )}
                   </View>
                   {idx < assignedFreshers.length - 1 && <View style={styles.divider} />}
                 </View>
