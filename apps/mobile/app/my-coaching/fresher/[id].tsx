@@ -4,8 +4,14 @@ import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { useAuth } from "@/context/auth-context";
-import { apiRequest } from "@/lib/api";
+import { apiRequest, API_URL } from "@/lib/api";
 import SessionDetailModal from "@/components/features/sessions/SessionDetailModal";
+
+const resolveImageUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return API_URL + url;
+};
 
 export default function FresherDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -99,8 +105,8 @@ export default function FresherDetailsScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#1A2B4A" />}
       >
         <View style={styles.profileCard}>
-          {fresher.avatar_url ? (
-            <Image source={{ uri: fresher.avatar_url }} style={styles.largeAvatar} />
+          {resolveImageUrl(fresher.avatar_url) ? (
+            <Image source={{ uri: resolveImageUrl(fresher.avatar_url)! }} style={styles.largeAvatar} />
           ) : (
             <View style={styles.avatarPlaceholder}>
               <Text style={styles.avatarText}>{fresher.fresher_name?.charAt(0) || "F"}</Text>
