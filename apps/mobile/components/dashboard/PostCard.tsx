@@ -8,6 +8,13 @@ import { hasRole } from '@/lib/permissions';
 import { Post } from '../../hooks/useDashboardData';
 import { styles } from './DashboardStyles';
 
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
+const resolveImageUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return API_URL + url;
+};
+
 export function PostCard({ post, onUpdate }: { post: Post; onUpdate: () => void }) {
   const router = useRouter();
   const { session } = useAuth();
@@ -55,8 +62,8 @@ export function PostCard({ post, onUpdate }: { post: Post; onUpdate: () => void 
       }}
     >
       <View style={styles.postHeader}>
-        {post.authorAvatar ? (
-          <Image source={{ uri: post.authorAvatar }} style={styles.postAuthorAvatarImage} />
+        {resolveImageUrl(post.authorAvatar) ? (
+          <Image source={{ uri: resolveImageUrl(post.authorAvatar)! }} style={styles.postAuthorAvatarImage} />
         ) : (
           <View style={styles.postAuthorAvatar}>
             <Text style={styles.postAuthorInitial}>{post.authorName.charAt(0).toUpperCase()}</Text>
