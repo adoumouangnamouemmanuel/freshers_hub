@@ -291,6 +291,84 @@ const getPeerAssignedStudents = asyncHandler(async (req, res) => {
   }
 });
 
+// ─── Resolve Counselling Case ────────────────────────────────────────────────
+const resolveAssignment = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query(`
+      UPDATE counsellor_assignments
+      SET status = 'resolved', resolved_at = NOW()
+      WHERE id = $1
+      RETURNING *
+    `, [id]);
+    
+    if (rows.length === 0) {
+      throw new AppError("Assignment not found", 404);
+    }
+    res.json({ success: true, assignment: rows[0] });
+  } finally {
+    client.release();
+  }
+});
+
+// ─── Reassign Counselling Case ──────────────────────────────────────────────
+const reassignAssignment = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { peerCounsellorId } = req.body;
+  if (!peerCounsellorId) {
+    throw new AppError("peerCounsellorId is required", 400);
+  }
+  
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query(`
+      UPDATE counsellor_assignments
+      SET peer_counsellor_id = $1, assigned_by = $2
+      WHERE id = $3
+      RETURNING *
+    `, [peerCounsellorId, req.user.id, id]);
+    
+    if (rows.length === 0) {
+      throw new AppError("Assignment not found", 404);
+    }
+    res.json({ success: true, assignment: rows[0] });
+  } finally {
+    client.release();
+  }
+});
+
+// ─── Get Counselling Cases ──────────────────────────────────────────────────
+const getCounsellingCases = asyncHandler(async (req, res) => {
+  const client = await pool.connect();
+  try {
+    const { rows } = await client.query(`
+      SELECT 
+        ca.id AS assignment_id, 
+        ca.status, 
+        ca.created_at, 
+        ca.resolved_at,
+        u.id AS student_id,
+        u.full_name AS student_name, 
+        u.avatar_url AS student_avatar,
+        u.email AS student_email,
+        u.major,
+        u.class_year,
+        p.id AS peer_counsellor_id,
+        p.full_name AS peer_counsellor_name,
+        p.avatar_url AS peer_counsellor_avatar
+      FROM counsellor_assignments ca
+      JOIN users u ON ca.student_id = u.id
+      JOIN users p ON ca.peer_counsellor_id = p.id
+      ORDER BY ca.created_at DESC
+    `);
+    
+    res.json(rows);
+  } finally {
+    client.release();
+  }
+});
+
 module.exports = {
   getCounsellingDashboard,
   getCounsellingStudents,
@@ -298,5 +376,8 @@ module.exports = {
   counsellorBookSession,
   getPeerCounsellors,
   assignStudentToPeer,
-  getPeerAssignedStudents
+  getPeerAssignedStudents,
+  resolveAssignment,
+  reassignAssignment,
+  getCounsellingCases
 };
