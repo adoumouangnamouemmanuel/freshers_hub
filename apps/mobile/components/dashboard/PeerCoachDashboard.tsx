@@ -5,6 +5,13 @@ import { IconSymbol } from '@/components/ui/icon-symbol';
 import { AssignedFresher, Session } from '../../hooks/useDashboardData';
 import { styles } from './DashboardStyles';
 
+const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
+const resolveImageUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return API_URL + url;
+};
+
 export function PeerCoachDashboard({ 
   assignedFreshers, 
   upcomingSessions 
@@ -42,8 +49,8 @@ export function PeerCoachDashboard({
           <View style={styles.fresherAvatarsRow}>
             {assignedFreshers.slice(0, 4).map((fresher, idx) => (
               <View key={fresher.id} style={[styles.fresherAvatarBubble, { zIndex: 10 - idx, marginLeft: idx > 0 ? -12 : 0 }]}>
-                {fresher.avatar_url ? (
-                  <Image source={{ uri: fresher.avatar_url }} style={styles.fresherAvatarImage} />
+                {resolveImageUrl(fresher.avatar_url) ? (
+                  <Image source={{ uri: resolveImageUrl(fresher.avatar_url)! }} style={styles.fresherAvatarImage} />
                 ) : (
                   <Text style={styles.fresherAvatarText}>{fresher.fresher_name.charAt(0)}</Text>
                 )}
