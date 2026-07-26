@@ -2,6 +2,7 @@
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useAuth } from "@/context/auth-context";
 import { hasRole, formatRoleName } from "@/lib/permissions";
+import { API_URL } from "@/lib/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { useEffect, useState, useRef } from "react";
@@ -23,6 +24,12 @@ import {
 export default function ProfileScreen() {
   const router = useRouter();
   const { session, signOut } = useAuth();
+  
+  const resolveImageUrl = (url?: string | null): string | null => {
+    if (!url) return null;
+    if (url.startsWith('http')) return url;
+    return API_URL + url;
+  };
   // const insets = useSafeAreaInsets();
 
   const [darkMode, setDarkMode] = useState(false);
@@ -139,8 +146,8 @@ export default function ProfileScreen() {
 
           <View style={styles.profileSection}>
             <View style={styles.avatarContainer}>
-              {avatarUrl ? (
-                <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+              {resolveImageUrl(avatarUrl) ? (
+                <Image source={{ uri: resolveImageUrl(avatarUrl)! }} style={styles.avatarImage} />
               ) : (
                 <View style={styles.avatarCircle}>
                   <Text style={styles.avatarInitial}>{userInitial}</Text>
