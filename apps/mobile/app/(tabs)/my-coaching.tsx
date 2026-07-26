@@ -4,7 +4,13 @@ import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Ionicons, FontAwesome } from '@expo/vector-icons';
 import { useAuth } from "@/context/auth-context";
-import { apiRequest } from "@/lib/api";
+import { apiRequest, API_URL } from "@/lib/api";
+
+const resolveImageUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return API_URL + url;
+};
 
 export default function MyCoachingScreen() {
   const router = useRouter();
@@ -130,8 +136,8 @@ export default function MyCoachingScreen() {
                   </View>
                 )}
                 <View style={styles.fresherHeader}>
-                  {fresher.avatar_url ? (
-                    <Image source={{ uri: fresher.avatar_url }} style={styles.avatar} />
+                  {resolveImageUrl(fresher.avatar_url) ? (
+                    <Image source={{ uri: resolveImageUrl(fresher.avatar_url)! }} style={styles.avatar} />
                   ) : (
                     <View style={styles.avatarPlaceholder}>
                       <Text style={styles.avatarText}>{fresher.fresher_name?.charAt(0) || "F"}</Text>
