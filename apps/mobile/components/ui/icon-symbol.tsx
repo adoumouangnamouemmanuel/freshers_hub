@@ -101,6 +101,8 @@ const MAPPING = {
   'globe': 'language',
   'square.and.arrow.up.fill': 'share',
   'square.and.arrow.up': 'share',
+  'arrow.triangle.2.circlepath': 'sync',
+  'folder.fill': 'folder',
 };
 
 export type IconSymbolName = keyof typeof MAPPING;
