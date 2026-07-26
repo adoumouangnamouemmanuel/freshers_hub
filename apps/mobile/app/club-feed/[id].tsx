@@ -3,10 +3,16 @@ import { StyleSheet, Text, View, ScrollView, ActivityIndicator, Pressable, Refre
 import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
-import { apiRequest } from "@/lib/api";
+import { apiRequest, API_URL } from "@/lib/api";
 import { useAuth } from "@/context/auth-context";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { StatusBar } from "expo-status-bar";
+
+const resolveImageUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return API_URL + url;
+};
 
 type Post = {
   id: string;
@@ -45,8 +51,8 @@ function ClubPostCard({ post, index }: { post: Post; index: number }) {
         }}
       >
         <View style={styles.postHeader}>
-          {post.authorAvatar ? (
-            <Image source={{ uri: post.authorAvatar }} style={styles.authorAvatarImage} />
+          {resolveImageUrl(post.authorAvatar) ? (
+            <Image source={{ uri: resolveImageUrl(post.authorAvatar)! }} style={styles.authorAvatarImage} />
           ) : (
             <View style={styles.authorAvatar}>
               <Text style={styles.authorInitial}>{post.authorName?.charAt(0) || '?'}</Text>
