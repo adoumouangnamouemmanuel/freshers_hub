@@ -12,6 +12,12 @@ import { hasRole, isAdvisor } from "../../lib/permissions";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
+const resolveImageUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return API_URL + url;
+};
+
 export default function StudentsScreen() {
   const { session } = useAuth();
   const token = session?.accessToken;
@@ -185,8 +191,8 @@ export default function StudentsScreen() {
               style={styles.card} 
               onPress={() => router.push(`/user/${item.id}` as any)}
             >
-              {item.avatar_url ? (
-                <Image source={{ uri: item.avatar_url }} style={styles.avatar} />
+              {resolveImageUrl(item.avatar_url) ? (
+                <Image source={{ uri: resolveImageUrl(item.avatar_url)! }} style={styles.avatar} />
               ) : (
                 <View style={[styles.avatar, { alignItems: 'center', justifyContent: 'center', backgroundColor: '#1A2B4A' }]}>
                   <Text style={{ color: '#FFFFFF', fontSize: 18, fontWeight: '700' }}>
