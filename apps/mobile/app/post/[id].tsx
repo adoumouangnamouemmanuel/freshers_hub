@@ -16,8 +16,14 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { useAuth } from "@/context/auth-context";
-import { apiRequest } from "@/lib/api";
+import { apiRequest, API_URL } from "@/lib/api";
 import { hasRole } from "@/lib/permissions";
+
+const resolveImageUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return API_URL + url;
+};
 
 type Post = {
   id: string;
@@ -107,8 +113,8 @@ export default function PostScreen() {
         <ScrollView contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom + 20, 100) }]}>
           <View style={[styles.card, isAlert && styles.alertCard]}>
             <View style={styles.postHeader}>
-              {post.authorAvatar ? (
-                <Image source={{ uri: post.authorAvatar }} style={styles.postAuthorAvatarImage} />
+              {resolveImageUrl(post.authorAvatar) ? (
+                <Image source={{ uri: resolveImageUrl(post.authorAvatar)! }} style={styles.postAuthorAvatarImage} />
               ) : (
                 <View style={styles.postAuthorAvatar}>
                   <Text style={styles.postAuthorInitial}>{post.authorName.charAt(0).toUpperCase()}</Text>
