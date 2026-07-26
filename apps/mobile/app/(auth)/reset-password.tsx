@@ -155,7 +155,7 @@ export default function ResetPasswordScreen() {
           </Pressable>
 
           <Image
-            source={require("@/assets/images/ashesi_logo.png")}
+            source={require('@/assets/images/ashesi_logo.webp')}
             style={s.logo}
             resizeMode="contain"
           />
