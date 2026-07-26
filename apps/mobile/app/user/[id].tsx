@@ -13,6 +13,12 @@ import { useQuery } from "@tanstack/react-query";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || "http://localhost:4000";
 
+const resolveImageUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return API_URL + url;
+};
+
 export default function UserProfileScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
@@ -146,8 +152,8 @@ export default function UserProfileScreen() {
         
         {/* Profile Card Overlay */}
         <Animated.View entering={FadeInDown.delay(100).duration(500)} style={styles.profileCard}>
-          {profile.avatar_url ? (
-            <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} />
+          {resolveImageUrl(profile.avatar_url) ? (
+            <Image source={{ uri: resolveImageUrl(profile.avatar_url)! }} style={styles.avatarImage} />
           ) : (
             <View style={styles.avatarCircle}>
               <Text style={styles.avatarInitial}>{userInitial}</Text>
