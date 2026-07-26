@@ -240,8 +240,8 @@ export default function FeedScreen() {
         <View style={styles.personalHeader}>
           <View style={styles.greetingRow}>
             <Pressable style={styles.headerAvatarLarge} onPress={() => router.push("/profile")}>
-              {session?.user.avatarUrl ? (
-                <Image source={{ uri: session.user.avatarUrl }} style={styles.headerAvatarImage} />
+              {resolveImageUrl(session?.user.avatarUrl) ? (
+                <Image source={{ uri: resolveImageUrl(session?.user.avatarUrl)! }} style={styles.headerAvatarImage} />
               ) : (
                 <Text style={styles.headerAvatarLargeText}>{userInitial}</Text>
               )}
@@ -272,8 +272,8 @@ export default function FeedScreen() {
                 <View style={styles.premiumRow}>
                   {assignedCoaches.length > 0 && (
                     <Pressable style={styles.premiumCardActive} onPress={() => router.push("/(tabs)/support")}>
-                      {assignedCoaches[0].avatar_url ? (
-                        <Image source={{ uri: assignedCoaches[0].avatar_url }} style={[styles.personImage, { width: 48, height: 48, borderRadius: 24, marginBottom: 8 }]} />
+                      {resolveImageUrl(assignedCoaches[0].avatar_url) ? (
+                        <Image source={{ uri: resolveImageUrl(assignedCoaches[0].avatar_url)! }} style={[styles.personImage, { width: 48, height: 48, borderRadius: 24, marginBottom: 8 }]} />
                       ) : (
                         <View style={[styles.personImage, styles.personImagePlaceholder, { width: 48, height: 48, borderRadius: 24, marginBottom: 8, backgroundColor: 'rgba(255,255,255,0.2)' }]}>
                           <Text style={[styles.personImagePlaceholderText, { color: '#FFF' }]}>{assignedCoaches[0].coach_name.charAt(0)}</Text>
@@ -286,8 +286,8 @@ export default function FeedScreen() {
                   
                   {assignedBuddy && (
                     <Pressable style={styles.premiumCardSmall} onPress={() => router.push("/(tabs)/support")}>
-                      {assignedBuddy.avatar_url ? (
-                        <Image source={{ uri: assignedBuddy.avatar_url }} style={[styles.personImage, { width: 48, height: 48, borderRadius: 24, marginBottom: 8 }]} />
+                      {resolveImageUrl(assignedBuddy.avatar_url) ? (
+                        <Image source={{ uri: resolveImageUrl(assignedBuddy.avatar_url)! }} style={[styles.personImage, { width: 48, height: 48, borderRadius: 24, marginBottom: 8 }]} />
                       ) : (
                         <View style={[styles.personImage, styles.personImagePlaceholder, { width: 48, height: 48, borderRadius: 24, marginBottom: 8, backgroundColor: '#EEF2FF' }]}>
                           <Text style={styles.personImagePlaceholderText}>{assignedBuddy.buddy_name.charAt(0)}</Text>
@@ -370,8 +370,8 @@ export default function FeedScreen() {
                   <View style={styles.fresherAvatarsRow}>
                     {assignedFreshers.slice(0, 4).map((fresher, idx) => (
                       <View key={fresher.id} style={[styles.fresherAvatarBubble, { zIndex: 10 - idx, marginLeft: idx > 0 ? -12 : 0 }]}>
-                        {fresher.avatar_url ? (
-                          <Image source={{ uri: fresher.avatar_url }} style={styles.fresherAvatarImage} />
+                        {resolveImageUrl(fresher.avatar_url) ? (
+                          <Image source={{ uri: resolveImageUrl(fresher.avatar_url)! }} style={styles.fresherAvatarImage} />
                         ) : (
                           <Text style={styles.fresherAvatarText}>{fresher.fresher_name.charAt(0)}</Text>
                         )}
