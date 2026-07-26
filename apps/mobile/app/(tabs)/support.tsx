@@ -7,8 +7,14 @@ import { IconSymbol } from "@/components/ui/icon-symbol";
 import { StatusBar } from "expo-status-bar";
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { useAuth } from "@/context/auth-context";
-import { apiRequest } from "@/lib/api";
+import { apiRequest, API_URL } from "@/lib/api";
 import Animated, { FadeInDown, SlideInDown } from "react-native-reanimated";
+
+const resolveImageUrl = (url?: string | null): string | null => {
+  if (!url) return null;
+  if (url.startsWith('http')) return url;
+  return API_URL + url;
+};
 
 import { isCoach, isAdvisor } from "@/lib/permissions";
 
@@ -101,8 +107,8 @@ export default function SupportScreen() {
     return (
       <Animated.View entering={FadeInDown.delay(index * 100).duration(400)} key={staff.id} style={styles.staffCard}>
         <View style={styles.staffHeader}>
-          {staff.avatar_url ? (
-            <Image source={{ uri: staff.avatar_url }} style={styles.staffAvatar} />
+          {resolveImageUrl(staff.avatar_url) ? (
+            <Image source={{ uri: resolveImageUrl(staff.avatar_url)! }} style={styles.staffAvatar} />
           ) : (
             <View style={[styles.staffAvatarPlaceholder, { backgroundColor: bgColor }]}>
               <Text style={styles.staffAvatarText}>{staff.name?.charAt(0) || "S"}</Text>
@@ -178,8 +184,8 @@ export default function SupportScreen() {
             {assignedCoach ? (
               <View style={styles.premiumCard}>
                 <View style={styles.coachProfile}>
-                  {assignedCoach.avatar_url ? (
-                    <Image source={{ uri: assignedCoach.avatar_url }} style={styles.largeAvatar} />
+                  {resolveImageUrl(assignedCoach.avatar_url) ? (
+                    <Image source={{ uri: resolveImageUrl(assignedCoach.avatar_url)! }} style={styles.largeAvatar} />
                   ) : (
                     <View style={[styles.largeAvatar, styles.avatarPlaceholder, { backgroundColor: "#EFF6FF" }]}>
                       <Text style={[styles.avatarText, { color: "#3B82F6" }]}>{assignedCoach.coach_name?.charAt(0) || "C"}</Text>
@@ -307,8 +313,8 @@ export default function SupportScreen() {
             {buddy ? (
               <View style={[styles.premiumCard, { borderColor: "#D1FAE5", borderWidth: 1, backgroundColor: "#F0FDF4" }]}>
                 <View style={styles.coachProfile}>
-                  {buddy.avatar_url ? (
-                    <Image source={{ uri: buddy.avatar_url }} style={styles.largeAvatar} />
+                  {resolveImageUrl(buddy.avatar_url) ? (
+                    <Image source={{ uri: resolveImageUrl(buddy.avatar_url)! }} style={styles.largeAvatar} />
                   ) : (
                     <View style={[styles.largeAvatar, styles.avatarPlaceholder, { backgroundColor: "#D1FAE5" }]}>
                       <Text style={[styles.avatarText, { color: "#059669" }]}>{buddy.buddy_name?.charAt(0) || "B"}</Text>
