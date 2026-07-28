@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useCallback } from "react";
 import { StyleSheet, Text, View, ScrollView, ActivityIndicator, TouchableOpacity, RefreshControl, Alert } from "react-native";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -27,7 +27,9 @@ export default function CasesScreen() {
   const [selectedCase, setSelectedCase] = useState<any>(null);
   const [isReassignModalVisible, setReassignModalVisible] = useState(false);
 
-  const { data: cases = [], isLoading: loading, isFetching: refreshing, refetch } = useQuery({
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const { data: cases = [], isLoading: loading, refetch } = useQuery({
     queryKey: ['counselling-cases'],
     queryFn: async () => {
       const res = await fetch(`${API_URL}/support/counselling/cases`, {
@@ -38,6 +40,15 @@ export default function CasesScreen() {
     },
     enabled: !!token,
   });
+
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await refetch();
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refetch]);
 
   const resolveMutation = useMutation({
     mutationFn: async (assignmentId: string) => {
@@ -112,7 +123,7 @@ export default function CasesScreen() {
       <ScrollView 
         style={styles.scroll} 
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => refetch()} tintColor="#4F46E5" />}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor="#4F46E5" />}
       >
         {displayedCases.length === 0 ? (
           <View style={styles.emptyState}>
