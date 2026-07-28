@@ -67,13 +67,13 @@ export default function ProfileScreen() {
   };
 
   const handleShare = async () => {
-    Alert.alert("Share Freshers Hub", "Share the app with your friends!");
+    Alert.alert("Share Fresher Hub", "Share the app with your friends!");
   };
 
   const handleRate = () => {
     Alert.alert(
       "Rate Us",
-      "Thank you for using Freshers Hub! Please rate us on the App Store.",
+      "Thank you for using Fresher Hub! Please rate us on the App Store.",
     );
   };
 
@@ -85,7 +85,7 @@ export default function ProfileScreen() {
   };
 
   const handleHelp = () => {
-    Alert.alert("Help & Support", "Contact us at support@freshershub.com");
+    Alert.alert("Help & Support", "Contact us at <EMAIL>");
   };
 
   // Animation for fade-in effect
