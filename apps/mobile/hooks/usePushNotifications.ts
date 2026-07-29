@@ -1,36 +1,117 @@
-/**
- * usePushNotifications (Stubbed)
- *
- * Temporarily stubbed out to focus on in-app notifications.
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Platform } from 'react-native';
+import * as Device from 'expo-device';
+import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
+
+/* 
+ * ============================================================================
+ * TODO: EXPO GO DEV BUILD TOGGLE
+ * ============================================================================
+ * If you are running this app in "Expo Go" (the standard app from App Store),
+ * push notifications will NOT work correctly and might throw an error.
+ * 
+ * To run in Expo Go without crashing:
+ * 1. Comment out the body of this hook
+ * 2. Return the stubbed values:
+ *    return { isEnabled: false, isLoading: false, enablePush: () => {}, disablePush: () => {}, expoPushToken: undefined };
+ * ============================================================================
  */
-import { useCallback, useState } from "react";
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
 
 export function usePushNotifications(accessToken: string | undefined) {
+  const [expoPushToken, setExpoPushToken] = useState<string | undefined>();
   const [isEnabled, setIsEnabled] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
-  // We keep expoPushToken undefined since we are stubbing
-  const expoPushToken = undefined;
+  const [notification, setNotification] = useState<Notifications.Notification | undefined>();
+  const notificationListener = useRef<Notifications.EventSubscription>();
+  const responseListener = useRef<Notifications.EventSubscription>();
+
+  const registerForPushNotificationsAsync = async () => {
+    let token;
+    if (Device.isDevice) {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      if (finalStatus !== 'granted') {
+        console.log('Failed to get push token for push notification!');
+        return;
+      }
+      const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
+      token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+    } else {
+      console.log('Must use physical device for Push Notifications');
+    }
+
+    if (Platform.OS === 'android') {
+      Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#FF231F7C',
+      });
+    }
+    return token;
+  };
 
   const enablePush = useCallback(async () => {
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setIsEnabled(true);
+    try {
+      const token = await registerForPushNotificationsAsync();
+      if (token) {
+        setExpoPushToken(token);
+        setIsEnabled(true);
+        // NOTE: Here you would normally send the token to your backend
+        // e.g., await fetch('/notifications/push-token', { method: 'POST', body: { token }})
+      }
+    } catch (error) {
+      console.error("Error enabling push:", error);
+    } finally {
       setIsLoading(false);
-      // NOTE: In the real implementation, this would sync with POST /notifications/push-token
-    }, 500);
+    }
   }, []);
 
   const disablePush = useCallback(async () => {
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      // NOTE: Here you would normally tell your backend to delete the token
       setIsEnabled(false);
+      setExpoPushToken(undefined);
+    } finally {
       setIsLoading(false);
-      // NOTE: In the real implementation, this would sync with DELETE /notifications/push-token
-    }, 500);
+    }
   }, []);
 
-  return { isEnabled, isLoading, enablePush, disablePush, expoPushToken };
+  useEffect(() => {
+    notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+      setNotification(notification);
+    });
+
+    responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
+      console.log(response);
+    });
+
+    return () => {
+      if (notificationListener.current) {
+        notificationListener.current.remove();
+      }
+      if (responseListener.current) {
+        responseListener.current.remove();
+      }
+    };
+  }, []);
+
+  return { isEnabled, isLoading, enablePush, disablePush, expoPushToken, notification };
 }
