@@ -18,6 +18,12 @@ const createEventSchema = z.object({
   rsvpEnabled: z.boolean().default(true),
   visibility: z.enum(["public", "targeted", "private"]).default("public"),
   targetGroupIds: z.array(uuidSchema).optional().default([]),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format (YYYY-MM-DD)").optional().nullable(),
+  endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)(:([0-5]\d))?$/, "Invalid time format (HH:MM)").optional().nullable(),
+  isAllDay: z.boolean().optional().default(false),
+  isOnline: z.boolean().optional().default(false),
+  meetingLink: z.string().max(500, "Meeting link is too long").optional().nullable(),
+  reminderMinutes: z.number().int().min(0).optional().nullable(),
 });
 
 const updateEventSchema = z.object({
@@ -32,6 +38,13 @@ const updateEventSchema = z.object({
   rsvpEnabled: z.boolean().optional(),
   visibility: z.enum(["public", "targeted", "private"]).optional(),
   status: eventStatusSchema.optional(),
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Invalid date format (YYYY-MM-DD)").optional().nullable(),
+  endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)(:([0-5]\d))?$/, "Invalid time format (HH:MM)").optional().nullable(),
+  isAllDay: z.boolean().optional().nullable(),
+  isOnline: z.boolean().optional().nullable(),
+  meetingLink: z.string().max(500, "Meeting link is too long").optional().nullable(),
+  reminderMinutes: z.number().int().min(0).optional().nullable(),
+  targetGroupIds: z.array(uuidSchema).optional().nullable(),
 });
 
 const rsvpSchema = z.object({
