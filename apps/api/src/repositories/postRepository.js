@@ -143,13 +143,16 @@ const insertPostTargets = async (client, postId, targetGroupIds, authorId) => {
 
 const insertNotificationsForTargets = async (client, { title, category, postId, targetGroupIds, authorId }) => {
   const actualGroupIds = targetGroupIds.filter(id => id !== "assigned_students");
+  const allNotified = [];
+  
   if (actualGroupIds.length > 0) {
-    await client.query(
+    const { rows } = await client.query(
       `INSERT INTO notifications (user_id, category, title, body, related_entity)
        SELECT DISTINCT gm.user_id, 'announcement', $1, $2, $3
        FROM group_members gm
        WHERE gm.group_id = ANY($4::uuid[])
-         AND gm.user_id != $5`,
+         AND gm.user_id != $5
+       RETURNING user_id, id, title, body`,
       [
         `New: ${title}`,
         `A new ${category} has been posted for your group. Tap to view.`,
@@ -158,10 +161,11 @@ const insertNotificationsForTargets = async (client, { title, category, postId, 
         authorId,
       ]
     );
+    allNotified.push(...rows);
   }
 
   if (targetGroupIds.includes("assigned_students")) {
-    await client.query(
+    const { rows } = await client.query(
       `INSERT INTO notifications (user_id, category, title, body, related_entity)
        SELECT DISTINCT ca.fresher_id, 'announcement', $1, $2, $3
        FROM coach_assignments ca
@@ -173,7 +177,10 @@ const insertNotificationsForTargets = async (client, { title, category, postId, 
         authorId,
       ]
     );
+    allNotified.push(...rows);
   }
+  
+  return allNotified;
 };
 
 const updatePost = async (client, postId, { title, content, category }) => {
