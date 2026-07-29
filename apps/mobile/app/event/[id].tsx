@@ -11,7 +11,7 @@ import { hasRole } from "@/lib/permissions";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 
 type Event = {
-  isOnline: string | undefined;
+  isOnline: boolean;  // BUG-26 fix: was string|undefined — should be boolean
   reminderMinutes: any;
   endDate: string | number | Date;
   endTime: any;
@@ -75,19 +75,22 @@ export default function EventDetailScreen() {
   } = useInfiniteQuery({
     queryKey: ['event_rsvps', id],
     queryFn: async ({ pageParam = 1 }) => {
-      const res = await apiRequest<{ rsvps: Rsvp[] }>(`/events/${id}/rsvps?page=${pageParam}&limit=10`, {
+      // BUG-18 fix: API now returns { rsvps, total } — use total for pagination
+      const res = await apiRequest<{ rsvps: Rsvp[]; total: number }>(`/events/${id}/rsvps?page=${pageParam}&limit=10`, {
         headers: { Authorization: `Bearer ${session?.accessToken}` },
       });
-      return res.rsvps || [];
+      return res;
     },
     getNextPageParam: (lastPage, allPages) => {
-      return lastPage.length === 10 ? allPages.length + 1 : undefined;
+      // Use the total from the API for accurate hasNextPage detection
+      const loaded = allPages.flatMap(p => p.rsvps || []).length;
+      return loaded < (lastPage.total ?? 0) ? allPages.length + 1 : undefined;
     },
     enabled: !!session?.accessToken && !!id,
     initialPageParam: 1
   });
 
-  const allRsvps = rsvpsData?.pages.flatMap(page => page) || [];
+  const allRsvps = rsvpsData?.pages.flatMap(page => page.rsvps || []) || [];
 
   const rsvpMutation = useMutation({
     mutationFn: async (status: string) => {
@@ -119,7 +122,9 @@ export default function EventDetailScreen() {
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest(`/posts/${event?.postId}`, {
+      // BUG-03 fix: Call DELETE /events/:id (not /posts/:postId) so the
+      // eventService.deleteEvent() permission check is enforced.
+      return apiRequest(`/events/${event?.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${session?.accessToken}` }
       });
@@ -227,11 +232,13 @@ export default function EventDetailScreen() {
           </View>
           <View style={styles.divider} />
 
-          {/* Timezone */}
+          {/* Timezone — BUG-25 fix: use device's real timezone instead of hardcoded GMT */}
           <View style={styles.infoRow}>
             <IconSymbol name="globe" size={20} color="#4B5563" />
             <View style={styles.infoRowContent}>
-              <Text style={styles.primaryInfoText}>(GMT+0) Greenwich Mean Time</Text>
+              <Text style={styles.primaryInfoText}>
+                {Intl.DateTimeFormat().resolvedOptions().timeZone}
+              </Text>
             </View>
           </View>
           <View style={styles.divider} />
