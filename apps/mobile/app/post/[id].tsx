@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { 
   View, 
   Text, 
@@ -34,6 +34,7 @@ type Post = {
   authorName: string;
   authorId: string;
   authorAvatar?: string;
+  eventId?: string;
 };
 
 export default function PostScreen() {
@@ -54,6 +55,12 @@ export default function PostScreen() {
     enabled: !!id,
     staleTime: 1000 * 60 * 5,
   });
+
+  useEffect(() => {
+    if (post?.category === 'event' && post.eventId) {
+      router.replace({ pathname: "/event/[id]", params: { id: post.eventId } } as any);
+    }
+  }, [post]);
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
@@ -94,73 +101,76 @@ export default function PostScreen() {
   const canEditOrDelete = session?.user.id === post?.authorId || hasRole(session?.user.roles || [], "admin");
 
   return (
-    <SafeAreaView style={styles.screen} edges={["top"]}>
-      <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.closeBtn}>
+    <View style={styles.screen}>
+      <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
+        <Pressable onPress={() => router.back()} style={styles.iconBtn}>
           <IconSymbol name="chevron.left" size={28} color="#1A2B4A" />
         </Pressable>
-        <Text style={styles.headerTitle}>Post Details</Text>
-        <View style={{ width: 40 }} />
+        {canEditOrDelete && post && (
+          <View style={styles.headerActions}>
+            <Pressable onPress={() => router.push({ pathname: "/edit-post/[id]", params: { id: post?.id } } as any)} style={styles.iconBtn}>
+              <IconSymbol name="pencil" size={22} color="#1A2B4A" />
+            </Pressable>
+            <Pressable onPress={handleDelete} disabled={isDeleting} style={styles.iconBtn}>
+              {isDeleting ? (
+                <ActivityIndicator color="#DC2626" size="small" />
+              ) : (
+                <IconSymbol name="trash.fill" size={22} color="#DC2626" />
+              )}
+            </Pressable>
+          </View>
+        )}
       </View>
 
       {isLoading ? (
-        <ActivityIndicator size="large" color="#A93C40" style={{ marginTop: 40 }} />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#A93C40" />
+        </View>
       ) : !post ? (
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyStateTitle}>Post Not Found</Text>
+        <View style={styles.loadingContainer}>
+          <IconSymbol name="megaphone.fill" size={48} color="#D1D5DB" />
+          <Text style={styles.errorText}>Post not found.</Text>
+          <Pressable onPress={() => router.back()} style={styles.backBtnFallback}>
+            <Text style={styles.backBtnFallbackText}>Go Back</Text>
+          </Pressable>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom + 20, 100) }]}>
-          <View style={[styles.card, isAlert && styles.alertCard]}>
-            <View style={styles.postHeader}>
-              {resolveImageUrl(post.authorAvatar) ? (
-                <Image source={{ uri: resolveImageUrl(post.authorAvatar)! }} style={styles.postAuthorAvatarImage} />
-              ) : (
-                <View style={styles.postAuthorAvatar}>
-                  <Text style={styles.postAuthorInitial}>{post.authorName.charAt(0).toUpperCase()}</Text>
-                </View>
-              )}
-              <View style={styles.postAuthorInfo}>
-                <Text style={styles.postAuthorName}>{post.authorName}</Text>
-                <Text style={styles.postDate}>
-                  {new Date(post.createdAt).toLocaleDateString()}
-                </Text>
-              </View>
-              <View style={[styles.categoryBadge, isAlert && styles.alertBadge]}>
-                <Text style={[styles.categoryBadgeText, isAlert && styles.alertBadgeText]}>
-                  {post.category}
-                </Text>
-              </View>
+        <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 20, 100) }}>
+          
+          <View style={styles.cardHeader}>
+            <View style={[styles.categoryBadge, isAlert ? styles.alertBadge : (post.category.toLowerCase() === 'announcement' ? styles.announcementBadge : undefined)]}>
+              <Text style={[styles.categoryBadgeText, isAlert ? styles.alertBadgeText : (post.category.toLowerCase() === 'announcement' ? styles.announcementBadgeText : undefined)]}>
+                {post.category}
+              </Text>
             </View>
-            
-            <Text style={styles.postTitle}>{post.title}</Text>
-            <Text style={styles.postContent}>{post.content}</Text>
+            <Text style={styles.title}>{post.title}</Text>
           </View>
 
-          {canEditOrDelete && (
-            <View style={styles.actionsContainer}>
-              <Pressable 
-                style={styles.editBtn} 
-                onPress={() => router.push({ pathname: "/edit-post/[id]", params: { id: post.id } } as any)}
-              >
-                <Text style={styles.editBtnText}>Edit Post</Text>
-              </Pressable>
-              <Pressable 
-                style={styles.deleteBtn} 
-                onPress={handleDelete}
-                disabled={isDeleting}
-              >
-                {isDeleting ? (
-                  <ActivityIndicator color="#DC2626" size="small" />
-                ) : (
-                  <Text style={styles.deleteBtnText}>Delete Post</Text>
-                )}
-              </Pressable>
+          <View style={styles.authorBox}>
+            {resolveImageUrl(post.authorAvatar) ? (
+              <Image source={{ uri: resolveImageUrl(post.authorAvatar)! }} style={styles.postAuthorAvatarImage} />
+            ) : (
+              <View style={styles.postAuthorAvatar}>
+                <Text style={styles.postAuthorInitial}>{post.authorName.charAt(0).toUpperCase()}</Text>
+              </View>
+            )}
+            <View style={styles.postAuthorInfo}>
+              <Text style={styles.postAuthorName}>{post.authorName}</Text>
+              <Text style={styles.postDate}>
+                {new Date(post.createdAt).toLocaleDateString(undefined, { 
+                  weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' 
+                })}
+              </Text>
             </View>
-          )}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.description}>{post.content}</Text>
+          </View>
+
         </ScrollView>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -168,76 +178,80 @@ const styles = StyleSheet.create({
   ...globalStyles.layout,
   ...globalStyles.typography,
   ...globalStyles.components,
-  screen: {
-    flex: 1,
-    backgroundColor: "#FAFAFA",
-  },
+  screen: { flex: 1, backgroundColor: "#FAFAFA" },
   header: {
     flexDirection: "row",
-    alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: "#FAFAFA",
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1A2B4A",
-  },
-  closeBtn: {
-    padding: 8,
-    marginLeft: -8,
-  },
-  content: {
-    padding: 20,
-    gap: 24,
-  },
-  emptyState: {
     alignItems: "center",
-    marginTop: 60,
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    backgroundColor: "#FAFAFA",
+    zIndex: 10,
   },
-  emptyStateTitle: {
-    fontSize: 18,
-    fontWeight: "700",
+  headerActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  iconBtn: {
+    width: 44,
+    height: 44,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F8F9FA", gap: 16 },
+  errorText: { fontSize: 18, color: "#1A2B4A", fontWeight: "700" },
+  backBtnFallback: { paddingHorizontal: 24, paddingVertical: 12, backgroundColor: "#A93C40", borderRadius: 12 },
+  backBtnFallbackText: { color: "#FFFFFF", fontWeight: "700" },
+  
+  content: { 
+    flex: 1,
+  },
+  
+  cardHeader: {
+    paddingHorizontal: 24,
+    marginBottom: 24,
+    marginTop: 16,
+    gap: 12,
+  },
+  title: {
+    fontSize: 26,
+    fontWeight: "800",
     color: "#1A2B4A",
+    lineHeight: 32,
+    letterSpacing: -0.5,
   },
-  card: {
+
+  authorBox: {
     backgroundColor: "#FFFFFF",
     borderRadius: 24,
-    padding: 24,
+    marginHorizontal: 20,
+    padding: 20,
+    gap: 16,
     shadowColor: "#1A2B4A",
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.04,
     shadowRadius: 16,
     elevation: 3,
-  },
-  alertCard: {
-    backgroundColor: "#FEF2F2",
-    shadowColor: "#DC2626",
-    shadowOpacity: 0.06,
-  },
-  postHeader: {
+    marginBottom: 32,
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
-    marginBottom: 20,
   },
+  
   postAuthorAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: "#F0F2F5",
     alignItems: "center",
     justifyContent: "center",
   },
   postAuthorAvatarImage: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
   postAuthorInitial: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "700",
     color: "#1A2B4A",
   },
@@ -250,68 +264,44 @@ const styles = StyleSheet.create({
     color: "#1A2B4A",
   },
   postDate: {
-    fontSize: 13,
+    fontSize: 14,
     color: "#6B7280",
     marginTop: 2,
+    fontWeight: "500",
   },
   categoryBadge: {
     backgroundColor: "#F0F2F5",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
     borderRadius: 12,
+    alignSelf: 'flex-start',
   },
   categoryBadgeText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "700",
     color: "#6B7280",
     textTransform: "uppercase",
   },
   alertBadge: {
-    backgroundColor: "#FEE2E2",
+    backgroundColor: "#FEF2F2",
   },
   alertBadgeText: {
     color: "#DC2626",
   },
-  postTitle: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#1A2B4A",
-    marginBottom: 12,
-    letterSpacing: -0.3,
+  announcementBadge: {
+    backgroundColor: "#FFFBEB",
   },
-  postContent: {
+  announcementBadgeText: {
+    color: "#F59E0B",
+  },
+
+  section: {
+    paddingHorizontal: 24,
+    marginBottom: 32,
+  },
+  description: {
     fontSize: 16,
     color: "#4B5563",
     lineHeight: 26,
-  },
-  actionsContainer: {
-    gap: 12,
-  },
-  editBtn: {
-    backgroundColor: "#1A2B4A",
-    padding: 16,
-    borderRadius: 16,
-    alignItems: "center",
-  },
-  editBtnText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-    fontWeight: "700",
-  },
-  deleteBtn: {
-    backgroundColor: "#FFFFFF",
-    padding: 16,
-    borderRadius: 16,
-    alignItems: "center",
-    shadowColor: "#1A2B4A",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 1,
-  },
-  deleteBtnText: {
-    color: "#DC2626",
-    fontSize: 16,
-    fontWeight: "700",
   },
 });
