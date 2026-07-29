@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState } from "react";
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Pressable, Alert } from "react-native";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Pressable, Alert, Modal, FlatList } from "react-native";
+import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import {  useSafeAreaInsets } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/auth-context";
 import { apiRequest } from "@/lib/api";
@@ -11,6 +11,11 @@ import { hasRole } from "@/lib/permissions";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 
 type Event = {
+  isOnline: string | undefined;
+  reminderMinutes: any;
+  endDate: string | number | Date;
+  endTime: any;
+  isAllDay: any;
   id: string;
   postId: string;
   title: string;
@@ -29,6 +34,7 @@ type Event = {
   goingCount: number;
   maybeCount: number;
   myRsvp: string | null;
+  meetingLink?: string;
 };
 
 type Rsvp = {
@@ -47,26 +53,41 @@ export default function EventDetailScreen() {
   
   const queryClient = useQueryClient();
   const [isRsvping, setIsRsvping] = useState(false);
+  const [isParticipantsModalOpen, setIsParticipantsModalOpen] = useState(false);
 
-  const { data, isLoading } = useQuery({
+  const { data: event, isLoading: isEventLoading } = useQuery({
     queryKey: ['event', id],
     queryFn: async () => {
-      const [eventRes, rsvpsRes] = await Promise.all([
-        apiRequest<{ event: Event }>(`/events/${id}`, {
-          headers: { Authorization: `Bearer ${session?.accessToken}` },
-        }),
-        apiRequest<{ rsvps: Rsvp[] }>(`/events/${id}/rsvps`, {
-          headers: { Authorization: `Bearer ${session?.accessToken}` },
-        })
-      ]);
-      return { event: eventRes.event, rsvps: rsvpsRes.rsvps || [] };
+      const res = await apiRequest<{ event: Event }>(`/events/${id}`, {
+        headers: { Authorization: `Bearer ${session?.accessToken}` },
+      });
+      return res.event;
     },
     enabled: !!session?.accessToken && !!id,
     staleTime: 1000 * 60 * 5,
   });
 
-  const event = data?.event || null;
-  const rsvps = data?.rsvps || [];
+  const {
+    data: rsvpsData,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['event_rsvps', id],
+    queryFn: async ({ pageParam = 1 }) => {
+      const res = await apiRequest<{ rsvps: Rsvp[] }>(`/events/${id}/rsvps?page=${pageParam}&limit=10`, {
+        headers: { Authorization: `Bearer ${session?.accessToken}` },
+      });
+      return res.rsvps || [];
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      return lastPage.length === 10 ? allPages.length + 1 : undefined;
+    },
+    enabled: !!session?.accessToken && !!id,
+    initialPageParam: 1
+  });
+
+  const allRsvps = rsvpsData?.pages.flatMap(page => page) || [];
 
   const rsvpMutation = useMutation({
     mutationFn: async (status: string) => {
@@ -80,6 +101,7 @@ export default function EventDetailScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['event', id] });
       queryClient.invalidateQueries({ queryKey: ['events'] });
+      queryClient.invalidateQueries({ queryKey: ['event_rsvps', id] });
     },
     onError: (err) => {
       console.error("Failed to RSVP:", err);
@@ -123,10 +145,10 @@ export default function EventDetailScreen() {
     ]);
   };
 
-  if (isLoading) {
+  if (isEventLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#A93C40" />
+        <ActivityIndicator size="large" color="#4285F4" />
       </View>
     );
   }
@@ -144,165 +166,272 @@ export default function EventDetailScreen() {
   }
 
   const isOwner = session?.user.id === event.authorId || hasRole(session?.user.roles || [], "admin");
-  const formattedDate = new Date(event.eventDate).toLocaleDateString(undefined, { 
-    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' 
+  
+  const eventDateObj = new Date(event.eventDate);
+  const formattedDate = eventDateObj.toLocaleDateString(undefined, { 
+    weekday: 'short', month: 'short', day: 'numeric' 
   });
-  const formattedTime = event.eventTime?.substring(0, 5);
+  const formattedTime = event.isAllDay ? "All Day" : (event.eventTime?.substring(0, 5) || "");
+
+  let formattedEndDate = formattedDate;
+  let formattedEndTime = event.isAllDay ? "All Day" : (event.endTime?.substring(0, 5) || "");
+  if (event.endDate) {
+    const endObj = new Date(event.endDate);
+    formattedEndDate = endObj.toLocaleDateString(undefined, {
+      weekday: 'short', month: 'short', day: 'numeric'
+    });
+  }
 
   return (
     <View style={styles.screen}>
       <View style={[styles.header, { paddingTop: insets.top + 12 }]}>
         <Pressable onPress={() => router.back()} style={styles.iconBtn}>
-          <IconSymbol name="chevron.left" size={28} color="#1A2B4A" />
+          <IconSymbol name="chevron.left" size={24} color="#374151" />
         </Pressable>
         {isOwner && (
-          <Pressable onPress={handleDelete} style={styles.iconBtn}>
-            <IconSymbol name="trash.fill" size={24} color="#DC2626" />
-          </Pressable>
+          <View style={{ flexDirection: 'row', gap: 12 }}>
+            <Pressable onPress={() => router.push(`/edit-post/${event.id}?type=event`)} style={styles.iconBtn}>
+              <IconSymbol name="pencil" size={20} color="#374151" />
+            </Pressable>
+            <Pressable onPress={handleDelete} style={styles.iconBtn}>
+              <IconSymbol name="trash" size={20} color="#374151" />
+            </Pressable>
+          </View>
         )}
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: Math.max(insets.bottom + 20, 100) }}>
         
-        <View style={styles.cardHeader}>
-          <View style={styles.dateBadge}>
-            <Text style={styles.dateBadgeMonth}>{new Date(event.eventDate).toLocaleDateString(undefined, { month: 'short' }).toUpperCase()}</Text>
-            <Text style={styles.dateBadgeDay}>{new Date(event.eventDate).getDate()}</Text>
-          </View>
-          <View style={styles.titleContainer}>
-            <Text style={styles.title}>{event.title}</Text>
-            <Text style={styles.organizerText}>by {event.authorName}</Text>
-          </View>
+        {/* Title */}
+        <View style={styles.titleSection}>
+          <View style={styles.colorIndicator} />
+          <Text style={styles.title}>{event.title}</Text>
         </View>
 
-        <View style={styles.detailsBox}>
-          <View style={styles.detailRow}>
-            <View style={styles.detailIconBg}>
-              <IconSymbol name="calendar" size={18} color="#A93C40" />
-            </View>
-            <View>
-              <Text style={styles.detailLabel}>When</Text>
-              <Text style={styles.detailValue}>{formattedDate}</Text>
-              <Text style={styles.detailSubValue}>{formattedTime}</Text>
+        {/* Info List */}
+        <View style={styles.infoList}>
+          {/* Time Block */}
+          <View style={styles.infoRow}>
+            <IconSymbol name="clock" size={20} color="#4B5563" />
+            <View style={styles.infoRowContent}>
+              <View style={styles.timeBlock}>
+                <Text style={styles.timeBlockDate}>{formattedDate}</Text>
+                <Text style={styles.timeBlockTime}>{formattedTime}</Text>
+              </View>
+              <IconSymbol name="arrow.right" size={14} color="#9CA3AF" style={{ marginHorizontal: 16 }} />
+              <View style={styles.timeBlock}>
+                <Text style={styles.timeBlockDate}>{formattedEndDate}</Text>
+                <Text style={styles.timeBlockTime}>{formattedEndTime}</Text>
+              </View>
             </View>
           </View>
+          <View style={styles.divider} />
 
-          <View style={styles.detailDivider} />
+          {/* Timezone */}
+          <View style={styles.infoRow}>
+            <IconSymbol name="globe" size={20} color="#4B5563" />
+            <View style={styles.infoRowContent}>
+              <Text style={styles.primaryInfoText}>(GMT+0) Greenwich Mean Time</Text>
+            </View>
+          </View>
+          <View style={styles.divider} />
 
-          {!!event.location && (
+          {/* Organizer */}
+          <View style={styles.infoRow}>
+            <IconSymbol name="calendar.badge.clock" size={20} color="#4B5563" />
+            <View style={styles.infoRowContent}>
+              <Text style={styles.primaryInfoText}>{event.authorName}</Text>
+            </View>
+          </View>
+          <View style={styles.divider} />
+
+          {/* Location / Meeting Link */}
+          {(event.location || event.meetingLink || event.isOnline) && (
             <>
-              <View style={styles.detailRow}>
-                <View style={styles.detailIconBg}>
-                  <IconSymbol name="mappin.and.ellipse" size={18} color="#A93C40" />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.detailLabel}>Where</Text>
-                  <Text style={styles.detailValue}>{event.location}</Text>
+              <View style={styles.infoRow}>
+                <IconSymbol name={event.isOnline ? "video.fill" : "mappin.and.ellipse"} size={20} color="#4B5563" />
+                <View style={styles.infoRowContent}>
+                  <Text style={styles.primaryInfoText}>
+                    {event.isOnline ? "Online Meeting" : (event.location || "Location TBD")}
+                  </Text>
+                  {event.isOnline && event.meetingLink && (
+                     <Text style={[styles.secondaryInfoText, { color: '#2563EB' }]}>{event.meetingLink}</Text>
+                  )}
                 </View>
               </View>
-              <View style={styles.detailDivider} />
+              <View style={styles.divider} />
             </>
           )}
 
-          {!!event.capacity && (
-            <View style={styles.detailRow}>
-              <View style={styles.detailIconBg}>
-                <IconSymbol name="person.3.fill" size={18} color="#A93C40" />
+          {/* Reminder */}
+          {!!event.reminderMinutes && (
+            <>
+              <View style={styles.infoRow}>
+                <IconSymbol name="bell" size={20} color="#4B5563" />
+                <View style={styles.infoRowContent}>
+                  <Text style={styles.primaryInfoText}>{event.reminderMinutes} minutes before</Text>
+                </View>
               </View>
-              <View>
-                <Text style={styles.detailLabel}>Capacity</Text>
-                <Text style={styles.detailValue}>{event.goingCount} / {event.capacity} Attendees</Text>
-              </View>
-            </View>
+              <View style={styles.divider} />
+            </>
           )}
-        </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>About this event</Text>
-          <Text style={styles.description}>{event.content}</Text>
-        </View>
+          {/* Capacity */}
+          {!!event.capacity && (
+            <>
+              <View style={styles.infoRow}>
+                <IconSymbol name="person.3.fill" size={20} color="#4B5563" />
+                <View style={styles.infoRowContent}>
+                  <Text style={styles.primaryInfoText}>{event.goingCount} / {event.capacity} Attendees</Text>
+                </View>
+              </View>
+              <View style={styles.divider} />
+            </>
+          )}
 
-        {event.rsvpEnabled && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Are you going?</Text>
-            <View style={styles.rsvpContainer}>
-              <Pressable 
-                style={[styles.rsvpTile, event.myRsvp === "going" && styles.rsvpTileGoing]}
-                onPress={() => handleRsvp("going")}
-                disabled={isRsvping}
-              >
-                <IconSymbol name="checkmark.circle.fill" size={24} color={event.myRsvp === "going" ? "#FFFFFF" : "#6B7280"} />
-                <Text style={[styles.rsvpTileText, event.myRsvp === "going" && styles.rsvpTileTextActive]}>Going</Text>
-              </Pressable>
-
-              <Pressable 
-                style={[styles.rsvpTile, event.myRsvp === "maybe" && styles.rsvpTileMaybe]}
-                onPress={() => handleRsvp("maybe")}
-                disabled={isRsvping}
-              >
-                <IconSymbol name="questionmark.circle.fill" size={24} color={event.myRsvp === "maybe" ? "#FFFFFF" : "#6B7280"} />
-                <Text style={[styles.rsvpTileText, event.myRsvp === "maybe" && styles.rsvpTileTextActive]}>Maybe</Text>
-              </Pressable>
-
-              <Pressable 
-                style={[styles.rsvpTile, event.myRsvp === "declined" && styles.rsvpTileDeclined]}
-                onPress={() => handleRsvp("declined")}
-                disabled={isRsvping}
-              >
-                <IconSymbol name="xmark.circle.fill" size={24} color={event.myRsvp === "declined" ? "#FFFFFF" : "#6B7280"} />
-                <Text style={[styles.rsvpTileText, event.myRsvp === "declined" && styles.rsvpTileTextActive]}>No</Text>
-              </Pressable>
+          {/* Description */}
+          <View style={styles.infoRow}>
+            <IconSymbol name="text.justifyleft" size={20} color="#4B5563" />
+            <View style={styles.infoRowContent}>
+              <Text style={styles.primaryInfoText}>{event.content}</Text>
             </View>
+          </View>
+        </View>
+
+        {/* Participants Summary Section */}
+        {event.rsvpEnabled && (
+          <View style={styles.participantsSection}>
+            <View style={styles.participantsHeader}>
+              <Text style={styles.participantsTitle}>Guests</Text>
+              <Text style={styles.participantsCounts}>
+                {event.goingCount} yes, {event.maybeCount} maybe
+              </Text>
+            </View>
+            
+            <View style={styles.avatarsRow}>
+              {allRsvps.slice(0, 5).map((rsvp, idx) => (
+                <View key={rsvp.userId + idx} style={[styles.miniAvatar, { zIndex: 10 - idx, marginLeft: idx > 0 ? -12 : 0 }]}>
+                  <Text style={styles.miniAvatarText}>{rsvp.fullName.charAt(0).toUpperCase()}</Text>
+                </View>
+              ))}
+              {allRsvps.length > 5 && (
+                <View style={[styles.miniAvatar, styles.miniAvatarMore, { zIndex: 0, marginLeft: -12 }]}>
+                  <Text style={styles.miniAvatarMoreText}>+{allRsvps.length - 5}</Text>
+                </View>
+              )}
+              {allRsvps.length === 0 && (
+                <Text style={{ color: '#6B7280', fontStyle: 'italic', fontSize: 14 }}>No guests yet.</Text>
+              )}
+            </View>
+            
+            {allRsvps.length > 0 && (
+              <Pressable onPress={() => setIsParticipantsModalOpen(true)} style={styles.viewMoreBtn}>
+                <Text style={styles.viewMoreBtnText}>View more</Text>
+                <IconSymbol name="chevron.right" size={16} color="#4285F4" />
+              </Pressable>
+            )}
           </View>
         )}
 
-        <View style={styles.section}>
-          <View style={styles.attendeesHeaderRow}>
-            <Text style={styles.sectionTitle}>Attendees ({event.goingCount})</Text>
-          </View>
+      </ScrollView>
 
-          {rsvps.length === 0 ? (
-            <View style={styles.emptyAttendees}>
-              <IconSymbol name="person.3.fill" size={32} color="#D1D5DB" />
-              <Text style={styles.emptyAttendeesText}>No attendees yet.</Text>
-            </View>
+      {/* Floating Bottom Bar */}
+      <View style={[styles.bottomBarContainer, { paddingBottom: Math.max(insets.bottom, 16) + 24 }]}>
+        <View style={styles.bottomBar}>
+          {event.rsvpEnabled ? (
+            <>
+              <Pressable 
+                style={styles.bottomBarAction}
+                onPress={() => handleRsvp("going")}
+              >
+                <IconSymbol name="checkmark" size={22} color={event.myRsvp === "going" ? "#10B981" : "#6B7280"} />
+                <Text style={[styles.bottomBarActionText, event.myRsvp === "going" && { color: "#10B981" }]}>Going</Text>
+              </Pressable>
+              <Pressable 
+                style={styles.bottomBarAction}
+                onPress={() => handleRsvp("maybe")}
+              >
+                <IconSymbol name="questionmark" size={22} color={event.myRsvp === "maybe" ? "#F59E0B" : "#6B7280"} />
+                <Text style={[styles.bottomBarActionText, event.myRsvp === "maybe" && { color: "#F59E0B" }]}>Maybe</Text>
+              </Pressable>
+              <Pressable 
+                style={styles.bottomBarAction}
+                onPress={() => handleRsvp("declined")}
+              >
+                <IconSymbol name="xmark" size={22} color={event.myRsvp === "declined" ? "#EF4444" : "#6B7280"} />
+                <Text style={[styles.bottomBarActionText, event.myRsvp === "declined" && { color: "#EF4444" }]}>No</Text>
+              </Pressable>
+            </>
           ) : (
-            <View style={styles.attendeesList}>
-              {rsvps.map((rsvp, idx) => (
-                <View key={rsvp.userId + idx} style={styles.attendeeRow}>
-                  <View style={styles.attendeeAvatar}>
-                    <Text style={styles.attendeeAvatarText}>{rsvp.fullName.charAt(0).toUpperCase()}</Text>
-                  </View>
-                  <View style={styles.attendeeInfo}>
-                    <Text style={styles.attendeeName}>{rsvp.fullName}</Text>
-                    <Text style={[
-                      styles.attendeeStatus, 
-                      rsvp.status === "going" ? { color: "#10B981" } : 
-                      rsvp.status === "maybe" ? { color: "#F59E0B" } : { color: "#EF4444" }
-                    ]}>
-                      {rsvp.status.toUpperCase()}
-                    </Text>
-                  </View>
-                </View>
-              ))}
+            <View style={{ flex: 1, alignItems: 'center' }}>
+              <Text style={{ color: '#6B7280', fontSize: 14 }}>RSVP is disabled for this event</Text>
             </View>
           )}
         </View>
+      </View>
 
-      </ScrollView>
+      {/* Participants Modal */}
+      <Modal
+        visible={isParticipantsModalOpen}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setIsParticipantsModalOpen(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={[styles.modalHeader, { paddingTop: insets.top + 16 }]}>
+            <Text style={styles.modalTitle}>Guests</Text>
+            <Pressable onPress={() => setIsParticipantsModalOpen(false)} style={styles.modalCloseBtn}>
+              <IconSymbol name="xmark" size={24} color="#111827" />
+            </Pressable>
+          </View>
+          
+          <FlatList
+            data={allRsvps}
+            keyExtractor={(item, index) => item.userId + index}
+            contentContainerStyle={styles.modalListContent}
+            renderItem={({ item }) => (
+              <View style={styles.attendeeRow}>
+                <View style={styles.attendeeAvatar}>
+                  <Text style={styles.attendeeAvatarText}>{item.fullName.charAt(0).toUpperCase()}</Text>
+                </View>
+                <View style={styles.attendeeInfo}>
+                  <Text style={styles.attendeeName}>{item.fullName}</Text>
+                  <Text style={[
+                    styles.attendeeStatus, 
+                    item.status === "going" ? { color: "#10B981" } : 
+                    item.status === "maybe" ? { color: "#F59E0B" } : { color: "#EF4444" }
+                  ]}>
+                    {item.status.toUpperCase()}
+                  </Text>
+                </View>
+              </View>
+            )}
+            onEndReached={() => {
+              if (hasNextPage && !isFetchingNextPage) {
+                fetchNextPage();
+              }
+            }}
+            onEndReachedThreshold={0.5}
+            ListFooterComponent={() => (
+              isFetchingNextPage ? <ActivityIndicator style={{ padding: 16 }} /> : null
+            )}
+          />
+        </View>
+      </Modal>
+
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: "#FAFAFA" },
+  screen: { flex: 1, backgroundColor: "#FFFFFF" },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
     paddingBottom: 12,
-    backgroundColor: "#FAFAFA",
+    backgroundColor: "#FFFFFF",
     zIndex: 10,
   },
   iconBtn: {
@@ -311,165 +440,217 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F8F9FA", gap: 16 },
-  errorText: { fontSize: 18, color: "#1A2B4A", fontWeight: "700" },
-  backBtnFallback: { paddingHorizontal: 24, paddingVertical: 12, backgroundColor: "#A93C40", borderRadius: 12 },
-  backBtnFallbackText: { color: "#FFFFFF", fontWeight: "700" },
+  loadingContainer: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#FFFFFF", gap: 16 },
+  errorText: { fontSize: 18, color: "#374151", fontWeight: "600" },
+  backBtnFallback: { paddingHorizontal: 24, paddingVertical: 12, backgroundColor: "#F3F4F6", borderRadius: 12 },
+  backBtnFallbackText: { color: "#374151", fontWeight: "600" },
   
   content: { 
     flex: 1,
   },
   
-  cardHeader: {
+  titleSection: {
     flexDirection: "row",
+    alignItems: "flex-start",
     paddingHorizontal: 24,
-    gap: 16,
-    marginBottom: 24,
-    marginTop: 16,
+    paddingVertical: 16,
+    gap: 12,
   },
-  dateBadge: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 16,
-    width: 64,
-    height: 72,
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#1A2B4A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  dateBadgeMonth: { fontSize: 13, fontWeight: "800", color: "#A93C40", marginBottom: 2 },
-  dateBadgeDay: { fontSize: 24, fontWeight: "800", color: "#1A2B4A" },
-  titleContainer: {
-    flex: 1,
-    justifyContent: "center",
+  colorIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#EA4335", // Red/orange color
+    marginTop: 8,
   },
   title: {
-    fontSize: 26,
-    fontWeight: "800",
-    color: "#1A2B4A",
+    fontSize: 24,
+    color: "#1F2937",
+    fontWeight: "400",
+    flex: 1,
     lineHeight: 32,
-    letterSpacing: -0.5,
-  },
-  organizerText: {
-    fontSize: 15,
-    fontWeight: "500",
-    color: "#6B7280",
-    marginTop: 4,
   },
 
-  detailsBox: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 24,
-    marginHorizontal: 20,
-    padding: 24,
-    gap: 16,
-    shadowColor: "#1A2B4A",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.04,
-    shadowRadius: 16,
-    elevation: 3,
-    marginBottom: 32,
+  infoList: {
+    paddingHorizontal: 24,
   },
-  detailRow: {
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    paddingVertical: 16,
+    gap: 16,
+  },
+  infoRowContent: {
+    flex: 1,
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
   },
-  detailIconBg: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: "#FEF2F2",
+  primaryInfoText: {
+    fontSize: 16,
+    color: "#1F2937",
+    lineHeight: 24,
+  },
+  secondaryInfoText: {
+    fontSize: 14,
+    color: "#6B7280",
+    marginTop: 2,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#F3F4F6",
+    marginLeft: 36,
+  },
+
+  timeBlock: {
+    flex: 1,
+  },
+  timeBlockDate: {
+    fontSize: 16,
+    color: "#1F2937",
+    marginBottom: 4,
+  },
+  timeBlockTime: {
+    fontSize: 14,
+    color: "#4B5563",
+  },
+
+  participantsSection: {
+    marginTop: 24,
+    paddingHorizontal: 24,
+  },
+  participantsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  participantsTitle: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1F2937",
+  },
+  participantsCounts: {
+    fontSize: 14,
+    color: "#6B7280",
+  },
+  avatarsRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  miniAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "#F3F4F6",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
   },
-  detailLabel: { fontSize: 13, color: "#9BA3AE", fontWeight: "600", marginBottom: 2 },
-  detailValue: { fontSize: 16, fontWeight: "700", color: "#1A2B4A" },
-  detailSubValue: { fontSize: 14, color: "#6B7280", marginTop: 2 },
-  detailDivider: { height: 1, backgroundColor: "#F0F2F5", marginLeft: 64 },
-
-  section: {
-    paddingHorizontal: 24,
-    marginBottom: 32,
+  miniAvatarText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#374151",
   },
-  sectionTitle: { fontSize: 20, fontWeight: "800", color: "#1A2B4A", marginBottom: 16 },
-  description: {
-    fontSize: 16,
-    color: "#4B5563",
-    lineHeight: 26,
+  miniAvatarMore: {
+    backgroundColor: "#E5E7EB",
   },
-  
-  rsvpContainer: {
+  miniAvatarMoreText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#374151",
+  },
+  viewMoreBtn: {
     flexDirection: "row",
-    gap: 12,
+    alignItems: "center",
+    marginTop: 16,
+    gap: 4,
   },
-  rsvpTile: {
+  viewMoreBtnText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#4285F4",
+  },
+
+  bottomBarContainer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    alignItems: "center",
+    paddingHorizontal: 16,
+    backgroundColor: "transparent",
+  },
+  bottomBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 100, // Fully rounded pill shape
+    paddingVertical: 8,
+    paddingHorizontal: 24,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 8,
+    width: "100%",
+    maxWidth: 320,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
+  },
+  bottomBarAction: {
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 4,
+    paddingHorizontal: 12,
+  },
+  bottomBarActionText: {
+    fontSize: 11,
+    fontWeight: "400",
+    color: "#6B7280",
+  },
+
+  modalContainer: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 16,
-    alignItems: "center",
-    gap: 8,
-    shadowColor: "#1A2B4A",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 1,
   },
-  rsvpTileGoing: { backgroundColor: "#10B981" },
-  rsvpTileMaybe: { backgroundColor: "#F59E0B" },
-  rsvpTileDeclined: { backgroundColor: "#EF4444" },
-  rsvpTileText: { fontSize: 14, fontWeight: "700", color: "#4B5563" },
-  rsvpTileTextActive: { color: "#FFFFFF" },
-  
-  attendeesHeaderRow: {
+  modalHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    marginBottom: 16,
-  },
-  emptyAttendees: {
-    padding: 32,
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    shadowColor: "#1A2B4A",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.03,
-    shadowRadius: 8,
-    elevation: 1,
-    gap: 12,
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
   },
-  emptyAttendeesText: { color: "#9BA3AE", fontWeight: "500", fontSize: 15 },
-  attendeesList: { 
-    backgroundColor: "#FFFFFF",
-    borderRadius: 24,
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: "#111827",
+  },
+  modalCloseBtn: {
+    padding: 4,
+  },
+  modalListContent: {
     padding: 20,
-    gap: 16,
-    shadowColor: "#1A2B4A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.02,
-    shadowRadius: 12,
-    elevation: 2,
   },
   attendeeRow: {
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    marginBottom: 16,
   },
   attendeeAvatar: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#F0F2F5",
+    backgroundColor: "#F3F4F6",
     alignItems: "center",
     justifyContent: "center",
   },
-  attendeeAvatarText: { fontSize: 16, fontWeight: "800", color: "#1A2B4A" },
+  attendeeAvatarText: { fontSize: 16, fontWeight: "600", color: "#374151" },
   attendeeInfo: { flex: 1 },
-  attendeeName: { fontSize: 16, fontWeight: "700", color: "#1A2B4A" },
-  attendeeStatus: { fontSize: 13, fontWeight: "800", marginTop: 2 },
+  attendeeName: { fontSize: 16, fontWeight: "500", color: "#111827" },
+  attendeeStatus: { fontSize: 13, fontWeight: "600", marginTop: 2 },
 });
