@@ -37,6 +37,7 @@ const MAPPING = {
   'calendar': 'event',
   'calendar.badge.clock': 'event-available',
   'chevron.down': 'keyboard-arrow-down',
+  'chevron.up': 'keyboard-arrow-up',
   'phone.fill': 'phone',
   'envelope.fill': 'email',
   'message.fill': 'chat',
@@ -103,6 +104,18 @@ const MAPPING = {
   'square.and.arrow.up': 'share',
   'arrow.triangle.2.circlepath': 'sync',
   'folder.fill': 'folder',
+  'clock': 'access-time',
+  'link': 'link',
+  'bell': 'notifications-none',
+  'text.alignleft': 'format-align-left',
+  'bubble.left.and.bubble.right.fill': 'forum',
+  'calendar.badge.plus': 'event-note',
+  'calendar.badge.clock': 'event',
+  'text.justifyleft': 'format-align-left',
+  'arrow.right': 'arrow-forward',
+  'trash': 'delete-outline',
+  'checkmark': 'check',
+  'questionmark': 'help-outline',
 };
 
 export type IconSymbolName = keyof typeof MAPPING;
