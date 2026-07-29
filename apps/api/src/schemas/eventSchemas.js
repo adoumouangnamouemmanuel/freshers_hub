@@ -22,9 +22,23 @@ const createEventSchema = z.object({
   endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)(:([0-5]\d))?$/, "Invalid time format (HH:MM)").optional().nullable(),
   isAllDay: z.boolean().optional().default(false),
   isOnline: z.boolean().optional().default(false),
-  meetingLink: z.string().max(500, "Meeting link is too long").optional().nullable(),
+  meetingLink: z.string().url("Meeting link must be a valid URL").max(500, "Meeting link is too long").optional().nullable(),
   reminderMinutes: z.number().int().min(0).optional().nullable(),
-});
+})
+  // BUG-14 fix: Ensure endDate is not before eventDate
+  .refine(data => {
+    if (data.endDate && data.eventDate) {
+      return data.endDate >= data.eventDate;
+    }
+    return true;
+  }, { message: "End date must be on or after the event date", path: ["endDate"] })
+  // BUG-15 fix: meetingLink is required when isOnline is true
+  .refine(data => {
+    if (data.isOnline) {
+      return !!(data.meetingLink && data.meetingLink.trim());
+    }
+    return true;
+  }, { message: "A meeting link is required for online events", path: ["meetingLink"] });
 
 const updateEventSchema = z.object({
   title: z.string().min(3, "Title must be at least 3 characters").max(100, "Title is too long").optional(),
@@ -42,10 +56,24 @@ const updateEventSchema = z.object({
   endTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)(:([0-5]\d))?$/, "Invalid time format (HH:MM)").optional().nullable(),
   isAllDay: z.boolean().optional().nullable(),
   isOnline: z.boolean().optional().nullable(),
-  meetingLink: z.string().max(500, "Meeting link is too long").optional().nullable(),
+  meetingLink: z.string().url("Meeting link must be a valid URL").max(500, "Meeting link is too long").optional().nullable(),
   reminderMinutes: z.number().int().min(0).optional().nullable(),
   targetGroupIds: z.array(uuidSchema).optional().nullable(),
-});
+})
+  // BUG-14 fix: Ensure endDate is not before eventDate when both are provided in an update
+  .refine(data => {
+    if (data.endDate && data.eventDate) {
+      return data.endDate >= data.eventDate;
+    }
+    return true;
+  }, { message: "End date must be on or after the event date", path: ["endDate"] })
+  // BUG-15 fix: meetingLink is required when explicitly setting isOnline to true
+  .refine(data => {
+    if (data.isOnline === true) {
+      return !!(data.meetingLink && data.meetingLink.trim());
+    }
+    return true;
+  }, { message: "A meeting link is required for online events", path: ["meetingLink"] });
 
 const rsvpSchema = z.object({
   status: z.enum(["going", "maybe", "declined"], {
@@ -56,7 +84,10 @@ const rsvpSchema = z.object({
 const getEventsQuerySchema = z.object({
   page: z.string().regex(/^\d+$/).transform(Number).default("1"),
   limit: z.string().regex(/^\d+$/).transform(Number).default("50"),
-  status: eventStatusSchema.optional().default("scheduled"),
+  status: eventStatusSchema.optional(),
+  // BUG-08 support: optional date range filters (ISO date strings YYYY-MM-DD)
+  dateFrom: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+  dateTo: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
 });
 
 module.exports = {
@@ -65,4 +96,5 @@ module.exports = {
   rsvpSchema,
   getEventsQuerySchema,
   uuidSchema,
+  eventStatusSchema,
 };
