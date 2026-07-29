@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
+import { router } from 'expo-router';
 
 /* 
  * ============================================================================
@@ -126,7 +127,16 @@ export function usePushNotifications(accessToken: string | undefined) {
     });
 
     responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-      console.log(response);
+      console.log("Notification tapped!", response);
+      const data = response.notification.request.content.data;
+      if (data && data.relatedEntity) {
+        const [type, id] = (data.relatedEntity as string).split(':');
+        if (type === 'post') router.push(`/post/${id}`);
+        else if (type === 'event') router.push(`/event/${id}`);
+        else router.push('/notifications');
+      } else {
+        router.push('/notifications');
+      }
     });
 
     return () => {
