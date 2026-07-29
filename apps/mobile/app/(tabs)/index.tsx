@@ -24,6 +24,7 @@ import { useEffect, useState } from "react";
 import Animated, { FadeInDown } from "react-native-reanimated";
 import { PostCard } from "@/components/dashboard/PostCard";
 import { useQuery, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+
 // import AsyncStorage from "@react-native-async-storage/async-storage";
 
 type Post = {
@@ -108,6 +109,8 @@ export default function FeedScreen() {
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+  const [isFabExpanded, setIsFabExpanded] = useState(false);
+
 
   // Role Checks
   const userClassYear = Number(session?.user?.classYear || session?.user?.studentProfile?.graduationYear);
@@ -214,9 +217,6 @@ export default function FeedScreen() {
     if (hour < 18) return "Good afternoon";
     return "Good evening";
   };
-
-  const allowedRoles = ["staff", "faculty", "student_leader", "admin", "club_lead", "advisor", "peer_coach", "coach_admin"];
-  const canPost = allowedRoles.some((roleName) => hasRole(session?.user.roles || [], roleName));
 
   const categories = ["All", "Announcement", "Event", "Alert"];
 
@@ -545,17 +545,7 @@ export default function FeedScreen() {
              </Animated.View>
            )}
 
-          {/* QUICK POST SECTION */}
-          {canPostFromHome && (
-             <View style={[styles.cardsStack, { marginTop: (isCoachAdmin && !isPeerCoach) || isAdvisor ? 0 : 12 }]}>
-                <Link href="/new-post" asChild>
-                  <Pressable style={styles.quickPostCard}>
-                    <IconSymbol name="plus" size={20} color="#4338CA" />
-                    <Text style={styles.quickPostText}>Post an announcement</Text>
-                  </Pressable>
-                </Link>
-             </View>
-          )}
+
         </View>
 
         {/* General Feed Section */}
@@ -613,6 +603,56 @@ export default function FeedScreen() {
           ) : null
         }
       />
+
+      {/* Expandable FAB for Creating Content */}
+      {isCoachAdmin && (
+        <>
+          {/* Overlay when expanded */}
+          {isFabExpanded && (
+            <Pressable 
+              style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 90 }]} 
+              onPress={() => setIsFabExpanded(false)} 
+            />
+          )}
+          
+          <Animated.View entering={FadeInDown.delay(500).duration(500)} style={[styles.fabContainer, { bottom: insets.bottom + 24, zIndex: 100 }]}>
+            {/* Options */}
+            {isFabExpanded && (
+              <View style={styles.fabOptionsContainer}>
+                {[
+                  { name: "Discussion", icon: "bubble.left.and.bubble.right.fill" },
+                  { name: "Alert", icon: "exclamationmark.triangle.fill" },
+                  { name: "Announcement", icon: "megaphone.fill" },
+                  { name: "Event", icon: "calendar.badge.plus" },
+                ].map((option, index) => (
+                  <Animated.View key={option.name} entering={FadeInDown.delay(index * 40).duration(200)}>
+                    <Pressable
+                      style={styles.fabOptionPill}
+                      onPress={() => {
+                        setIsFabExpanded(false);
+                        router.push({ pathname: "/new-post", params: { category: option.name } } as any);
+                      }}
+                    >
+                      <IconSymbol name={option.icon as any} size={18} color="#2F3C5F" />
+                      <Text style={styles.fabOptionPillText}>{option.name}</Text>
+                    </Pressable>
+                  </Animated.View>
+                ))}
+              </View>
+            )}
+
+            {/* Main FAB */}
+            <Pressable
+              style={({ pressed }) => [styles.fab, pressed && styles.fabPressed, isFabExpanded && styles.fabActive]}
+              onPress={() => setIsFabExpanded(!isFabExpanded)}
+            >
+              <IconSymbol name={isFabExpanded ? "xmark" : "plus"} size={24} color="#FFFFFF" />
+            </Pressable>
+          </Animated.View>
+        </>
+      )}
+      
+
     </SafeAreaView>
   );
 }
@@ -1445,5 +1485,54 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     color: '#4338CA',
+  },
+  fabContainer: {
+    position: "absolute",
+    right: 24,
+    alignItems: "flex-end",
+  },
+  fabOptionsContainer: {
+    marginBottom: 16,
+    gap: 12,
+    alignItems: "flex-end",
+  },
+  fabOptionPill: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#E4E6FB", 
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 24,
+    gap: 10,
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  fabOptionPillText: {
+    fontSize: 15,
+    fontWeight: "600",
+    color: "#2F3C5F",
+  },
+  fab: {
+    backgroundColor: "#1A2B4A",
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#1A2B4A",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  fabActive: {
+    backgroundColor: "#DC2626",
+  },
+  fabPressed: {
+    transform: [{ scale: 0.92 }],
+    opacity: 0.9,
   },
 });
