@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, View, Text, Image } from 'react-native'; 
+import { Pressable, View, Text, Image, Alert } from 'react-native'; 
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/context/auth-context';
 import { IconSymbol } from '@/components/ui/icon-symbol';
@@ -37,17 +37,22 @@ export function PostCard({ post, onUpdate }: { post: Post; onUpdate: () => void 
         body: JSON.stringify({ status }),
       });
       onUpdate();
-    } catch (err) {
-      console.error("Failed to RSVP:", err);
+    } catch (err: any) {
+      // BUG-12 fix: Show user-facing alert instead of silently logging
+      Alert.alert(
+        "Could not RSVP",
+        err?.message || "Something went wrong. Please try again.",
+        [{ text: "OK" }]
+      );
     } finally {
       setIsRsvping(false);
     }
   };
 
   const getRsvpLabel = () => {
-    if (post.myRsvp === 'going') return 'Going';
+    if (post.myRsvp === 'going') return 'Going ✓';
     if (post.myRsvp === 'maybe') return 'Maybe';
-    if (post.myRsvp === 'declined') return 'No';
+    if (post.myRsvp === 'declined') return 'Not going';
     return 'RSVP';
   };
 
@@ -136,14 +141,32 @@ export function PostCard({ post, onUpdate }: { post: Post; onUpdate: () => void 
               {post.goingCount || 0} attending
             </Text>
             {post.rsvpEnabled && (
+              // BUG-11 fix: Three buttons (Going / Maybe / Decline) instead of
+              // a single binary toggle so users can set all three states from the feed.
               <View style={styles.rsvpActions}>
                 <Pressable
-                  style={[styles.rsvpBtn, getRsvpStyle()]}
-                  onPress={() => handleRsvp(post.myRsvp === "going" ? "declined" : "going")}
+                  style={[
+                    styles.rsvpBtn,
+                    post.myRsvp === 'going' ? { backgroundColor: '#D1FAE5' } : {}
+                  ]}
+                  onPress={() => handleRsvp(post.myRsvp === 'going' ? 'declined' : 'going')}
                   disabled={isRsvping}
                 >
-                  <Text style={[styles.rsvpBtnText, getRsvpTextStyle()]}>
-                    {getRsvpLabel()}
+                  <Text style={[styles.rsvpBtnText, post.myRsvp === 'going' ? { color: '#059669' } : {}]}>
+                    {post.myRsvp === 'going' ? 'Going ✓' : 'Going'}
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  style={[
+                    styles.rsvpBtn,
+                    post.myRsvp === 'maybe' ? { backgroundColor: '#FEF3C7' } : {}
+                  ]}
+                  onPress={() => handleRsvp(post.myRsvp === 'maybe' ? 'declined' : 'maybe')}
+                  disabled={isRsvping}
+                >
+                  <Text style={[styles.rsvpBtnText, post.myRsvp === 'maybe' ? { color: '#D97706' } : {}]}>
+                    Maybe
                   </Text>
                 </Pressable>
               </View>
