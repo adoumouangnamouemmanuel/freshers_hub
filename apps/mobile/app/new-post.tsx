@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react"; // BUG-09 fix: added useMemo
 import { 
   View, 
   Text, 
@@ -101,6 +101,8 @@ export default function NewPostScreen() {
       return res.locations || [];
     },
     enabled: !!session?.accessToken,
+    // BUG-24 fix: Campus locations are static — don't re-fetch on every mount
+    staleTime: 1000 * 60 * 60,
   });
 
   useEffect(() => {
@@ -157,6 +159,8 @@ export default function NewPostScreen() {
       } else {
         if (!selectedLocation.trim()) return false;
       }
+      // BUG-20 fix: Match server-side content.min(5) requirement
+      if (content.trim().length > 0 && content.trim().length < 5) return false;
     } else {
       if (!content.trim()) return false;
     }
