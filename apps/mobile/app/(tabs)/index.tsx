@@ -1,5 +1,4 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-import { useRouter , Link } from "expo-router";
+import { useRouter, Link } from "expo-router";
 import {
   Pressable,
   ScrollView,
@@ -7,25 +6,33 @@ import {
   View,
   ActivityIndicator,
   RefreshControl,
-  Image,
   StyleSheet,
   FlatList,
   TextInput
 } from "react-native"; 
-import globalStyles from '../../styles';
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-
-import { useAuth } from "@/context/auth-context";
-import { IconSymbol } from "@/components/ui/icon-symbol";
-import { apiRequest, API_URL } from "@/lib/api";
-import { hasRole } from "@/lib/permissions";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import Animated, { FadeInDown } from "react-native-reanimated";
-import { PostCard } from "@/components/dashboard/PostCard";
 import { useQuery, useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
 
-// import AsyncStorage from "@react-native-async-storage/async-storage";
+import globalStyles from '../../styles';
+import { useAuth } from "@/context/auth-context";
+import { IconSymbol } from "@/components/ui/icon-symbol";
+import { apiRequest } from "@/lib/api";
+import { hasRole } from "@/lib/permissions";
+import { PostCard } from "@/components/dashboard/PostCard";
+
+// New Foundation Components
+import { DynamicHeader } from "@/components/homescreen/DynamicHeader";
+import { DashboardSkeleton } from "@/components/homescreen/SkeletonLoader";
+
+// Role Components
+import { FresherHomeScreen } from "@/components/homescreen/roles/FresherHomeScreen";
+import { ContinuingStudentHomeScreen } from "@/components/homescreen/roles/ContinuingStudentHomeScreen";
+import { CoachHomeScreen } from "@/components/homescreen/roles/CoachHomeScreen";
+import { AdvisorHomeScreen } from "@/components/homescreen/roles/AdvisorHomeScreen";
+import { CoachAdminHomeScreen } from "@/components/homescreen/roles/CoachAdminHomeScreen";
 
 type Post = {
   id: string;
@@ -50,59 +57,10 @@ type Post = {
   myRsvp?: string;
 };
 
-// New Types for DB integration
-type CoachAssignment = { id: string; peer_coach_id: string; coach_name: string; avatar_url: string | null; };
-type BuddyPairing = { id: string; buddy_id: string; buddy_name: string; avatar_url: string | null; };
-type AssignedFresher = { id: string; fresher_id: string; fresher_name: string; avatar_url: string | null; };
-type Group = { id: string; name: string; image_url: string | null; isLeader: boolean; member_count?: number; category?: string; };
-type Session = { id: string; title: string; session_date?: string; start_time?: string; status: string; provider_id?: string; date?: string; scheduled_at?: string; };
-type AdminStats = { 
-  unassigned_freshers?: number; 
-  total_freshers?: number;
-  upcoming_sessions_count?: number;
-  completed_mandatory_sessions?: number;
-  active_coaches?: number;
-};
-
-const resolveImageUrl = (url?: string | null): string | null => {
-  if (!url) return null;
-  if (url.startsWith('http')) return url;
-  return `${API_URL}${url}`;
-};
-
-function NotificationBell() {
-  const router = useRouter();
-  const { session } = useAuth();
-  
-  const { data: unreadData } = useQuery({
-    queryKey: ['notifications', 'unread-count'],
-    queryFn: async () => {
-      const headers = { Authorization: `Bearer ${session?.accessToken}` };
-      return apiRequest<{ unreadCount: number }>("/notifications/unread-count", { headers });
-    },
-    enabled: !!session?.accessToken,
-    refetchInterval: 60000, // 60 seconds polling
-  });
-  
-  const unreadCount = unreadData?.unreadCount || 0;
-
-  return (
-    <Pressable style={styles.iconBtn} onPress={() => router.push("/notifications")}>
-      <IconSymbol name="bell.fill" size={22} color="#1A2B4A" />
-      {unreadCount > 0 && (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{unreadCount > 99 ? "99+" : unreadCount}</Text>
-        </View>
-      )}
-    </Pressable>
-  );
-}
-
 export default function FeedScreen() {
   const router = useRouter();
   const { session } = useAuth();
   const insets = useSafeAreaInsets();
-
   const queryClient = useQueryClient();
 
   const [refreshing, setRefreshing] = useState(false);
@@ -111,27 +69,27 @@ export default function FeedScreen() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [isFabExpanded, setIsFabExpanded] = useState(false);
 
-
   // Role Checks
   const userClassYear = Number(session?.user?.classYear || session?.user?.studentProfile?.graduationYear);
   const { isUserFresher } = require("@/lib/fresherUtils");
-  const isFresher = isUserFresher(userClassYear);
   
+  const isFresher = isUserFresher(userClassYear);
   const roles = session?.user.roles || [];
   
   const isPeerCoach = hasRole(roles, "peer_coach");
   const isPeerCounsellor = hasRole(roles, "peer_counsellor");
   const isCounsellor = hasRole(roles, "counsellor");
-  const isClubLead = hasRole(roles, "club_lead");
   const isAdmin = hasRole(roles, "admin");
   const isCoachAdmin = hasRole(roles, "coach_admin") || isAdmin;
-  const isStaff = hasRole(roles, "staff") || hasRole(roles, "faculty");
   const isAdvisor = hasRole(roles, "advisor");
+  const isClubLead = hasRole(roles, "club_lead");
   const isStudentLeader = hasRole(roles, "student_leader");
   
-  const canPostFromHome = isAdvisor || isCounsellor || isCoachAdmin || isAdmin || isStudentLeader || isPeerCoach;
-  
-  const isContinuingStudent = !isFresher && !isStaff && !isCoachAdmin && !isAdmin && !isPeerCoach && !isPeerCounsellor && !isClubLead && !isAdvisor && !isCounsellor && !isStudentLeader;
+  // A continuing student is anyone who is not a fresher and not staff/faculty/admin/advisor
+  const isContinuingStudent = !isFresher && !roles.some(r => {
+    const roleName = typeof r === 'string' ? r : r.name;
+    return roleName ? ["staff", "faculty", "coach_admin", "admin", "advisor", "counsellor"].includes(roleName) : false;
+  });
 
   // Debounce search query
   useEffect(() => {
@@ -148,7 +106,8 @@ export default function FeedScreen() {
       return apiRequest<any>("/home/dashboard", { headers });
     },
     enabled: !!session?.accessToken,
-    staleTime: 1000 * 60 * 5,
+    // Reduced staleTime to 30 seconds to keep data (like session counts) fresh
+    staleTime: 1000 * 30, 
   });
 
   const {
@@ -196,32 +155,17 @@ export default function FeedScreen() {
     setRefreshing(false);
   };
 
-  const myGroups: Group[] = dashboardData?.groups || [];
-  const assignedCoaches = dashboardData?.fresherData?.assignedCoaches || [];
-  const assignedBuddy = dashboardData?.fresherData?.assignedBuddy || null;
-  const assignedFreshers: AssignedFresher[] = dashboardData?.coachData?.assignedFreshers || [];
-  const upcomingSessions = dashboardData?.sessions?.upcoming || [];
-  const overdueSessions = dashboardData?.sessions?.overdue || [];
-  const adminStats = dashboardData?.adminStats || null;
-  const advisingData = dashboardData?.advisingStats || null;
-  const counsellingData = dashboardData?.counsellingStats || null;
-
   const isLoading = isLoadingDashboard || isLoadingPosts;
-
-  const firstName = session?.user.fullName?.split(" ")[0] ?? "there";
-  const userInitial = session?.user.fullName?.charAt(0).toUpperCase() ?? "?";
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return "Good morning";
-    if (hour < 18) return "Good afternoon";
-    return "Good evening";
-  };
-
   const categories = ["All", "Announcement", "Event", "Alert"];
 
-  const nextSession = upcomingSessions.length > 0 ? upcomingSessions[0] : null;
-  const myLedClubs = myGroups.filter((g: any) => g.isLeader);
+  if (isLoading && !dashboardData && !refreshing) {
+    return (
+      <SafeAreaView style={styles.screen} edges={["top"]}>
+        <StatusBar style="dark" />
+        <DashboardSkeleton />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
@@ -237,365 +181,94 @@ export default function FeedScreen() {
         onEndReachedThreshold={0.5}
         ListHeaderComponent={
           <>
-        {/* Dynamic Personal Greeting Header */}
-        <View style={styles.personalHeader}>
-          <View style={styles.greetingRow}>
-            <Pressable style={styles.headerAvatarLarge} onPress={() => router.push("/profile")}>
-              {resolveImageUrl(session?.user.avatarUrl) ? (
-                <Image source={{ uri: resolveImageUrl(session?.user.avatarUrl)! }} style={styles.headerAvatarImage} />
-              ) : (
-                <Text style={styles.headerAvatarLargeText}>{userInitial}</Text>
-              )}
-            </Pressable>
-            <View>
-              <Text style={styles.greetingTime}>{getGreeting()},</Text>
-              <Text style={styles.greetingName}>{firstName}</Text>
-            </View>
-          </View>
-          
-          <View style={styles.headerActions}>
-            <Pressable style={styles.iconBtn} onPress={() => router.push("/search")}>
-              <IconSymbol name="magnifyingglass" size={22} color="#1A2B4A" />
-            </Pressable>
-            <NotificationBell />
-          </View>
-        </View>
+            <DynamicHeader />
 
-        {/* Personalized "What matters right now" Section */}
-        <View style={styles.personalSection}>
-          
-          {/* FRESHER CARDS */}
-          {isFresher && (
-            <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.premiumDashboardContainer}>
-              <Text style={styles.premiumTitle}>Your Support Team</Text>
+            {/* Role-Based Dashboard Sections */}
+            <View style={styles.roleSectionsContainer}>
+              {isFresher && (
+                <FresherHomeScreen 
+                  dashboardData={dashboardData} 
+                  myGroups={dashboardData?.groups || []} 
+                />
+              )}
+
+              {isContinuingStudent && !isFresher && (
+                <ContinuingStudentHomeScreen 
+                  myGroups={dashboardData?.groups || []} 
+                />
+              )}
+
+              {isPeerCoach && (
+                <CoachHomeScreen 
+                  dashboardData={dashboardData} 
+                />
+              )}
+
+              {isAdvisor && !isCoachAdmin && (
+                <AdvisorHomeScreen 
+                  dashboardData={dashboardData} 
+                />
+              )}
+
+              {isCounsellor && (
+                <AdvisorHomeScreen 
+                  dashboardData={dashboardData} 
+                  isCounsellor={true} 
+                />
+              )}
+
+              {isCoachAdmin && !isPeerCoach && !isClubLead && (
+                <CoachAdminHomeScreen 
+                  dashboardData={dashboardData} 
+                  upcomingSessions={dashboardData?.sessions?.upcoming || []} 
+                />
+              )}
+            </View>
+
+            {/* General Feed Section */}
+            <View style={styles.feedSection}>
+              <Text style={styles.feedTitle}>Campus Updates</Text>
               
-              {(assignedCoaches.length > 0 || assignedBuddy) && (
-                <View style={styles.premiumRow}>
-                  {assignedCoaches.length > 0 && (
-                    <Pressable style={styles.premiumCardActive} onPress={() => router.push("/(tabs)/support")}>
-                      {resolveImageUrl(assignedCoaches[0].avatar_url) ? (
-                        <Image source={{ uri: resolveImageUrl(assignedCoaches[0].avatar_url)! }} style={[styles.personImage, { width: 48, height: 48, borderRadius: 24, marginBottom: 8 }]} />
-                      ) : (
-                        <View style={[styles.personImage, styles.personImagePlaceholder, { width: 48, height: 48, borderRadius: 24, marginBottom: 8, backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                          <Text style={[styles.personImagePlaceholderText, { color: '#FFF' }]}>{assignedCoaches[0].coach_name.charAt(0)}</Text>
-                        </View>
-                      )}
-                      <Text style={[styles.personName, { color: '#FFF' }]}>{assignedCoaches[0].coach_name.split(' ')[0]}</Text>
-                      <Text style={styles.premiumLabelWhiteOp}>Peer Coach</Text>
+              <View style={styles.searchContainer}>
+                <IconSymbol name="magnifyingglass" size={20} color="#6B7280" />
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search posts..."
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholderTextColor="#9CA3AF"
+                  autoCapitalize="none"
+                  returnKeyType="search"
+                />
+              </View>
+
+              <View style={styles.categoryScrollContainer}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScrollContent}>
+                  {categories.map(cat => (
+                    <Pressable 
+                      key={cat} 
+                      style={[styles.categoryChip, activeCategory === cat && styles.categoryChipActive]}
+                      onPress={() => setActiveCategory(cat)}
+                    >
+                      <Text style={[styles.categoryChipText, activeCategory === cat && styles.categoryChipTextActive]}>{cat}</Text>
                     </Pressable>
-                  )}
-                  
-                  {assignedBuddy && (
-                    <Pressable style={styles.premiumCardSmall} onPress={() => router.push("/(tabs)/support")}>
-                      {resolveImageUrl(assignedBuddy.avatar_url) ? (
-                        <Image source={{ uri: resolveImageUrl(assignedBuddy.avatar_url)! }} style={[styles.personImage, { width: 48, height: 48, borderRadius: 24, marginBottom: 8 }]} />
-                      ) : (
-                        <View style={[styles.personImage, styles.personImagePlaceholder, { width: 48, height: 48, borderRadius: 24, marginBottom: 8, backgroundColor: '#EEF2FF' }]}>
-                          <Text style={styles.personImagePlaceholderText}>{assignedBuddy.buddy_name.charAt(0)}</Text>
-                        </View>
-                      )}
-                      <Text style={[styles.personName, { color: '#111827' }]}>{assignedBuddy.buddy_name.split(' ')[0]}</Text>
-                      <Text style={styles.premiumLabelDark}>OIPCC Buddy</Text>
-                    </Pressable>
-                  )}
+                  ))}
+                </ScrollView>
+              </View>
+              
+              {!isLoading && posts.length === 0 && (
+                <View style={styles.emptyFeedCard}>
+                  <View style={styles.emptyFeedIcon}>
+                    <IconSymbol name="newspaper.fill" size={28} color="#9BA3AE" />
+                  </View>
+                  <Text style={styles.emptyFeedTitle}>No posts found</Text>
+                  <Text style={styles.emptyFeedDesc}>
+                    Try adjusting your search or filters.
+                  </Text>
                 </View>
               )}
-
-              {myGroups.length === 0 && (
-                <Pressable style={styles.premiumActionBtnLight} onPress={() => router.push("/(tabs)/clubs")}>
-                  <Text style={styles.premiumActionTextLight}>Find a community to join</Text>
-                  <IconSymbol name="chevron.right" size={16} color="#4F46E5" />
-                </Pressable>
-              )}
-            </Animated.View>
-          )}
-
-          {/* CONTINUING STUDENT CARDS (Clubs they are just a member of) */}
-          {(isContinuingStudent || isFresher) && myGroups.filter(g => !g.isLeader).length > 0 && (
-            <View style={{ marginTop: 12 }}>
-              <Text style={styles.cardSectionTitle}>Your Clubs</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 12, paddingRight: 20 }}>
-                {myGroups.filter(g => !g.isLeader).map(club => (
-                  <Pressable key={club.id} style={[styles.joinedClubCard, { width: 280 }]} onPress={() => router.push("/(tabs)/clubs")}>
-                    <View style={styles.clubRow}>
-                      {resolveImageUrl(club.image_url) ? (
-                        <Image source={{uri: resolveImageUrl(club.image_url)!}} style={styles.clubAvatarImage} />
-                      ) : (
-                        <View style={styles.clubAvatarMock}><Text style={styles.clubAvatarText}>{club.name.charAt(0)}</Text></View>
-                      )}
-                      <View style={styles.clubInfo}>
-                        <Text style={styles.clubName} numberOfLines={1}>{club.name}</Text>
-                        <Text style={styles.clubUpdate} numberOfLines={1}>{club.category}</Text>
-                      </View>
-                    </View>
-                  </Pressable>
-                ))}
-              </ScrollView>
             </View>
-          )}
-
-          {/* PEER COACH DASHBOARD */}
-          {isPeerCoach && (
-            <View style={styles.coachDashboardContainer}>
-              <Text style={styles.cardSectionTitle}>Coach Overview</Text>
-              
-              <View style={styles.coachStatsRow}>
-                <Pressable style={styles.coachStatCard} onPress={() => router.push("/(tabs)/my-coaching")}>
-                  <View style={styles.statIconBg}>
-                    <IconSymbol name="person.3.fill" size={20} color="#4338CA" />
-                  </View>
-                  <Text style={styles.statValue}>{assignedFreshers.length}</Text>
-                  <Text style={styles.statLabel}>Freshers</Text>
-                </Pressable>
-
-                <Pressable style={styles.coachStatCard} onPress={() => router.push("/(tabs)/support")}>
-                  <View style={[styles.statIconBg, { backgroundColor: '#DEF7EC' }]}>
-                    <IconSymbol name="calendar" size={20} color="#059669" />
-                  </View>
-                  <Text style={styles.statValue}>{upcomingSessions.length}</Text>
-                  <Text style={styles.statLabel}>Upcoming</Text>
-                </Pressable>
-                
-                <Pressable style={styles.coachStatCard} onPress={() => router.push("/(tabs)/support")}>
-                  <View style={[styles.statIconBg, { backgroundColor: '#FEE2E2' }]}>
-                    <IconSymbol name="exclamationmark.triangle.fill" size={20} color="#DC2626" />
-                  </View>
-                  <Text style={[styles.statValue, { color: '#DC2626' }]}>{overdueSessions.length}</Text>
-                  <Text style={styles.statLabel}>Overdue</Text>
-                </Pressable>
-              </View>
-
-              {assignedFreshers.length > 0 && (
-                <Pressable style={styles.fresherListPreview} onPress={() => router.push("/(tabs)/my-coaching")}>
-                  <Text style={styles.previewTitle}>Recent Freshers</Text>
-                  <View style={styles.fresherAvatarsRow}>
-                    {assignedFreshers.slice(0, 4).map((fresher, idx) => (
-                      <View key={fresher.id} style={[styles.fresherAvatarBubble, { zIndex: 10 - idx, marginLeft: idx > 0 ? -12 : 0 }]}>
-                        {resolveImageUrl(fresher.avatar_url) ? (
-                          <Image source={{ uri: resolveImageUrl(fresher.avatar_url)! }} style={styles.fresherAvatarImage} />
-                        ) : (
-                          <Text style={styles.fresherAvatarText}>{fresher.fresher_name.charAt(0)}</Text>
-                        )}
-                      </View>
-                    ))}
-                    {assignedFreshers.length > 4 && (
-                      <View style={[styles.fresherAvatarBubble, styles.fresherAvatarMore, { zIndex: 5, marginLeft: -12 }]}>
-                        <Text style={styles.fresherAvatarMoreText}>+{assignedFreshers.length - 4}</Text>
-                      </View>
-                    )}
-                  </View>
-                </Pressable>
-              )}
-            </View>
-          )}
-
-
-          {isPeerCounsellor && nextSession && (
-            <Pressable style={styles.elevatedCard} onPress={() => router.push("/(tabs)/my-roles")}>
-              <View style={styles.elevatedHeader}>
-                <Text style={styles.elevatedTitle}>Upcoming sessions</Text>
-                <IconSymbol name="calendar" size={18} color="#059669" />
-              </View>
-              <Text style={styles.elevatedDesc}>
-                {nextSession.title || 'Your next session'}: {new Date(nextSession.date || nextSession.session_date || nextSession.scheduled_at || new Date()).toLocaleDateString()} at {new Date(nextSession.date || nextSession.session_date || nextSession.scheduled_at || new Date()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </Text>
-            </Pressable>
-          )}
-
-          {isClubLead && myLedClubs.map(club => (
-            <Pressable key={club.id} style={styles.elevatedCard} onPress={() => router.push("/(tabs)/club-admin")}>
-              <View style={styles.elevatedHeader}>
-                <Text style={styles.elevatedTitle}>Your club: {club.name}</Text>
-                <Link href="/new-post" asChild>
-                  <Pressable style={styles.miniPostBtn}>
-                    <Text style={styles.miniPostBtnText}>New Post</Text>
-                  </Pressable>
-                </Link>
-              </View>
-              <Text style={styles.elevatedDesc}>Manage your club members and announcements</Text>
-            </Pressable>
-          ))}
-
-           {/* ADVISOR - Daily Agenda & Impact Widget */}
-           {isAdvisor && !isCoachAdmin && (
-             <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.premiumDashboardContainer}>
-               <Text style={styles.premiumTitle}>Quick Overview</Text>
-               
-               <View style={styles.premiumRow}>
-                 <Pressable style={styles.premiumCardActive} onPress={() => router.push("/(tabs)/advising-dashboard")}>
-                   <IconSymbol name="calendar" size={24} color="#FFFFFF" />
-                   <Text style={styles.premiumValueWhite}>{advisingData?.stats?.today_sessions ?? 0}</Text>
-                   <Text style={styles.premiumLabelWhite}>Sessions Today</Text>
-                 </Pressable>
-                 
-                 <View style={styles.premiumCol}>
-                   <Pressable style={styles.premiumCardSmall} onPress={() => router.push("/(tabs)/advising-dashboard")}>
-                     <Text style={styles.premiumValueDark}>{advisingData?.stats?.this_week_sessions ?? 0}</Text>
-                     <Text style={styles.premiumLabelDark}>This Week</Text>
-                   </Pressable>
-                   <Pressable style={styles.premiumCardSmallRed} onPress={() => router.push("/(tabs)/advising-dashboard")}>
-                     <Text style={styles.premiumValueRed}>{advisingData?.stats?.overdue_sessions ?? 0}</Text>
-                     <Text style={styles.premiumLabelRed}>Overdue</Text>
-                   </Pressable>
-                 </View>
-               </View>
-               
-               {advisingData?.upcomingSessions?.[0] && (
-                 <Pressable style={styles.premiumNextCard} onPress={() => router.push("/(tabs)/advising-dashboard")}>
-                   <View style={styles.premiumNextLeft}>
-                     <Text style={styles.premiumNextLabel}>UP NEXT</Text>
-                     <Text style={styles.premiumNextStudent}>{advisingData.upcomingSessions[0].student_name}</Text>
-                     <Text style={styles.premiumNextTime}>
-                       {new Date(advisingData.upcomingSessions[0].date || advisingData.upcomingSessions[0].scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                     </Text>
-                   </View>
-                   <View style={styles.premiumNextIcon}>
-                     <IconSymbol name="arrow.right" size={20} color="#4F46E5" />
-                   </View>
-                 </Pressable>
-               )}
-             </Animated.View>
-           )}
-
-           {/* COUNSELLOR - Daily Agenda & Impact Widget */}
-           {isCounsellor && (
-             <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.premiumDashboardContainer}>
-               <Text style={styles.premiumTitle}>Counselling Overview</Text>
-               
-               <View style={styles.premiumRow}>
-                 <Pressable style={[styles.premiumCardActive, { backgroundColor: '#10B981' }]} onPress={() => router.push("/(tabs)/counselling-dashboard")}>
-                   <IconSymbol name="calendar" size={24} color="#FFFFFF" />
-                   <Text style={styles.premiumValueWhite}>{counsellingData?.stats?.today_sessions ?? 0}</Text>
-                   <Text style={styles.premiumLabelWhite}>Sessions Today</Text>
-                 </Pressable>
-                 
-                 <View style={styles.premiumCol}>
-                   <Pressable style={styles.premiumCardSmall} onPress={() => router.push("/(tabs)/counselling-dashboard")}>
-                     <Text style={styles.premiumValueDark}>{counsellingData?.stats?.this_week_sessions ?? 0}</Text>
-                     <Text style={styles.premiumLabelDark}>This Week</Text>
-                   </Pressable>
-                   <Pressable style={styles.premiumCardSmallRed} onPress={() => router.push("/(tabs)/counselling-dashboard")}>
-                     <Text style={styles.premiumValueRed}>{counsellingData?.stats?.overdue_sessions ?? 0}</Text>
-                     <Text style={styles.premiumLabelRed}>Overdue</Text>
-                   </Pressable>
-                 </View>
-               </View>
-               
-               {counsellingData?.upcomingSessions?.[0] && (
-                 <Pressable style={styles.premiumNextCard} onPress={() => router.push("/(tabs)/counselling-dashboard")}>
-                   <View style={styles.premiumNextLeft}>
-                     <Text style={styles.premiumNextLabel}>UP NEXT</Text>
-                     <Text style={styles.premiumNextStudent}>{counsellingData.upcomingSessions[0].student_name}</Text>
-                     <Text style={styles.premiumNextTime}>
-                       {new Date(counsellingData.upcomingSessions[0].date || counsellingData.upcomingSessions[0].scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                     </Text>
-                   </View>
-                   <View style={styles.premiumNextIcon}>
-                     <IconSymbol name="arrow.right" size={20} color="#10B981" />
-                   </View>
-                 </Pressable>
-               )}
-             </Animated.View>
-           )}
-
-
-           {/* COACH ADMIN - Executive Command Center */}
-           {isCoachAdmin && !isPeerCoach && !isClubLead && (
-             <Animated.View entering={FadeInDown.delay(100).duration(400)} style={styles.premiumDashboardContainer}>
-               <Text style={styles.premiumTitle}>Coach Admin Overview</Text>
-               
-               <View style={styles.premiumRow}>
-                 <Pressable style={styles.premiumCardWarningActive} onPress={() => router.push("/(tabs)/coaching-admin/compliance")}>
-                   <IconSymbol name="exclamationmark.triangle.fill" size={24} color="#DC2626" />
-                   <Text style={styles.premiumValueWarningLarge}>{adminStats?.needsAttention?.length ?? 0}</Text>
-                   <Text style={styles.premiumLabelWarning}>Needs Attention</Text>
-                 </Pressable>
-                 
-                 <View style={styles.premiumCol}>
-                   <Pressable style={styles.premiumCardSmall} onPress={() => router.push("/(tabs)/schedule")}>
-                     <Text style={styles.premiumValueDark}>{adminStats?.stats?.upcoming_sessions_count ?? 0}</Text>
-                     <Text style={styles.premiumLabelDark}>Upcoming Sessions</Text>
-                   </Pressable>
-                   <Pressable style={styles.premiumCardSmallRed} onPress={() => router.push("/(tabs)/schedule")}>
-                     <Text style={styles.premiumValueRed}>{adminStats?.stats?.overdue_sessions_count ?? 0}</Text>
-                     <Text style={styles.premiumLabelRed}>Overdue Sessions</Text>
-                   </Pressable>
-                 </View>
-               </View>
-
-               {upcomingSessions?.[0] && (
-                 <Pressable style={styles.premiumNextCard} onPress={() => router.push("/(tabs)/schedule")}>
-                   <View style={styles.premiumNextLeft}>
-                     <Text style={styles.premiumNextLabel}>UP NEXT</Text>
-                     <Text style={styles.premiumNextStudent}>{(upcomingSessions[0] as any).student_name}</Text>
-                     <Text style={styles.premiumNextTime}>
-                       {new Date((upcomingSessions[0] as any).date || (upcomingSessions[0] as any).scheduled_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                     </Text>
-                   </View>
-                   <View style={styles.premiumNextIcon}>
-                     <IconSymbol name="arrow.right" size={20} color="#4F46E5" />
-                   </View>
-                 </Pressable>
-               )}
-
-               <Pressable style={styles.premiumActionBtnLight} onPress={() => router.push("/(tabs)/coaching-admin")}>
-                 <Text style={styles.premiumActionTextLight}>Open Dashboard</Text>
-                 <IconSymbol name="chevron.right" size={16} color="#4F46E5" />
-               </Pressable>
-             </Animated.View>
-           )}
-
-
-        </View>
-
-        {/* General Feed Section */}
-        <View style={styles.feedSection}>
-          <Text style={styles.feedTitle}>Campus Updates</Text>
-          
-          <View style={styles.searchContainer}>
-            <IconSymbol name="magnifyingglass" size={20} color="#6B7280" />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search posts..."
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholderTextColor="#9CA3AF"
-              autoCapitalize="none"
-              returnKeyType="search"
-            />
-          </View>
-
-          <View style={styles.categoryScrollContainer}>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.categoryScrollContent}>
-              {categories.map(cat => (
-                <Pressable 
-                  key={cat} 
-                  style={[styles.categoryChip, activeCategory === cat && styles.categoryChipActive]}
-                  onPress={() => setActiveCategory(cat)}
-                >
-                  <Text style={[styles.categoryChipText, activeCategory === cat && styles.categoryChipTextActive]}>{cat}</Text>
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-
-          {isLoading && (
-            <ActivityIndicator size="large" color="#A93C40" style={{ marginTop: 24 }} />
-          )}
-          
-          {!isLoading && posts.length === 0 && (
-            <View style={styles.emptyFeedCard}>
-              <View style={styles.emptyFeedIcon}>
-                <IconSymbol name="newspaper.fill" size={28} color="#9BA3AE" />
-              </View>
-              <Text style={styles.emptyFeedTitle}>No posts found</Text>
-              <Text style={styles.emptyFeedDesc}>
-                Try adjusting your search or filters.
-              </Text>
-            </View>
-          )}
-        </View>
-        </>
+          </>
         }
         ListFooterComponent={
           isLoadingMore ? (
@@ -604,10 +277,9 @@ export default function FeedScreen() {
         }
       />
 
-      {/* Expandable FAB for Creating Content */}
+      {/* Expandable FAB for Creating Content (For Admins) */}
       {isCoachAdmin && (
         <>
-          {/* Overlay when expanded */}
           {isFabExpanded && (
             <Pressable 
               style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.4)', zIndex: 90 }]} 
@@ -616,7 +288,6 @@ export default function FeedScreen() {
           )}
           
           <Animated.View entering={FadeInDown.delay(500).duration(500)} style={[styles.fabContainer, { bottom: insets.bottom + 24, zIndex: 100 }]}>
-            {/* Options */}
             {isFabExpanded && (
               <View style={styles.fabOptionsContainer}>
                 {[
@@ -641,7 +312,6 @@ export default function FeedScreen() {
               </View>
             )}
 
-            {/* Main FAB */}
             <Pressable
               style={({ pressed }) => [styles.fab, pressed && styles.fabPressed, isFabExpanded && styles.fabActive]}
               onPress={() => setIsFabExpanded(!isFabExpanded)}
@@ -651,8 +321,6 @@ export default function FeedScreen() {
           </Animated.View>
         </>
       )}
-      
-
     </SafeAreaView>
   );
 }
@@ -665,539 +333,25 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F4F5F7",
   },
-  scroll: {
-    flex: 1,
-  },
   content: {
     paddingBottom: 20,
   },
-
-  // Personal Header
-  personalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 24,
+  roleSectionsContainer: {
+    marginTop: 8,
   },
-  greetingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-  },
-  headerAvatarLarge: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: "#A93C40",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#A93C40",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-  },
-  headerAvatarLargeText: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: "#FFFFFF",
-  },
-  headerAvatarImage: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-  },
-  greetingTime: {
-    fontSize: 15,
-    color: "#6B7280",
-    fontWeight: "500",
-  },
-  greetingName: {
-    fontSize: 24,
-    fontWeight: "800",
-    color: "#1A2B4A",
-    letterSpacing: -0.5,
-  },
-  headerActions: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  iconBtn: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
-    shadowColor: "#1A2B4A",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  badge: {
-    position: "absolute",
-    top: 6,
-    right: 8,
-    backgroundColor: "#A93C40",
-    borderRadius: 10,
-    minWidth: 18,
-    height: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 4,
-    borderWidth: 1.5,
-    borderColor: "#FFFFFF",
-  },
-  badgeText: {
-    color: "#FFFFFF",
-    fontSize: 10,
-    fontWeight: "800",
-  },
-
-  // Personal Section
-  personalSection: {
-    paddingHorizontal: 20,
-    marginBottom: 32,
-  },
-  cardsStack: {
-    gap: 12,
-  },
-  cardSectionTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#6B7280",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 12,
-  },
-
-  // Fresher Cards
-  dayCounter: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#A93C40",
-    marginBottom: 4,
-  },
-  fresherPeopleCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 24,
-    padding: 20,
-    shadowColor: "#1A2B4A",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.04,
-    shadowRadius: 24,
-    elevation: 3,
-  },
-  peopleRow: {
-    flexDirection: "row",
-    gap: 16,
-  },
-  personItem: {
-    flex: 1,
-    alignItems: "center",
-    backgroundColor: "#F8F9FA",
-    padding: 16,
-    borderRadius: 16,
-  },
-  personImage: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    marginBottom: 12,
-  },
-  personImagePlaceholder: {
-    backgroundColor: "#C7D2FE",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyActionText: { fontSize: 14, fontWeight: "700", color: "#4338CA" },
-
-  // --- PREMIUM WIDGET STYLES ---
-  premiumDashboardContainer: {
-    backgroundColor: "#F4F7FB",
-    borderRadius: 24,
-    padding: 2,
-    marginBottom: 20,
-  },
-  premiumDashboardDark: {
-    backgroundColor: "#0F172A",
-    borderRadius: 28,
-    padding: 24,
-    marginBottom: 20,
-    shadowColor: "#0F172A",
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.4,
-    shadowRadius: 24,
-    elevation: 8,
-  },
-  premiumTitle: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#4F46E5",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 16,
-    marginLeft: 4,
-  },
-  premiumTitleDark: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: "#94A3B8",
-    textTransform: "uppercase",
-    letterSpacing: 1.2,
-    marginBottom: 20,
-  },
-  premiumRow: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  premiumCol: {
-    flex: 1,
-    gap: 12,
-  },
-  premiumCardActive: {
-    flex: 1,
-    backgroundColor: "#4F46E5",
-    borderRadius: 24,
-    padding: 20,
-    justifyContent: "center",
-    shadowColor: "#4F46E5",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 5,
-  },
-  premiumValueWhite: { fontSize: 32, fontWeight: "900", color: "#FFFFFF", letterSpacing: -1, marginTop: 12, marginBottom: 4 },
-  premiumValueWhiteLarge: { fontSize: 44, fontWeight: "900", color: "#FFFFFF", letterSpacing: -2, marginTop: 16, marginBottom: 4 },
-  premiumLabelWhite: { fontSize: 14, fontWeight: "600", color: "rgba(255,255,255,0.8)" },
-  premiumLabelWhiteOp: { fontSize: 13, fontWeight: "600", color: "rgba(255,255,255,0.6)" },
   
-  premiumCardSmall: {
-    flex: 1,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 16,
-    justifyContent: "center",
-    shadowColor: "#1A2B4A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
-  },
-  premiumValueDark: { fontSize: 24, fontWeight: "900", color: "#111827", letterSpacing: -1, marginBottom: 2 },
-  premiumLabelDark: { fontSize: 12, fontWeight: "600", color: "#6B7280" },
-
-  premiumCardSmallRed: {
-    flex: 1,
-    backgroundColor: "#FEF2F2",
-    borderRadius: 20,
-    padding: 16,
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "#FECACA",
-  },
-  premiumValueRed: { fontSize: 24, fontWeight: "900", color: "#DC2626", letterSpacing: -1, marginBottom: 2 },
-  premiumLabelRed: { fontSize: 12, fontWeight: "700", color: "#EF4444" },
-
-  premiumNextCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#FFFFFF",
-    marginTop: 16,
-    padding: 18,
-    borderRadius: 20,
-    shadowColor: "#1A2B4A",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.06,
-    shadowRadius: 16,
-    elevation: 3,
-  },
-  premiumNextLeft: { flex: 1 },
-  premiumNextLabel: { fontSize: 11, fontWeight: "800", color: "#8B5CF6", letterSpacing: 1, marginBottom: 6 },
-  premiumNextStudent: { fontSize: 17, fontWeight: "800", color: "#111827", marginBottom: 2 },
-  premiumNextTime: { fontSize: 14, fontWeight: "600", color: "#6B7280" },
-  premiumNextIcon: { width: 40, height: 40, borderRadius: 20, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center" },
-
-  premiumCardDarkPrimary: {
-    flex: 1,
-    backgroundColor: "#1E293B",
-    borderRadius: 24,
-    padding: 20,
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
-  },
-  premiumCardDarkSecondary: {
-    flex: 1,
-    backgroundColor: "rgba(255,255,255,0.05)",
-    borderRadius: 20,
-    padding: 16,
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.05)",
-  },
-  premiumCardDarkWarning: {
-    flex: 1,
-    backgroundColor: "rgba(239, 68, 68, 0.1)",
-    borderRadius: 20,
-    padding: 16,
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: "rgba(239, 68, 68, 0.2)",
-  },
-  premiumActionBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "rgba(255,255,255,0.1)",
-    marginTop: 16,
-    padding: 16,
-    borderRadius: 16,
-  },
-  premiumActionText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#FFFFFF",
-  },
-  premiumCardWarningActive: {
-    flex: 1,
-    backgroundColor: "#FEF2F2",
-    borderRadius: 24,
-    padding: 20,
-    justifyContent: "center",
-    shadowColor: "#DC2626",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.15,
-    shadowRadius: 16,
-    elevation: 5,
-    borderWidth: 1,
-    borderColor: "#FECACA",
-  },
-  premiumValueWarningLarge: { fontSize: 44, fontWeight: "900", color: "#DC2626", letterSpacing: -2, marginTop: 16, marginBottom: 4 },
-  premiumLabelWarning: { fontSize: 14, fontWeight: "700", color: "#EF4444" },
-  premiumActionBtnLight: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#E0E7FF",
-    marginTop: 16,
-    padding: 16,
-    borderRadius: 16,
-  },
-  premiumActionTextLight: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#4F46E5",
-  },
-  personImagePlaceholderText: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#4338CA",
-  },
-  personName: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#1A2B4A",
-  },
-  personRole: {
-    fontSize: 13,
-    color: "#6B7280",
-    marginTop: 2,
-  },
-
-  upNextCard: {
-    backgroundColor: "#1A2B4A",
-    borderRadius: 20,
-    padding: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  upNextLeft: {
-    flex: 1,
-  },
-  upNextLabel: {
-    color: "#9BA3AE",
-    fontSize: 13,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 4,
-  },
-  upNextTitle: {
-    color: "#FFFFFF",
-    fontSize: 18,
-    fontWeight: "700",
-    marginBottom: 4,
-  },
-  upNextTime: {
-    color: "#D1D5DB",
-    fontSize: 14,
-  },
-  progressRing: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    borderWidth: 3,
-    borderColor: "#4B5563",
-    borderTopColor: "#FFFFFF",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  progressText: {
-    color: "#FFFFFF",
-    fontSize: 13,
-    fontWeight: "700",
-  },
-
-  clubNudgeCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  clubNudgeInfo: {
-    flex: 1,
-  },
-  clubNudgeTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1A2B4A",
-  },
-  clubNudgeDesc: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginTop: 4,
-  },
-
-  // Continuing Student Cards
-  joinedClubCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 12,
-  },
-  clubRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 16,
-  },
-  clubAvatarMock: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-    backgroundColor: "#FEF3C7",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  clubAvatarImage: {
-    width: 48,
-    height: 48,
-    borderRadius: 16,
-  },
-  clubAvatarText: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#D97706",
-  },
-  clubInfo: {
-    flex: 1,
-  },
-  clubName: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1A2B4A",
-  },
-  clubUpdate: {
-    fontSize: 14,
-    color: "#6B7280",
-    marginTop: 4,
-  },
-
-  // Elevated Role Cards
-  elevatedCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: "#4338CA",
-    shadowColor: "#1A2B4A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 12,
-  },
-  elevatedHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 8,
-  },
-  elevatedTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1A2B4A",
-  },
-  elevatedDesc: {
-    fontSize: 14,
-    color: "#6B7280",
-  },
-  miniPostBtn: {
-    backgroundColor: "#F0F2F5",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  miniPostBtnText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#1A2B4A",
-  },
-
-  // Staff Cards
-  staffSummaryCard: {
-    backgroundColor: "#FEF2F2",
-    borderRadius: 20,
-    padding: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  staffSummaryText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#991B1B",
-    flex: 1,
-    marginRight: 16,
-  },
-  quickPostCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
-    padding: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  quickPostText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#1A2B4A",
-  },
-
   // Feed Section
   feedSection: {
     gap: 16,
+    marginTop: 8,
   },
   feedTitle: {
     fontSize: 20,
-    fontWeight: "700",
+    fontWeight: "800",
     color: "#111827",
     marginBottom: 16,
     paddingHorizontal: 20,
+    letterSpacing: -0.3,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -1206,10 +360,14 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginBottom: 16,
     paddingHorizontal: 12,
-    height: 44,
-    borderRadius: 8,
+    height: 48,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    shadowColor: "#0A1229",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.02,
+    shadowRadius: 12,
   },
   searchInput: {
     flex: 1,
@@ -1234,6 +392,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.04,
     shadowRadius: 6,
     elevation: 1,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.03)',
   },
   categoryChipActive: {
     backgroundColor: "#1A2B4A",
@@ -1246,122 +406,6 @@ const styles = StyleSheet.create({
   categoryChipTextActive: {
     color: "#FFFFFF",
   },
-  postsList: {
-    paddingHorizontal: 20,
-    gap: 20,
-  },
-  postCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 24,
-    padding: 24,
-    shadowColor: "#1A2B4A",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.04,
-    shadowRadius: 24,
-    elevation: 3,
-  },
-  alertCard: {
-    backgroundColor: "#FEF2F2",
-    shadowColor: "#DC2626",
-    shadowOpacity: 0.06,
-  },
-  postHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    marginBottom: 16,
-  },
-  postAuthorAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: "#F0F2F5",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  postAuthorInitial: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1A2B4A",
-  },
-  postAuthorInfo: {
-    flex: 1,
-  },
-  postAuthorName: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#1A2B4A",
-  },
-  postDate: {
-    fontSize: 13,
-    color: "#6B7280",
-    marginTop: 2,
-  },
-  postTitle: {
-    fontSize: 20,
-    fontWeight: "800",
-    color: "#1A2B4A",
-    marginBottom: 8,
-    letterSpacing: -0.3,
-  },
-  postContent: {
-    fontSize: 16,
-    color: "#4B5563",
-    lineHeight: 26,
-  },
-  viewMoreInline: {
-    color: "#A93C40",
-    fontWeight: "700",
-  },
-  eventContainer: {
-    marginTop: 20,
-    paddingTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: "#F0F2F5",
-    gap: 12,
-  },
-  eventDetailsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-  },
-  eventDetailsText: {
-    fontSize: 14,
-    color: "#6B7280",
-    fontWeight: "500",
-  },
-  eventFooter: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginTop: 12,
-  },
-  attendeeCount: {
-    fontSize: 14,
-    color: "#6B7280",
-    fontWeight: "600",
-  },
-  rsvpActions: {
-    flexDirection: "row",
-    gap: 8,
-  },
-  rsvpBtn: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 16,
-    backgroundColor: "#F0F2F5",
-  },
-  rsvpBtnActive: {
-    backgroundColor: "#FEF2F2",
-  },
-  rsvpBtnText: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: "#1A2B4A",
-  },
-  rsvpBtnTextActive: {
-    color: "#A93C40",
-  },
   emptyFeedCard: {
     backgroundColor: "#FFFFFF",
     borderRadius: 24,
@@ -1370,10 +414,9 @@ const styles = StyleSheet.create({
     gap: 12,
     marginHorizontal: 20,
     shadowColor: "#1A2B4A",
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.03,
-    shadowRadius: 12,
-    elevation: 2,
+    shadowRadius: 24,
   },
   emptyFeedIcon: {
     width: 64,
@@ -1396,96 +439,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     lineHeight: 22,
   },
-  coachDashboardContainer: {
-    marginBottom: 16,
-    gap: 12,
-  },
-  coachStatsRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  coachStatCard: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 16,
-    alignItems: 'center',
-    shadowColor: "#1A2B4A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 12,
-    elevation: 2,
-  },
-  statIconBg: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#EEF2FF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 8,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#1A2B4A',
-    marginBottom: 2,
-  },
-  statLabel: {
-    fontSize: 13,
-    color: '#6B7280',
-    fontWeight: '500',
-  },
-  fresherListPreview: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
-    padding: 16,
-    shadowColor: "#1A2B4A",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 12,
-    elevation: 2,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  previewTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#1A2B4A',
-  },
-  fresherAvatarsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  fresherAvatarBubble: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#F0F2F5',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  fresherAvatarImage: {
-    width: '100%',
-    height: '100%',
-  },
-  fresherAvatarText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#1A2B4A',
-  },
-  fresherAvatarMore: {
-    backgroundColor: '#EEF2FF',
-  },
-  fresherAvatarMoreText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#4338CA',
-  },
+
+  // FAB 
   fabContainer: {
     position: "absolute",
     right: 24,
