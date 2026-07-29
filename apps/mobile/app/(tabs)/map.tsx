@@ -72,7 +72,7 @@ export default function MapScreen() {
   const [userCoords, setUserCoords] = useState<Location.LocationObjectCoords | null>(null);
 
   const { data: locations = [], isLoading } = useQuery({
-    queryKey: ['locations'],
+    queryKey: ['campus_locations'],
     queryFn: async () => {
       const res = await apiRequest<{ locations: LocationItem[] }>("/locations");
       return res.locations || [];
