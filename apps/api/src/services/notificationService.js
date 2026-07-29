@@ -165,6 +165,7 @@ module.exports = {
   createNotification,
   registerPushToken,
   sendNotification,
+  sendExpoPush,
   scheduleReminder,
   processDueReminders,
   pruneOldNotifications,
