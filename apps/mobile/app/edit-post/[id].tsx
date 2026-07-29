@@ -35,6 +35,11 @@ interface Location {
   name: string;
 }
 
+// BUG-19 fix: Define categories outside the component so the reference is
+// stable and doesn't cause the useEffect to re-run on every render.
+const ALL_CATEGORIES = ["Announcement", "Event", "Alert", "Discussion"];
+const GROUP_CATEGORIES = ["Announcement", "Event", "Discussion"];
+
 export default function EditPostScreen() {
   const router = useRouter();
   const { session } = useAuth();
@@ -71,9 +76,7 @@ export default function EditPostScreen() {
   const [targetGroupIds, setTargetGroupIds] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const categories = preselectGroup 
-    ? ["Announcement", "Event", "Discussion"] 
-    : ["Announcement", "Event", "Alert", "Discussion"];
+  const categories = preselectGroup ? GROUP_CATEGORIES : ALL_CATEGORIES;
   const isEvent = category === "Event";
   const roles = session?.user.roles || [];
   const isPeerCoach = roles.some((r: any) => r.name === "peer_coach");
@@ -101,6 +104,8 @@ export default function EditPostScreen() {
       return res.locations || [];
     },
     enabled: !!session?.accessToken,
+    // BUG-24 fix: Campus locations are static — don't re-fetch on every mount
+    staleTime: 1000 * 60 * 60,
   });
 
   useEffect(() => {
@@ -153,12 +158,16 @@ export default function EditPostScreen() {
         setIsAllDay(!!data.isAllDay);
         if (data.eventDate && data.eventTime) {
           const datePart = typeof data.eventDate === 'string' ? data.eventDate.split('T')[0] : data.eventDate;
-          const d = new Date(`${datePart}T${data.eventTime}`);
+          // BUG-10 fix: Append 'Z' so the bare date+time is parsed as UTC,
+          // preventing time shifts when the device timezone differs from the server.
+          const timeStr = data.eventTime.length === 5 ? `${data.eventTime}:00` : data.eventTime;
+          const d = new Date(`${datePart}T${timeStr}Z`);
           setStartDate(d);
         }
         if (data.endDate && data.endTime) {
           const edDatePart = typeof data.endDate === 'string' ? data.endDate.split('T')[0] : data.endDate;
-          const ed = new Date(`${edDatePart}T${data.endTime}`);
+          const edTimeStr = data.endTime.length === 5 ? `${data.endTime}:00` : data.endTime;
+          const ed = new Date(`${edDatePart}T${edTimeStr}Z`);
           setEndDate(ed);
         }
         setIsOnline(!!data.isOnline);
@@ -189,6 +198,8 @@ export default function EditPostScreen() {
         setTargetGroupIds(data.targets.map((t: any) => t.groupId));
       }
     }
+  // BUG-19 fix: `categories` is now a stable reference (defined outside component)
+  // so this effect only re-runs when the fetched data or type actually changes.
   }, [fetchedData, type, categories]);
 
   const submitMutation = useMutation({
