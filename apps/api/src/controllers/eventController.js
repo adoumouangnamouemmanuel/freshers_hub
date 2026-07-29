@@ -51,8 +51,9 @@ const handleGetRsvps = asyncHandler(async (req, res) => {
   const limit = parseInt(req.query.limit, 10) || 10;
   const offset = (page - 1) * limit;
 
-  const rsvps = await eventService.getEventRsvps(id, limit, offset);
-  res.json({ rsvps });
+  // BUG-18 fix: getEventRsvps now returns { rsvps, total } — forward both to client
+  const result = await eventService.getEventRsvps(id, limit, offset);
+  res.json(result);
 });
 
 module.exports = {
