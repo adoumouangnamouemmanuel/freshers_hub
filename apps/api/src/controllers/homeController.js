@@ -19,7 +19,7 @@ const getHomeDashboard = asyncHandler(async (req, res) => {
   const isAdvisor = roles.includes("advisor");
 
   const isContinuingStudent = !isFresher && !roles.some(r => 
-    ["staff", "faculty", "coach_admin", "admin", "peer_coach", "peer_counsellor", "club_lead", "advisor", "counsellor", "student_leader"].includes(r)
+    ["staff", "faculty", "coach_admin", "admin", "advisor", "counsellor"].includes(r)
   );
 
   const client = await pool.connect();
@@ -116,16 +116,40 @@ const getHomeDashboard = asyncHandler(async (req, res) => {
         const now = new Date();
 
         sessions.forEach(s => {
-          const sessionDate = new Date(s.scheduled_at || s.date || (s.session_date ? `${s.session_date}T${s.start_time || '00:00:00'}` : now));
+          let sessionDate;
+          if (s.scheduled_at) {
+            sessionDate = new Date(s.scheduled_at);
+          } else if (s.date) {
+            sessionDate = new Date(s.date);
+          } else if (s.session_date) {
+            const datePart = typeof s.session_date === 'string' ? s.session_date.split('T')[0] : s.session_date;
+            const timeStr = s.start_time || '00:00:00';
+            const formattedTime = timeStr.length === 5 ? `${timeStr}:00` : timeStr;
+            sessionDate = new Date(`${datePart}T${formattedTime}Z`);
+          } else {
+            sessionDate = now;
+          }
+
           if (sessionDate > now) {
             upcoming.push(s);
-          } else if (sessionDate <= now) {
+          } else {
             overdue.push(s);
           }
         });
 
-        upcoming.sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime());
-        overdue.sort((a, b) => new Date(b.scheduled_at).getTime() - new Date(a.scheduled_at).getTime());
+        const getTime = (s) => {
+          if (s.scheduled_at) return new Date(s.scheduled_at).getTime();
+          if (s.date) return new Date(s.date).getTime();
+          if (s.session_date) {
+             const datePart = typeof s.session_date === 'string' ? s.session_date.split('T')[0] : s.session_date;
+             const timeStr = s.start_time || '00:00:00';
+             return new Date(`${datePart}T${timeStr.length === 5 ? `${timeStr}:00` : timeStr}Z`).getTime();
+          }
+          return 0;
+        };
+
+        upcoming.sort((a, b) => getTime(a) - getTime(b));
+        overdue.sort((a, b) => getTime(b) - getTime(a));
 
         dashboardData.sessions = { upcoming, overdue };
       })());
@@ -138,13 +162,13 @@ const getHomeDashboard = asyncHandler(async (req, res) => {
       promises.push(
         client.query(`
           SELECT 
-            (SELECT COUNT(*) FROM users u JOIN user_roles ur ON u.id = ur.user_id JOIN roles r ON ur.role_id = r.id WHERE r.name = 'student' AND u.class_year = ${fresherYear} AND u.id NOT IN (SELECT fresher_id FROM coach_assignments)) as unassigned_freshers,
-            (SELECT COUNT(*) FROM users u JOIN user_roles ur ON u.id = ur.user_id JOIN roles r ON ur.role_id = r.id WHERE r.name = 'student' AND u.class_year = ${fresherYear}) as total_freshers,
+            (SELECT COUNT(*) FROM users u JOIN user_roles ur ON u.id = ur.user_id JOIN roles r ON ur.role_id = r.id WHERE r.name = 'student' AND u.class_year = $1 AND u.id NOT IN (SELECT fresher_id FROM coach_assignments)) as unassigned_freshers,
+            (SELECT COUNT(*) FROM users u JOIN user_roles ur ON u.id = ur.user_id JOIN roles r ON ur.role_id = r.id WHERE r.name = 'student' AND u.class_year = $1) as total_freshers,
             (SELECT COUNT(*) FROM sessions WHERE status = 'scheduled' AND scheduled_at > NOW() AND unit_id = (SELECT id FROM units WHERE name = 'coaching' LIMIT 1)) as upcoming_sessions_count,
             (SELECT COUNT(*) FROM sessions WHERE status = 'scheduled' AND scheduled_at <= NOW() AND unit_id = (SELECT id FROM units WHERE name = 'coaching' LIMIT 1)) as overdue_sessions_count,
             (SELECT COUNT(*) FROM sessions WHERE status = 'completed' AND is_mandatory = true AND unit_id = (SELECT id FROM units WHERE name = 'coaching' LIMIT 1)) as completed_mandatory_sessions,
             (SELECT COUNT(DISTINCT peer_coach_id) FROM coach_assignments) as active_coaches
-        `).then(res => {
+        `, [fresherYear]).then(res => {
           const stats = res.rows[0];
           const needsAttention = [];
           if (stats.unassigned_freshers > 0) needsAttention.push({ id: 1, text: `${stats.unassigned_freshers} freshers need coaches assigned` });
