@@ -85,7 +85,7 @@ export default function FreshersScreen() {
       ) : (
         <FlatList
           data={freshers}
-          keyExtractor={f => f.id}
+          keyExtractor={(f, index) => `${f.id}-${index}`}
           contentContainerStyle={styles.listContent}
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}
