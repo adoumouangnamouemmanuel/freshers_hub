@@ -44,6 +44,27 @@ export function PostCard({ post, onUpdate }: { post: Post; onUpdate: () => void 
     }
   };
 
+  const getRsvpLabel = () => {
+    if (post.myRsvp === 'going') return 'Going';
+    if (post.myRsvp === 'maybe') return 'Maybe';
+    if (post.myRsvp === 'declined') return 'No';
+    return 'RSVP';
+  };
+
+  const getRsvpStyle = () => {
+    if (post.myRsvp === 'going') return { backgroundColor: '#D1FAE5' };
+    if (post.myRsvp === 'maybe') return { backgroundColor: '#FEF3C7' };
+    if (post.myRsvp === 'declined') return { backgroundColor: '#FEE2E2' };
+    return {};
+  };
+
+  const getRsvpTextStyle = () => {
+    if (post.myRsvp === 'going') return { color: '#059669' };
+    if (post.myRsvp === 'maybe') return { color: '#D97706' };
+    if (post.myRsvp === 'declined') return { color: '#DC2626' };
+    return {};
+  };
+
   const formattedEventDate = post.eventDate 
     ? new Date(post.eventDate).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
     : "";
@@ -117,12 +138,12 @@ export function PostCard({ post, onUpdate }: { post: Post; onUpdate: () => void 
             {post.rsvpEnabled && (
               <View style={styles.rsvpActions}>
                 <Pressable
-                  style={[styles.rsvpBtn, post.myRsvp === "going" && styles.rsvpBtnActive]}
+                  style={[styles.rsvpBtn, getRsvpStyle()]}
                   onPress={() => handleRsvp(post.myRsvp === "going" ? "declined" : "going")}
                   disabled={isRsvping}
                 >
-                  <Text style={[styles.rsvpBtnText, post.myRsvp === "going" && styles.rsvpBtnTextActive]}>
-                    {post.myRsvp === "going" ? "Going" : "RSVP"}
+                  <Text style={[styles.rsvpBtnText, getRsvpTextStyle()]}>
+                    {getRsvpLabel()}
                   </Text>
                 </Pressable>
               </View>
