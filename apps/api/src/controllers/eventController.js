@@ -47,7 +47,11 @@ const handleRsvp = asyncHandler(async (req, res) => {
 
 const handleGetRsvps = asyncHandler(async (req, res) => {
   const { id } = req.params;
-  const rsvps = await eventService.getEventRsvps(id);
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 10;
+  const offset = (page - 1) * limit;
+
+  const rsvps = await eventService.getEventRsvps(id, limit, offset);
   res.json({ rsvps });
 });
 
