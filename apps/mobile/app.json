@@ -19,7 +19,12 @@
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
       "package": "com.adoumouangnamouemmanuel.fresherhub",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "config": {
+        "googleMaps": {
+          "apiKey": "DUMMY_API_KEY_TO_PREVENT_CRASH"
+        }
+      }
     },
     "plugins": [
       "expo-router",
