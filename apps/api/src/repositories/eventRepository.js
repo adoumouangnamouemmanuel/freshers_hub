@@ -2,33 +2,50 @@
  * src/repositories/eventRepository.js
  */
 
-const insertEvent = async (client, { postId, eventDate, eventTime, location, organizer, dressCode, capacity, rsvpEnabled }) => {
+const insertEvent = async (client, { 
+  postId, eventDate, eventTime, endDate, endTime, isAllDay, isOnline, meetingLink, reminderMinutes, location, organizer, dressCode, capacity, rsvpEnabled 
+}) => {
   const { rows } = await client.query(
-    `INSERT INTO events (post_id, event_date, event_time, location, organizer, dress_code, capacity, rsvp_enabled)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+    `INSERT INTO events (
+      post_id, event_date, event_time, end_date, end_time, is_all_day, is_online, meeting_link, reminder_minutes, 
+      location, organizer, dress_code, capacity, rsvp_enabled
+     )
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
      RETURNING id, post_id as "postId", event_date as "eventDate", event_time as "eventTime",
+               end_date as "endDate", end_time as "endTime", is_all_day as "isAllDay",
+               is_online as "isOnline", meeting_link as "meetingLink", reminder_minutes as "reminderMinutes",
                location, organizer, dress_code as "dressCode", capacity, rsvp_enabled as "rsvpEnabled", status`,
-    [postId, eventDate, eventTime, location || null, organizer || null, dressCode || null, capacity || null, rsvpEnabled]
+    [postId, eventDate, eventTime, endDate || null, endTime || null, isAllDay || false, isOnline || false, meetingLink || null, reminderMinutes || null, location || null, organizer || null, dressCode || null, capacity || null, rsvpEnabled]
   );
   return rows[0];
 };
 
-const updateEvent = async (client, eventId, { eventDate, eventTime, location, organizer, dressCode, capacity, rsvpEnabled, status }) => {
+const updateEvent = async (client, eventId, { 
+  eventDate, eventTime, endDate, endTime, isAllDay, isOnline, meetingLink, reminderMinutes, location, organizer, dressCode, capacity, rsvpEnabled, status 
+}) => {
   const { rows } = await client.query(
     `UPDATE events
      SET
        event_date = COALESCE($1, event_date),
        event_time = COALESCE($2, event_time),
-       location = COALESCE($3, location),
-       organizer = COALESCE($4, organizer),
-       dress_code = COALESCE($5, dress_code),
-       capacity = COALESCE($6, capacity),
-       rsvp_enabled = COALESCE($7, rsvp_enabled),
-       status = COALESCE($8, status)
-     WHERE id = $9
+       end_date = COALESCE($3, end_date),
+       end_time = COALESCE($4, end_time),
+       is_all_day = COALESCE($5, is_all_day),
+       is_online = COALESCE($6, is_online),
+       meeting_link = COALESCE($7, meeting_link),
+       reminder_minutes = COALESCE($8, reminder_minutes),
+       location = COALESCE($9, location),
+       organizer = COALESCE($10, organizer),
+       dress_code = COALESCE($11, dress_code),
+       capacity = COALESCE($12, capacity),
+       rsvp_enabled = COALESCE($13, rsvp_enabled),
+       status = COALESCE($14, status)
+     WHERE id = $15
      RETURNING id, post_id as "postId", event_date as "eventDate", event_time as "eventTime",
+               end_date as "endDate", end_time as "endTime", is_all_day as "isAllDay",
+               is_online as "isOnline", meeting_link as "meetingLink", reminder_minutes as "reminderMinutes",
                location, organizer, dress_code as "dressCode", capacity, rsvp_enabled as "rsvpEnabled", status`,
-    [eventDate, eventTime, location, organizer, dressCode, capacity, rsvpEnabled, status, eventId]
+    [eventDate, eventTime, endDate, endTime, isAllDay, isOnline, meetingLink, reminderMinutes, location, organizer, dressCode, capacity, rsvpEnabled, status, eventId]
   );
   return rows[0];
 };
@@ -37,6 +54,8 @@ const findEvents = async (client, userId, { limit, offset, status = 'scheduled' 
   const { rows } = await client.query(
     `SELECT 
        e.id, e.post_id as "postId", e.event_date as "eventDate", e.event_time as "eventTime",
+       e.end_date as "endDate", e.end_time as "endTime", e.is_all_day as "isAllDay",
+       e.is_online as "isOnline", e.meeting_link as "meetingLink", e.reminder_minutes as "reminderMinutes",
        e.location, e.organizer, e.dress_code as "dressCode", e.capacity,
        e.rsvp_enabled as "rsvpEnabled", e.status,
        p.title, p.content, p.visibility, p.created_at as "createdAt",
@@ -77,6 +96,8 @@ const findEventById = async (client, eventId, userId) => {
   const { rows } = await client.query(
     `SELECT 
        e.id, e.post_id as "postId", e.event_date as "eventDate", e.event_time as "eventTime",
+       e.end_date as "endDate", e.end_time as "endTime", e.is_all_day as "isAllDay",
+       e.is_online as "isOnline", e.meeting_link as "meetingLink", e.reminder_minutes as "reminderMinutes",
        e.location, e.organizer, e.dress_code as "dressCode", e.capacity,
        e.rsvp_enabled as "rsvpEnabled", e.status,
        p.title, p.content, p.visibility, p.created_at as "createdAt",
@@ -114,15 +135,16 @@ const getEventCounts = async (client, eventId) => {
   return rows[0];
 };
 
-const findRsvpsByEventId = async (client, eventId) => {
+const findRsvpsByEventId = async (client, eventId, limit = 10, offset = 0) => {
   const { rows } = await client.query(
     `SELECT er.status, er.rsvp_at as "rsvpAt",
        u.id as "userId", u.full_name as "fullName", u.avatar_url as "avatarUrl"
      FROM event_rsvps er
      JOIN users u ON u.id = er.user_id
      WHERE er.event_id = $1
-     ORDER BY er.rsvp_at DESC`,
-    [eventId]
+     ORDER BY er.rsvp_at DESC
+     LIMIT $2 OFFSET $3`,
+    [eventId, limit, offset]
   );
   return rows;
 };
