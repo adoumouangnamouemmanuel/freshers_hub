@@ -67,6 +67,8 @@ const findPosts = async (client, { userId, page = 1, limit = 50, category, autho
       p.created_at as "createdAt",
       u.id as "authorId", u.full_name as "authorName", u.avatar_url as "authorAvatar",
       e.id as "eventId", e.event_date as "eventDate", e.event_time as "eventTime",
+      e.end_date as "endDate", e.end_time as "endTime", e.is_all_day as "isAllDay",
+      e.is_online as "isOnline", e.meeting_link as "meetingLink", e.reminder_minutes as "reminderMinutes",
       e.location as "eventLocation", e.organizer as "eventOrganizer",
       e.capacity as "eventCapacity", e.rsvp_enabled as "rsvpEnabled", e.status as "eventStatus",
       (SELECT COUNT(*)::int FROM event_rsvps er WHERE er.event_id = e.id AND er.status = 'going') as "goingCount",
@@ -101,9 +103,11 @@ const findPostById = async (client, postId) => {
     SELECT 
       p.id, p.title, p.content, p.category, p.visibility,
       p.created_at as "createdAt",
-      u.id as "authorId", u.full_name as "authorName", u.avatar_url as "authorAvatar"
+      u.id as "authorId", u.full_name as "authorName", u.avatar_url as "authorAvatar",
+      e.id as "eventId"
     FROM posts p
     JOIN users u ON u.id = p.author_id
+    LEFT JOIN events e ON e.post_id = p.id
     WHERE p.id = $1
   `, [postId]);
   return rows[0] || null;
@@ -183,6 +187,23 @@ const insertNotificationsForTargets = async (client, { title, category, postId, 
   return allNotified;
 };
 
+const insertNotificationsForAllStudents = async (client, { title, category, postId, authorId }) => {
+  const { rows } = await client.query(
+    `INSERT INTO notifications (user_id, category, title, body, related_entity)
+     SELECT DISTINCT sp.user_id, 'announcement', $1, $2, $3
+     FROM student_profiles sp
+     WHERE sp.user_id != $4
+     RETURNING user_id, id, title, body`,
+    [
+      `New: ${title}`,
+      `A new ${category} has been posted for everyone. Tap to view.`,
+      `post:${postId}`,
+      authorId,
+    ]
+  );
+  return rows;
+};
+
 const updatePost = async (client, postId, { title, content, category }) => {
   const { rows } = await client.query(`
     UPDATE posts
@@ -208,6 +229,7 @@ module.exports = {
   insertPost,
   insertPostTargets,
   insertNotificationsForTargets,
+  insertNotificationsForAllStudents,
   updatePost,
   deletePost
 };
