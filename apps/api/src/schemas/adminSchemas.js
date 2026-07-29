@@ -158,14 +158,29 @@ const addGroupMembersSchema = z.object({
   }),
 });
 
+/**
+ * BUG-02 fix: Status enum corrected from ['active','cancelled'] to
+ * ['scheduled','cancelled','completed'] to match the real DB constraint.
+ * Added title, content, visibility (post-level) fields that were missing.
+ */
 const updateEventSchema = z.object({
   body: z.object({
-    title:        z.string().optional(),
-    description:  z.string().optional(),
-    location:     z.string().optional(),
-    starts_at:    z.string().optional(),
-    ends_at:      z.string().optional(),
-    status:       z.enum(['active', 'cancelled']).optional(),
+    // Post-level fields
+    title:       z.string().min(1).optional(),
+    content:     z.string().min(1).optional(),
+    visibility:  z.enum(['public', 'targeted', 'private']).optional(),
+    // Event-level fields
+    event_date:  z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+    event_time:  z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)/).optional(),
+    end_date:    z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional().nullable(),
+    end_time:    z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)/).optional().nullable(),
+    location:    z.string().optional().nullable(),
+    organizer:   z.string().optional().nullable(),
+    capacity:    z.number().int().positive().optional().nullable(),
+    rsvp_enabled: z.boolean().optional(),
+    is_online:   z.boolean().optional(),
+    meeting_link: z.string().url().optional().nullable(),
+    status:      z.enum(['scheduled', 'cancelled', 'completed']).optional(),
   }),
 });
 
