@@ -23,7 +23,11 @@ const createEvent = async (userId, userRoles, data) => {
     throw new AppError("Insufficient permissions to create an event", 403);
   }
 
-  const { title, content, visibility, targetGroupIds, ...eventFields } = data;
+  const { 
+    title, content, visibility, targetGroupIds, 
+    endDate, endTime, isAllDay, isOnline, meetingLink, reminderMinutes,
+    ...eventFields 
+  } = data;
 
   const client = await pool.connect();
   try {
@@ -38,10 +42,12 @@ const createEvent = async (userId, userRoles, data) => {
       visibility
     });
 
+    let notifiedUsers = [];
     // 2. Targets & Notifications
     if (visibility === "targeted" && targetGroupIds?.length > 0) {
-      await postRepository.insertPostTargets(client, post.id, targetGroupIds);
-      const notifiedUsers = await postRepository.insertNotificationsForTargets(
+      // authorId is needed by insertPostTargets
+      await postRepository.insertPostTargets(client, post.id, targetGroupIds, userId);
+      notifiedUsers = await postRepository.insertNotificationsForTargets(
         client, 
         {
           title: `New Event: ${title.trim()}`,
@@ -68,13 +74,70 @@ const createEvent = async (userId, userRoles, data) => {
           }
         })).catch(err => logger.error(`Background push error: ${err.message}`));
       }
+    } else {
+      // Notify all students if not targeted
+      notifiedUsers = await postRepository.insertNotificationsForAllStudents(
+        client, 
+        {
+          title: `New Event: ${title.trim()}`,
+          category: 'event',
+          postId: post.id,
+          authorId: userId
+        }
+      );
+
+      if (notifiedUsers && notifiedUsers.length > 0) {
+        Promise.all(notifiedUsers.map(async (n) => {
+          try {
+            const tokens = await notificationRepo.getPushTokensForUser(n.user_id);
+            if (tokens && tokens.length > 0) {
+              await notificationService.sendExpoPush(tokens, n.title, n.body, { 
+                notificationId: n.id, 
+                relatedEntity: `post:${post.id}` 
+              });
+            }
+          } catch (err) {
+            logger.error(`Failed to send push for new event to user ${n.user_id}: ${err.message}`);
+          }
+        })).catch(err => logger.error(`Background push error: ${err.message}`));
+      }
     }
 
     // 3. Create Event
     const event = await eventRepository.insertEvent(client, {
       postId: post.id,
+      endDate,
+      endTime,
+      isAllDay,
+      isOnline,
+      meetingLink,
+      reminderMinutes,
       ...eventFields
     });
+
+    // 4. Schedule Reminder (if applicable)
+    if (reminderMinutes && reminderMinutes > 0 && notifiedUsers && notifiedUsers.length > 0) {
+      // Calculate reminder time: eventDate + eventTime - reminderMinutes
+      const eventDateTime = new Date(`${eventFields.eventDate}T${eventFields.eventTime}`);
+      const scheduledAt = new Date(eventDateTime.getTime() - (reminderMinutes * 60 * 1000));
+      
+      if (scheduledAt > new Date()) {
+        Promise.all(notifiedUsers.map(async (n) => {
+          try {
+            await notificationService.scheduleReminder({
+              userId: n.user_id,
+              category: 'event_reminder',
+              title: `Reminder: ${title.trim()}`,
+              body: `Starts in ${reminderMinutes} minutes. Tap to view details.`,
+              scheduledAt: scheduledAt.toISOString(),
+              relatedEntity: `post:${post.id}`
+            });
+          } catch (err) {
+            logger.error(`Failed to schedule reminder for user ${n.user_id}: ${err.message}`);
+          }
+        })).catch(err => logger.error(`Background reminder scheduling error: ${err.message}`));
+      }
+    }
 
     await client.query("COMMIT");
     return { post, event };
@@ -140,7 +203,12 @@ const updateEvent = async (eventId, userId, userRoles, data) => {
 
     checkPermission(userRoles, existingEvent.authorId, userId);
 
-    const { title, content, visibility, ...eventFields } = data;
+    const { 
+    title, content, category, 
+    visibility,
+    endDate, endTime, isAllDay, isOnline, meetingLink, reminderMinutes,
+    ...eventFields 
+  } = data;
 
     // Update post if needed
     if (title || content || visibility) {
@@ -148,7 +216,15 @@ const updateEvent = async (eventId, userId, userRoles, data) => {
     }
 
     // Update event if needed
-    const updatedEvent = await eventRepository.updateEvent(client, eventId, eventFields);
+    const event = await eventRepository.updateEvent(client, eventId, {
+      endDate,
+      endTime,
+      isAllDay,
+      isOnline,
+      meetingLink,
+      reminderMinutes,
+      ...eventFields
+    });
 
     await client.query("COMMIT");
     
@@ -221,7 +297,7 @@ const rsvpToEvent = async (eventId, userId, status) => {
   }
 };
 
-const getEventRsvps = async (eventId) => {
+const getEventRsvps = async (eventId, limit = 10, offset = 0) => {
   const client = await pool.connect();
   try {
     const event = await eventRepository.findEventById(client, eventId);
@@ -229,7 +305,7 @@ const getEventRsvps = async (eventId) => {
       throw new AppError("Event not found", 404);
     }
     
-    return await eventRepository.findRsvpsByEventId(client, eventId);
+    return await eventRepository.findRsvpsByEventId(client, eventId, limit, offset);
   } finally {
     client.release();
   }
