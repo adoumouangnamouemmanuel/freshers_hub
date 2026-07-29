@@ -27,6 +27,7 @@ import {
   ScrollView,
   Switch,
 } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import { API_URL } from "@/lib/api";
 
@@ -63,8 +64,9 @@ export default function SendNotificationModal({
   const [title, setTitle]         = useState("");
   const [body, setBody]           = useState("");
   const [isScheduled, setIsScheduled] = useState(false);
-  const [scheduleDate, setScheduleDate] = useState("");
-  const [scheduleTime, setScheduleTime] = useState("");
+  const [scheduleDateTime, setScheduleDateTime] = useState<Date>(new Date(Date.now() + 3600000));
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [sending, setSending]     = useState(false);
   const [category]                = useState(defaultCategory);
 
@@ -72,8 +74,7 @@ export default function SendNotificationModal({
     setTitle("");
     setBody("");
     setIsScheduled(false);
-    setScheduleDate("");
-    setScheduleTime("");
+    setScheduleDateTime(new Date(Date.now() + 3600000));
   };
 
   const applyQuick = (q: any) => {
@@ -89,16 +90,11 @@ export default function SendNotificationModal({
 
     let scheduledAt: string | null = null;
     if (isScheduled) {
-      if (!scheduleDate || !scheduleTime) {
-        Alert.alert("Missing date/time", "Please enter a date and time for the reminder.");
-        return;
-      }
-      const dt = new Date(`${scheduleDate}T${scheduleTime}:00`);
-      if (isNaN(dt.getTime()) || dt <= new Date()) {
+      if (scheduleDateTime <= new Date()) {
         Alert.alert("Invalid date", "Please choose a future date and time.");
         return;
       }
-      scheduledAt = dt.toISOString();
+      scheduledAt = scheduleDateTime.toISOString();
     }
 
     setSending(true);
@@ -123,7 +119,7 @@ export default function SendNotificationModal({
       Alert.alert(
         "Sent! ✓",
         isScheduled
-          ? `Reminder scheduled for ${scheduleDate} at ${scheduleTime}.`
+          ? `Reminder scheduled for ${scheduleDateTime.toLocaleDateString()} at ${scheduleDateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`
           : `Notification sent to ${targetUserName}.`
       );
       reset();
@@ -205,25 +201,53 @@ export default function SendNotificationModal({
 
             {isScheduled && (
               <View style={styles.dateTimeRow}>
-                <TextInput
-                  style={[styles.input, styles.halfInput]}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor="#9CA3AF"
-                  value={scheduleDate}
-                  onChangeText={setScheduleDate}
-                  keyboardType="numeric"
-                  maxLength={10}
-                />
-                <TextInput
-                  style={[styles.input, styles.halfInput]}
-                  placeholder="HH:MM"
-                  placeholderTextColor="#9CA3AF"
-                  value={scheduleTime}
-                  onChangeText={setScheduleTime}
-                  keyboardType="numeric"
-                  maxLength={5}
-                />
+                <Pressable
+                  style={[styles.input, styles.halfInput, { justifyContent: 'center' }]}
+                  onPress={() => setShowDatePicker(true)}
+                >
+                  <Text style={{ fontSize: 15, color: '#111827' }}>
+                    {scheduleDateTime.toLocaleDateString()}
+                  </Text>
+                </Pressable>
+                
+                <Pressable
+                  style={[styles.input, styles.halfInput, { justifyContent: 'center' }]}
+                  onPress={() => setShowTimePicker(true)}
+                >
+                  <Text style={{ fontSize: 15, color: '#111827' }}>
+                    {scheduleDateTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </Text>
+                </Pressable>
               </View>
+            )}
+
+            {showDatePicker && (
+              <DateTimePicker
+                testID="dateTimePicker"
+                value={scheduleDateTime}
+                mode="date"
+                is24Hour={true}
+                display="default"
+                minimumDate={new Date()}
+                onChange={(event, selectedDate) => {
+                  if (Platform.OS === 'android') setShowDatePicker(false);
+                  if (selectedDate) setScheduleDateTime(selectedDate);
+                }}
+              />
+            )}
+
+            {showTimePicker && (
+              <DateTimePicker
+                testID="timePicker"
+                value={scheduleDateTime}
+                mode="time"
+                is24Hour={true}
+                display="default"
+                onChange={(event, selectedDate) => {
+                  if (Platform.OS === 'android') setShowTimePicker(false);
+                  if (selectedDate) setScheduleDateTime(selectedDate);
+                }}
+              />
             )}
           </ScrollView>
 
