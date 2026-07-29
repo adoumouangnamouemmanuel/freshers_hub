@@ -4,7 +4,7 @@ const eventRepository = require("../repositories/eventRepository");
 const postRepository = require("../repositories/postRepository");
 
 // Shared roles allowed to manipulate events
-const ALLOWED_ROLES = ["staff", "faculty", "student_leader", "admin", "club_lead"];
+const ALLOWED_ROLES = ["staff", "faculty", "student_leader", "admin", "club_lead", "advisor", "counsellor", "coach_admin"];
 
 const checkPermission = (userRoles, authorId, userId) => {
   const hasRole = userRoles.some(role => ALLOWED_ROLES.includes(role));
