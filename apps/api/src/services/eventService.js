@@ -17,6 +17,30 @@ const checkPermission = (userRoles, authorId, userId) => {
   }
 };
 
+/**
+ * BUG-23 fix: Extracted shared helper so push dispatch isn't duplicated.
+ * BUG-06 fix: Uses setImmediate so notifications fire AFTER the DB transaction
+ * commits — preventing ghost notifications if the transaction rolls back.
+ */
+const dispatchPushNotifications = (notifiedUsers, postId) => {
+  if (!notifiedUsers || notifiedUsers.length === 0) return;
+  setImmediate(async () => {
+    for (const n of notifiedUsers) {
+      try {
+        const tokens = await notificationRepo.getPushTokensForUser(n.user_id);
+        if (tokens && tokens.length > 0) {
+          await notificationService.sendExpoPush(tokens, n.title, n.body, {
+            notificationId: n.id,
+            relatedEntity: `post:${postId}`
+          });
+        }
+      } catch (err) {
+        logger.error(`Failed to send push for new event to user ${n.user_id}: ${err.message}`);
+      }
+    }
+  });
+};
+
 const createEvent = async (userId, userRoles, data) => {
   const hasRole = userRoles.some(role => ALLOWED_ROLES.includes(role));
   if (!hasRole) {
@@ -43,9 +67,9 @@ const createEvent = async (userId, userRoles, data) => {
     });
 
     let notifiedUsers = [];
-    // 2. Targets & Notifications
+
+    // 2. Targets & Notifications (DB inserts happen inside the transaction)
     if (visibility === "targeted" && targetGroupIds?.length > 0) {
-      // authorId is needed by insertPostTargets
       await postRepository.insertPostTargets(client, post.id, targetGroupIds, userId);
       notifiedUsers = await postRepository.insertNotificationsForTargets(
         client, 
@@ -57,23 +81,6 @@ const createEvent = async (userId, userRoles, data) => {
           authorId: userId
         }
       );
-
-      // Send Expo Push Notifications
-      if (notifiedUsers && notifiedUsers.length > 0) {
-        Promise.all(notifiedUsers.map(async (n) => {
-          try {
-            const tokens = await notificationRepo.getPushTokensForUser(n.user_id);
-            if (tokens && tokens.length > 0) {
-              await notificationService.sendExpoPush(tokens, n.title, n.body, { 
-                notificationId: n.id, 
-                relatedEntity: `post:${post.id}` 
-              });
-            }
-          } catch (err) {
-            logger.error(`Failed to send push for new event to user ${n.user_id}: ${err.message}`);
-          }
-        })).catch(err => logger.error(`Background push error: ${err.message}`));
-      }
     } else {
       // Notify all students if not targeted
       notifiedUsers = await postRepository.insertNotificationsForAllStudents(
@@ -85,25 +92,9 @@ const createEvent = async (userId, userRoles, data) => {
           authorId: userId
         }
       );
-
-      if (notifiedUsers && notifiedUsers.length > 0) {
-        Promise.all(notifiedUsers.map(async (n) => {
-          try {
-            const tokens = await notificationRepo.getPushTokensForUser(n.user_id);
-            if (tokens && tokens.length > 0) {
-              await notificationService.sendExpoPush(tokens, n.title, n.body, { 
-                notificationId: n.id, 
-                relatedEntity: `post:${post.id}` 
-              });
-            }
-          } catch (err) {
-            logger.error(`Failed to send push for new event to user ${n.user_id}: ${err.message}`);
-          }
-        })).catch(err => logger.error(`Background push error: ${err.message}`));
-      }
     }
 
-    // 3. Create Event
+    // 3. Create Event record
     const event = await eventRepository.insertEvent(client, {
       postId: post.id,
       endDate,
@@ -115,31 +106,40 @@ const createEvent = async (userId, userRoles, data) => {
       ...eventFields
     });
 
-    // 4. Schedule Reminder (if applicable)
+    await client.query("COMMIT");
+
+    // BUG-06 fix: Push notifications are dispatched AFTER commit so they
+    // never fire for rolled-back transactions.
+    dispatchPushNotifications(notifiedUsers, post.id);
+
+    // 4. Schedule Reminder (if applicable) — also after commit
     if (reminderMinutes && reminderMinutes > 0 && notifiedUsers && notifiedUsers.length > 0) {
-      // Calculate reminder time: eventDate + eventTime - reminderMinutes
+      // NOTE: eventDate/eventTime are bare strings (YYYY-MM-DD / HH:MM).
+      // They are treated as server-local time here. Ensure the server runs in UTC
+      // or switch to UTC ISO timestamps in a future timezone refactor.
       const eventDateTime = new Date(`${eventFields.eventDate}T${eventFields.eventTime}`);
       const scheduledAt = new Date(eventDateTime.getTime() - (reminderMinutes * 60 * 1000));
-      
+
       if (scheduledAt > new Date()) {
-        Promise.all(notifiedUsers.map(async (n) => {
-          try {
-            await notificationService.scheduleReminder({
-              userId: n.user_id,
-              category: 'event_reminder',
-              title: `Reminder: ${title.trim()}`,
-              body: `Starts in ${reminderMinutes} minutes. Tap to view details.`,
-              scheduledAt: scheduledAt.toISOString(),
-              relatedEntity: `post:${post.id}`
-            });
-          } catch (err) {
-            logger.error(`Failed to schedule reminder for user ${n.user_id}: ${err.message}`);
+        setImmediate(async () => {
+          for (const n of notifiedUsers) {
+            try {
+              await notificationService.scheduleReminder({
+                userId: n.user_id,
+                category: 'event_reminder',
+                title: `Reminder: ${title.trim()}`,
+                body: `Starts in ${reminderMinutes} minutes. Tap to view details.`,
+                scheduledAt: scheduledAt.toISOString(),
+                relatedEntity: `post:${post.id}`
+              });
+            } catch (err) {
+              logger.error(`Failed to schedule reminder for user ${n.user_id}: ${err.message}`);
+            }
           }
-        })).catch(err => logger.error(`Background reminder scheduling error: ${err.message}`));
+        });
       }
     }
 
-    await client.query("COMMIT");
     return { post, event };
   } catch (error) {
     await client.query("ROLLBACK");
@@ -152,17 +152,20 @@ const createEvent = async (userId, userRoles, data) => {
 const getEvents = async (userId, options) => {
   const client = await pool.connect();
   try {
-    const limit = options.limit || 50;
-    const page = options.page || 1;
+    // BUG-17 fix: Use ?? instead of || so limit=0 is handled correctly
+    const limit = options.limit ?? 50;
+    const page = options.page ?? 1;
     const offset = (page - 1) * limit;
 
     const { data, total } = await eventRepository.findEvents(client, userId, {
       limit,
       offset,
-      status: options.status
+      status: options.status,
+      dateFrom: options.dateFrom,
+      dateTo: options.dateTo,
     });
 
-    const totalPages = Math.ceil(total / limit);
+    const totalPages = Math.ceil(total / (limit || 1));
 
     return {
       data,
@@ -204,19 +207,25 @@ const updateEvent = async (eventId, userId, userRoles, data) => {
     checkPermission(userRoles, existingEvent.authorId, userId);
 
     const { 
-    title, content, category, 
-    visibility,
-    endDate, endTime, isAllDay, isOnline, meetingLink, reminderMinutes,
-    ...eventFields 
-  } = data;
+      title, content, category, 
+      visibility,
+      endDate, endTime, isAllDay, isOnline, meetingLink, reminderMinutes,
+      ...eventFields 
+    } = data;
 
-    // Update post if needed
-    if (title || content || visibility) {
-      await postRepository.updatePost(client, existingEvent.postId, { title, content, category: 'event', visibility });
+    // Update post fields (title, content, visibility) if any are provided
+    if (title !== undefined || content !== undefined || visibility !== undefined) {
+      await postRepository.updatePost(client, existingEvent.postId, {
+        title,
+        content,
+        category: 'event',
+        // BUG-04 fix: visibility is now properly forwarded to updatePost
+        visibility
+      });
     }
 
-    // Update event if needed
-    const event = await eventRepository.updateEvent(client, eventId, {
+    // Update event-specific fields
+    await eventRepository.updateEvent(client, eventId, {
       endDate,
       endTime,
       isAllDay,
@@ -226,10 +235,12 @@ const updateEvent = async (eventId, userId, userRoles, data) => {
       ...eventFields
     });
 
+    // BUG-01 fix: Read refreshed view BEFORE committing so we use the
+    // same still-open client — no dead-client or double-release risk.
+    const refreshed = await eventRepository.findEventById(client, eventId, userId);
+
     await client.query("COMMIT");
-    
-    // Return completely refreshed view
-    return await eventRepository.findEventById(client, eventId, userId);
+    return refreshed;
   } catch (error) {
     await client.query("ROLLBACK");
     throw error;
@@ -268,18 +279,30 @@ const rsvpToEvent = async (eventId, userId, status) => {
   try {
     await client.query("BEGIN");
 
-    const event = await eventRepository.findEventById(client, eventId, userId);
-    if (!event) {
+    // BUG-21 fix: Lock the event row with FOR UPDATE so concurrent RSVPs are
+    // serialized — prevents two users from both passing the capacity check for
+    // the last remaining slot (TOCTOU race condition).
+    const { rows: lockRows } = await client.query(
+      `SELECT e.id, e.capacity, e.rsvp_enabled,
+              (SELECT COUNT(*)::int FROM event_rsvps er WHERE er.event_id = e.id AND er.status = 'going') AS going_count,
+              (SELECT er2.status FROM event_rsvps er2 WHERE er2.event_id = $1 AND er2.user_id = $2) AS my_rsvp
+       FROM events e WHERE e.id = $1 FOR UPDATE`,
+      [eventId, userId]
+    );
+
+    if (!lockRows.length) {
       throw new AppError("Event not found", 404);
     }
 
-    if (!event.rsvpEnabled) {
+    const { capacity, rsvp_enabled, going_count, my_rsvp } = lockRows[0];
+
+    if (!rsvp_enabled) {
       throw new AppError("RSVP is not enabled for this event", 400);
     }
 
-    if (status === "going" && event.capacity && event.goingCount >= event.capacity) {
-      // Allow overriding if the user is ALREADY going (e.g. updating RSVP just refreshes timestamp)
-      if (event.myRsvp !== "going") {
+    if (status === "going" && capacity && going_count >= capacity) {
+      // Allow if user is already going (refreshing their RSVP)
+      if (my_rsvp !== "going") {
         throw new AppError("Event is at full capacity", 400);
       }
     }
@@ -300,11 +323,17 @@ const rsvpToEvent = async (eventId, userId, status) => {
 const getEventRsvps = async (eventId, limit = 10, offset = 0) => {
   const client = await pool.connect();
   try {
-    const event = await eventRepository.findEventById(client, eventId);
-    if (!event) {
+    // BUG-07 fix: Simple existence check instead of loading the full event
+    // with a fragile template-literal SQL branch.
+    const { rows } = await client.query(
+      'SELECT 1 FROM events WHERE id = $1',
+      [eventId]
+    );
+    if (!rows.length) {
       throw new AppError("Event not found", 404);
     }
     
+    // BUG-18 fix: findRsvpsByEventId now returns { rsvps, total }
     return await eventRepository.findRsvpsByEventId(client, eventId, limit, offset);
   } finally {
     client.release();
