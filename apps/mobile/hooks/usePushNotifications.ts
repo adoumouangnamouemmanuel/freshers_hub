@@ -20,7 +20,6 @@ import Constants from 'expo-constants';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
     shouldShowBanner: true,
@@ -73,26 +72,53 @@ export function usePushNotifications(accessToken: string | undefined) {
       if (token) {
         setExpoPushToken(token);
         setIsEnabled(true);
-        // NOTE: Here you would normally send the token to your backend
-        // e.g., await fetch('/notifications/push-token', { method: 'POST', body: { token }})
+        const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
+        if (accessToken) {
+          try {
+            await fetch(`${API_URL}/notifications/push-token`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${accessToken}`
+              },
+              body: JSON.stringify({ pushToken: token })
+            });
+          } catch (e) {
+            console.error("Failed to sync push token with backend", e);
+          }
+        }
       }
     } catch (error) {
       console.error("Error enabling push:", error);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [accessToken]);
 
   const disablePush = useCallback(async () => {
     setIsLoading(true);
     try {
-      // NOTE: Here you would normally tell your backend to delete the token
+      const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4000';
+      if (accessToken && expoPushToken) {
+        try {
+          await fetch(`${API_URL}/notifications/push-token`, {
+            method: 'DELETE',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`
+            },
+            body: JSON.stringify({ pushToken: expoPushToken })
+          });
+        } catch (e) {
+          console.error("Failed to remove push token from backend", e);
+        }
+      }
       setIsEnabled(false);
       setExpoPushToken(undefined);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [accessToken]);
 
   useEffect(() => {
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
