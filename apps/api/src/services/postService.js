@@ -97,6 +97,33 @@ const createPost = async (client, { userPayload, title, content, category, visib
           }
         })).catch(err => logger.error(`Background push error: ${err.message}`));
       }
+    } else {
+      // Notify all students if not targeted
+      const notifiedUsers = await postRepository.insertNotificationsForAllStudents(
+        client, 
+        {
+          title: `New: ${title.trim()}`,
+          category: category,
+          postId: post.id,
+          authorId: userPayload.sub
+        }
+      );
+
+      if (notifiedUsers && notifiedUsers.length > 0) {
+        Promise.all(notifiedUsers.map(async (n) => {
+          try {
+            const tokens = await notificationRepo.getPushTokensForUser(n.user_id);
+            if (tokens && tokens.length > 0) {
+              await notificationService.sendExpoPush(tokens, n.title, n.body, { 
+                notificationId: n.id, 
+                relatedEntity: `post:${post.id}` 
+              });
+            }
+          } catch (err) {
+            logger.error(`Failed to send push for new post to user ${n.user_id}: ${err.message}`);
+          }
+        })).catch(err => logger.error(`Background push error: ${err.message}`));
+      }
     }
 
     await client.query("COMMIT");
