@@ -4,6 +4,7 @@ import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
+import { queryClient } from '@/lib/queryClient';
 
 /* 
  * ============================================================================
@@ -124,6 +125,7 @@ export function usePushNotifications(accessToken: string | undefined) {
   useEffect(() => {
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
       setNotification(notification);
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] });
     });
 
     responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
