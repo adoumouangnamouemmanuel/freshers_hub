@@ -77,13 +77,13 @@ function NotificationBell() {
     queryKey: ['notifications', 'unread-count'],
     queryFn: async () => {
       const headers = { Authorization: `Bearer ${session?.accessToken}` };
-      return apiRequest<{ count: number }>("/notifications/unread-count", { headers });
+      return apiRequest<{ unreadCount: number }>("/notifications/unread-count", { headers });
     },
     enabled: !!session?.accessToken,
     refetchInterval: 60000, // 60 seconds polling
   });
   
-  const unreadCount = unreadData?.count || 0;
+  const unreadCount = unreadData?.unreadCount || 0;
 
   return (
     <Pressable style={styles.iconBtn} onPress={() => router.push("/notifications")}>
@@ -188,6 +188,7 @@ export default function FeedScreen() {
     await Promise.all([
       refetchDashboard(),
       refetchPosts(),
+      queryClient.invalidateQueries({ queryKey: ['notifications', 'unread-count'] })
     ]);
     setRefreshing(false);
   };
