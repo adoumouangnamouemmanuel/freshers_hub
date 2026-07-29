@@ -2,6 +2,9 @@ const AppError = require("../utils/AppError");
 const { pool } = require("../services/db");
 const eventRepository = require("../repositories/eventRepository");
 const postRepository = require("../repositories/postRepository");
+const notificationRepo = require("../repositories/notificationRepository");
+const notificationService = require("./notificationService");
+const logger = require("../utils/logger");
 
 // Shared roles allowed to manipulate events
 const ALLOWED_ROLES = ["staff", "faculty", "student_leader", "admin", "club_lead", "advisor", "counsellor", "coach_admin"];
@@ -38,7 +41,7 @@ const createEvent = async (userId, userRoles, data) => {
     // 2. Targets & Notifications
     if (visibility === "targeted" && targetGroupIds?.length > 0) {
       await postRepository.insertPostTargets(client, post.id, targetGroupIds);
-      await postRepository.insertNotificationsForTargets(
+      const notifiedUsers = await postRepository.insertNotificationsForTargets(
         client, 
         {
           title: `New Event: ${title.trim()}`,
@@ -48,6 +51,23 @@ const createEvent = async (userId, userRoles, data) => {
           authorId: userId
         }
       );
+
+      // Send Expo Push Notifications
+      if (notifiedUsers && notifiedUsers.length > 0) {
+        Promise.all(notifiedUsers.map(async (n) => {
+          try {
+            const tokens = await notificationRepo.getPushTokensForUser(n.user_id);
+            if (tokens && tokens.length > 0) {
+              await notificationService.sendExpoPush(tokens, n.title, n.body, { 
+                notificationId: n.id, 
+                relatedEntity: `post:${post.id}` 
+              });
+            }
+          } catch (err) {
+            logger.error(`Failed to send push for new event to user ${n.user_id}: ${err.message}`);
+          }
+        })).catch(err => logger.error(`Background push error: ${err.message}`));
+      }
     }
 
     // 3. Create Event
