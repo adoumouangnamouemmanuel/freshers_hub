@@ -113,56 +113,126 @@ class AdminFeedRepository {
 
   // ── Events ─────────────────────────────────────────────────────────────────
 
+  /**
+   * BUG-02 fix: Rewrote to JOIN posts and use actual events table columns.
+   * Previously queried non-existent columns (e.title, e.starts_at, e.organizer_id)
+   * which would have crashed at runtime. Now mirrors the real schema.
+   */
   async listEvents({ status = '', search = '', page = 1, pageSize = 20 } = {}) {
     const params = [];
     const conditions = [];
     let p = 1;
 
     if (status) { conditions.push(`e.status = $${p++}`); params.push(status); }
-    if (search) { conditions.push(`e.title ILIKE $${p++}`); params.push(`%${search}%`); }
+    if (search) { conditions.push(`p.title ILIKE $${p++}`); params.push(`%${search}%`); }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
     const offset = (page - 1) * pageSize;
 
     const { rows } = await pool.query(
-      `SELECT e.id, e.title, e.description, e.location, e.starts_at, e.ends_at,
-              e.status, e.created_at, u.full_name AS organizer_name
+      `SELECT
+              e.id, e.status, e.event_date AS event_date, e.event_time AS event_time,
+              e.end_date, e.end_time, e.is_all_day, e.is_online, e.meeting_link,
+              e.location, e.organizer, e.capacity, e.rsvp_enabled,
+              e.created_at,
+              p.id AS post_id, p.title, p.content, p.visibility,
+              p.author_id,
+              u.full_name AS author_name, u.avatar_url AS author_avatar,
+              (SELECT COUNT(*)::int FROM event_rsvps er WHERE er.event_id = e.id AND er.status = 'going') AS going_count
        FROM events e
-       LEFT JOIN users u ON u.id = e.organizer_id
+       JOIN posts p ON p.id = e.post_id
+       JOIN users u ON u.id = p.author_id
        ${where}
-       ORDER BY e.starts_at DESC
+       ORDER BY e.event_date DESC, e.event_time DESC
        LIMIT $${p} OFFSET $${p + 1}`,
       [...params, pageSize, offset]
     );
 
     const { rows: countRows } = await pool.query(
-      `SELECT COUNT(*) AS total FROM events e ${where}`,
+      `SELECT COUNT(*) AS total
+       FROM events e
+       JOIN posts p ON p.id = e.post_id
+       ${where}`,
       params
     );
 
     return { data: rows, total: parseInt(countRows[0].total), page, pageSize };
   }
 
+  /**
+   * BUG-02 fix: updateEvent now uses the correct column names from the real
+   * events table. Previously used 'title', 'description', 'starts_at', 'ends_at'
+   * — none of which exist.
+   */
   async updateEvent(id, fields) {
-    const allowed = ['title', 'description', 'location', 'starts_at', 'ends_at', 'status'];
-    const sets = [];
-    const params = [];
+    // event-level fields
+    const eventAllowed = ['event_date', 'event_time', 'end_date', 'end_time', 'location',
+                         'organizer', 'capacity', 'rsvp_enabled', 'is_online', 'meeting_link',
+                         'is_all_day', 'status'];
+    const eventSets = [];
+    const eventParams = [];
     let p = 1;
 
-    for (const key of allowed) {
+    for (const key of eventAllowed) {
       if (fields[key] !== undefined) {
-        sets.push(`${key} = $${p++}`);
-        params.push(fields[key]);
+        eventSets.push(`${key} = $${p++}`);
+        eventParams.push(fields[key]);
       }
     }
-    if (sets.length === 0) return null;
 
-    params.push(id);
-    const { rows } = await pool.query(
-      `UPDATE events SET ${sets.join(', ')}, updated_at = now() WHERE id = $${p} RETURNING *`,
-      params
-    );
-    return rows[0] || null;
+    // post-level fields (title, content, visibility)
+    const postAllowed = ['title', 'content', 'visibility'];
+    const postSets = [];
+    const postParams = [];
+    let pp = 1;
+
+    for (const key of postAllowed) {
+      if (fields[key] !== undefined) {
+        postSets.push(`${key} = $${pp++}`);
+        postParams.push(fields[key]);
+      }
+    }
+
+    if (eventSets.length === 0 && postSets.length === 0) return null;
+
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      let updatedEvent = null;
+      if (eventSets.length > 0) {
+        eventParams.push(id);
+        const { rows } = await client.query(
+          `UPDATE events SET ${eventSets.join(', ')}, updated_at = now()
+           WHERE id = $${p} RETURNING *`,
+          eventParams
+        );
+        updatedEvent = rows[0] || null;
+      }
+
+      if (postSets.length > 0) {
+        // Get the post_id for this event
+        const { rows: eventRows } = await client.query(
+          `SELECT post_id FROM events WHERE id = $1`, [id]
+        );
+        if (eventRows.length > 0) {
+          postParams.push(eventRows[0].post_id);
+          await client.query(
+            `UPDATE posts SET ${postSets.join(', ')}, updated_at = now()
+             WHERE id = $${pp}`,
+            postParams
+          );
+        }
+      }
+
+      await client.query('COMMIT');
+      return updatedEvent;
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
   }
 }
 
