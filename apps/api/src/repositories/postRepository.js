@@ -204,17 +204,22 @@ const insertNotificationsForAllStudents = async (client, { title, category, post
   return rows;
 };
 
-const updatePost = async (client, postId, { title, content, category }) => {
+/**
+ * BUG-04 fix: Added `visibility` to the SET clause so event/post visibility
+ * changes (e.g. public → targeted) are actually persisted.
+ */
+const updatePost = async (client, postId, { title, content, category, visibility }) => {
   const { rows } = await client.query(`
     UPDATE posts
     SET 
       title = COALESCE($1, title), 
       content = COALESCE($2, content), 
-      category = COALESCE($3, category), 
+      category = COALESCE($3, category),
+      visibility = COALESCE($4, visibility),
       updated_at = now()
-    WHERE id = $4
-    RETURNING id, title, content, category, created_at as "createdAt"
-  `, [title, content, category, postId]);
+    WHERE id = $5
+    RETURNING id, title, content, category, visibility, created_at as "createdAt"
+  `, [title, content, category, visibility, postId]);
   return rows[0];
 };
 
