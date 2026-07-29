@@ -57,7 +57,7 @@ export default function TabLayout() {
           shadowRadius: 12,
         },
         tabBarItemStyle: {
-          paddingVertical: 10,
+          // paddingVertical removed to prevent vertical misalignment
         },
         tabBarLabelStyle: {
           fontSize: 10,
