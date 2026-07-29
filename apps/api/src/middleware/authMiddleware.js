@@ -53,12 +53,19 @@ function requireRoles(...allowedRoles) {
  * Middleware that restricts access to users with the 'platform_admin' role.
  * Returns 403 (not 404) on failure — this is intentionally hidden, not missing.
  * Must be used after requireAuth.
+ *
+ * BUG-05 fix: Use .some() with role normalization (matching requireRoles logic
+ * on L41) instead of raw .includes() which fails when roles are objects.
  */
 function requirePlatformAdmin(req, res, next) {
   if (!req.user) {
     return res.status(401).json({ error: 'Not authenticated' });
   }
-  if (!req.user.roles.includes('platform_admin')) {
+  const hasAdminRole = req.user.roles.some(r => {
+    const roleName = typeof r === 'string' ? r : (r.name || r);
+    return roleName === 'platform_admin';
+  });
+  if (!hasAdminRole) {
     return res.status(403).json({ error: 'Forbidden' });
   }
   next();
