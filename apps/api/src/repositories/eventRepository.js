@@ -50,7 +50,45 @@ const updateEvent = async (client, eventId, {
   return rows[0];
 };
 
-const findEvents = async (client, userId, { limit, offset, status = 'scheduled' }) => {
+/**
+ * BUG-08 fix: Removed hardcoded `event_date >= CURRENT_DATE` filter.
+ * Past/completed events are now visible when queried. Optional dateFrom/dateTo
+ * params allow callers to filter by date range explicitly.
+ */
+const findEvents = async (client, userId, { limit, offset, status = 'scheduled', dateFrom, dateTo }) => {
+  // Build dynamic WHERE clauses
+  const params = [userId, limit, offset];
+  const conditions = [];
+  let p = 4;
+
+  if (status) {
+    conditions.push(`e.status = $${p++}`);
+    params.push(status);
+  }
+
+  // BUG-08: date range is now optional and parameterized, not hardcoded
+  if (dateFrom) {
+    conditions.push(`e.event_date >= $${p++}`);
+    params.push(dateFrom);
+  }
+  if (dateTo) {
+    conditions.push(`e.event_date <= $${p++}`);
+    params.push(dateTo);
+  }
+
+  const visibilityClause = `(
+    p.visibility = 'public'
+    OR EXISTS (
+      SELECT 1 FROM post_targets pt
+      JOIN group_members gm ON gm.group_id = pt.target_id AND pt.target_type = 'group'
+      WHERE pt.post_id = p.id AND gm.user_id = $1
+    )
+    OR p.author_id = $1
+  )`;
+
+  conditions.push(visibilityClause);
+  const whereStr = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
   const { rows } = await client.query(
     `SELECT 
        e.id, e.post_id as "postId", e.event_date as "eventDate", e.event_time as "eventTime",
@@ -66,26 +104,15 @@ const findEvents = async (client, userId, { limit, offset, status = 'scheduled' 
      FROM events e
      JOIN posts p ON p.id = e.post_id
      JOIN users u ON u.id = p.author_id
-     WHERE e.status = $4
-       AND e.event_date >= CURRENT_DATE
-       AND (
-         p.visibility = 'public'
-         OR EXISTS (
-           SELECT 1 FROM post_targets pt
-           JOIN group_members gm ON gm.group_id = pt.target_id AND pt.target_type = 'group'
-           WHERE pt.post_id = p.id AND gm.user_id = $1
-         )
-         OR p.author_id = $1
-       )
+     ${whereStr}
      ORDER BY e.event_date ASC, e.event_time ASC
      LIMIT $2 OFFSET $3`,
-    [userId, limit, offset, status]
+    params
   );
   
   if (rows.length === 0) return { data: [], total: 0 };
   
   const total = rows[0].totalCount;
-  // Remove totalCount from individual rows
   const data = rows.map(({ totalCount, ...rest }) => rest);
   
   return { data, total };
@@ -135,10 +162,16 @@ const getEventCounts = async (client, eventId) => {
   return rows[0];
 };
 
+/**
+ * BUG-18 fix: Returns { rsvps, total } instead of a bare array so the
+ * mobile infinite query can determine hasNextPage without a fragile
+ * length-equals-pageSize heuristic.
+ */
 const findRsvpsByEventId = async (client, eventId, limit = 10, offset = 0) => {
   const { rows } = await client.query(
     `SELECT er.status, er.rsvp_at as "rsvpAt",
-       u.id as "userId", u.full_name as "fullName", u.avatar_url as "avatarUrl"
+       u.id as "userId", u.full_name as "fullName", u.avatar_url as "avatarUrl",
+       COUNT(*) OVER()::int AS total_count
      FROM event_rsvps er
      JOIN users u ON u.id = er.user_id
      WHERE er.event_id = $1
@@ -146,7 +179,10 @@ const findRsvpsByEventId = async (client, eventId, limit = 10, offset = 0) => {
      LIMIT $2 OFFSET $3`,
     [eventId, limit, offset]
   );
-  return rows;
+  if (rows.length === 0) return { rsvps: [], total: 0 };
+  const total = rows[0].total_count;
+  const rsvps = rows.map(({ total_count, ...rest }) => rest);
+  return { rsvps, total };
 };
 
 module.exports = {
