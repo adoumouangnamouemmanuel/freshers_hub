@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, ActivityIndicator, Modal, TextInput, Alert, Platform, KeyboardAvoidingView, Pressable } from "react-native";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { StyleSheet, Text, View, TouchableOpacity, ActivityIndicator, Alert, Platform, Pressable } from "react-native";
+import { BottomSheetModal, BottomSheetBackdrop, BottomSheetScrollView, BottomSheetView, BottomSheetTextInput } from "@gorhom/bottom-sheet";
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from "expo-router";
 import { IconSymbol } from "@/components/ui/icon-symbol";
@@ -26,6 +27,34 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
   const [isAssigning, setIsAssigning] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [peerCounsellors, setPeerCounsellors] = useState<any[]>([]);
+
+  const bottomSheetModalRef = useRef<BottomSheetModal>(null);
+  const snapPoints = useMemo(() => ["90%"], []);
+
+  useEffect(() => {
+    if (visible) {
+      bottomSheetModalRef.current?.present();
+    } else {
+      bottomSheetModalRef.current?.dismiss();
+    }
+  }, [visible]);
+
+  const handleSheetChanges = useCallback((index: number) => {
+    if (index === -1) {
+      onClose();
+    }
+  }, [onClose]);
+
+  const renderBackdrop = useCallback(
+    (props: any) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+      />
+    ),
+    []
+  );
 
   // Edit Form State
   const [editDate, setEditDate] = useState<Date>(new Date());
@@ -189,22 +218,29 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
   const canMarkComplete = isOwner || (isParticipant && (isCoachAdmin || isAdvisor || isCounsellor)) || (isProvider && isPeerCoach);
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
-      <KeyboardAvoidingView 
-        style={styles.modalOverlay} 
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-      >
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>
-              {isEditMode ? "Edit Session" : "Session Details"}
-            </Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Ionicons name="close" size={24} color="#4B5563" />
-            </TouchableOpacity>
-          </View>
+    <BottomSheetModal
+      ref={bottomSheetModalRef}
+      index={0}
+      snapPoints={snapPoints}
+      onChange={handleSheetChanges}
+      backdropComponent={renderBackdrop}
+      enablePanDownToClose={true}
+      handleIndicatorStyle={{ backgroundColor: "#D1D5DB", width: 40 }}
+      backgroundStyle={{ borderTopLeftRadius: 24, borderTopRightRadius: 24 }}
+      keyboardBehavior="interactive"
+      keyboardBlurBehavior="restore"
+    >
+      <BottomSheetView style={styles.modalContent}>
+        <View style={styles.modalHeader}>
+          <Text style={styles.modalTitle}>
+            {isEditMode ? "Edit Session" : "Session Details"}
+          </Text>
+          <TouchableOpacity onPress={() => bottomSheetModalRef.current?.dismiss()} style={styles.closeBtn}>
+            <Ionicons name="close" size={24} color="#4B5563" />
+          </TouchableOpacity>
+        </View>
 
-          <ScrollView style={styles.modalBody} contentContainerStyle={{ paddingBottom: 60 }}>
+          <BottomSheetScrollView style={styles.modalBody} contentContainerStyle={{ paddingBottom: 60 }}>
             {isEditMode ? (
               <View style={styles.form}>
                 <Text style={styles.label}>Date & Time</Text>
@@ -242,7 +278,7 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
                   />
                 )}
                 <Text style={styles.label}>Title</Text>
-                <TextInput
+                <BottomSheetTextInput
                   style={[styles.input, !isOwner && { backgroundColor: '#E5E7EB', color: '#6B7280' }]}
                   value={editTitle}
                   onChangeText={setEditTitle}
@@ -252,7 +288,7 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
                 />
 
                 <Text style={styles.label}>Location</Text>
-                <TextInput 
+                <BottomSheetTextInput 
                   style={styles.input} 
                   value={editLocation} 
                   onChangeText={setEditLocation}
@@ -260,7 +296,7 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
                 />
 
                 <Text style={styles.label}>Description / Notes</Text>
-                <TextInput 
+                <BottomSheetTextInput 
                   style={[styles.input, { height: 100, textAlignVertical: 'top' }, !isOwner && { backgroundColor: '#E5E7EB', color: '#6B7280' }]} 
                   value={editDescription} 
                   onChangeText={setEditDescription}
@@ -355,7 +391,7 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
                 </View>
               </View>
             )}
-          </ScrollView>
+          </BottomSheetScrollView>
 
           <View style={styles.modalFooter}>
             {isEditMode ? (
@@ -432,15 +468,14 @@ export default function SessionDetailModal({ session, visible, onClose, onRefres
               </>
             )}
           </View>
-        </View>
-      </KeyboardAvoidingView>
-    </Modal>
+        </BottomSheetView>
+    </BottomSheetModal>
   );
 }
 
 const styles = StyleSheet.create({
   modalOverlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)", justifyContent: "flex-end" },
-  modalContent: { backgroundColor: "#FFFFFF", borderTopLeftRadius: 24, borderTopRightRadius: 24, height: "90%", shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 10 },
+  modalContent: { flex: 1, backgroundColor: "#FFFFFF" },
   modalHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 24, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: "#F3F4F6" },
   modalTitle: { fontSize: 20, fontWeight: "800", color: "#111827" },
   closeBtn: { padding: 4, backgroundColor: "#F3F4F6", borderRadius: 20 },
