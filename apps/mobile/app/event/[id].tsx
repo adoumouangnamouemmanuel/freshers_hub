@@ -4,6 +4,7 @@ import { View, Text, StyleSheet, ActivityIndicator, ScrollView, Pressable, Alert
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from "@tanstack/react-query";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Burnt from "burnt";
 
 import { useAuth } from "@/context/auth-context";
 import { apiRequest } from "@/lib/api";
@@ -105,9 +106,19 @@ export default function EventDetailScreen() {
       queryClient.invalidateQueries({ queryKey: ['event', id] });
       queryClient.invalidateQueries({ queryKey: ['events'] });
       queryClient.invalidateQueries({ queryKey: ['event_rsvps', id] });
+      Burnt.toast({
+        title: "Success",
+        preset: "done",
+        message: "Your RSVP status has been updated.",
+      });
     },
     onError: (err) => {
       console.error("Failed to RSVP:", err);
+      Burnt.toast({
+        title: "Error",
+        preset: "error",
+        message: "Failed to update RSVP status.",
+      });
     },
     onSettled: () => {
       setIsRsvping(false);
@@ -135,7 +146,11 @@ export default function EventDetailScreen() {
       router.back();
     },
     onError: () => {
-      Alert.alert("Error", "Failed to delete event.");
+      Burnt.toast({
+        title: "Error",
+        preset: "error",
+        message: "Failed to delete event.",
+      });
     }
   });
 
