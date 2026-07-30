@@ -14,7 +14,9 @@ const locationRepository = {
         emoji, 
         hours, 
         latitude, 
-        longitude
+        longitude,
+        floor_level,
+        images
       FROM locations
       ORDER BY category ASC, name ASC
     `);
