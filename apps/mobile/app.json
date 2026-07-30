@@ -22,7 +22,7 @@
       "googleServicesFile": "./google-services.json",
       "config": {
         "googleMaps": {
-          "apiKey": "DUMMY_API_KEY_TO_PREVENT_CRASH"
+          "apiKey": "AIzaSyDcHy0fIE9Xd08VCOHYHOPabk-4zPvKYww"
         }
       }
     },
