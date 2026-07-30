@@ -78,19 +78,23 @@ function AppNavigator() {
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import { queryClient, persistOptions } from '@/lib/queryClient';
 
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+
 export default function RootLayout() {
   const colorScheme = useColorScheme();
 
   return (
-    <SafeAreaProvider>
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
-          <AuthProvider>
-            <AppNavigator />
-          </AuthProvider>
-        </PersistQueryClientProvider>
-        <StatusBar style="dark" />
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+          <PersistQueryClientProvider client={queryClient} persistOptions={persistOptions}>
+            <AuthProvider>
+              <AppNavigator />
+            </AuthProvider>
+          </PersistQueryClientProvider>
+          <StatusBar style="dark" />
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
