@@ -6,12 +6,13 @@ import {
   StyleSheet,
   ActivityIndicator,
   Pressable,
-  FlatList,
+  TextInput,
   RefreshControl,
   Animated,
   Alert,
-  TextInput,
+  FlatList,
 } from "react-native";
+import { FlashList } from "@shopify/flash-list";
 import { useRouter } from "expo-router";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/auth-context";
@@ -267,7 +268,7 @@ export default function NotificationsScreen() {
           )}
         </View>
       ) : (
-        <FlatList
+        <FlashList
           data={filtered}
           keyExtractor={(n) => n.id}
           contentContainerStyle={styles.list}
@@ -278,6 +279,7 @@ export default function NotificationsScreen() {
             <NotificationCard item={item} index={index} onPress={handlePressNotification} />
           )}
           ItemSeparatorComponent={() => <View style={styles.separator} />}
+          estimatedItemSize={100}
         />
       )}
 
