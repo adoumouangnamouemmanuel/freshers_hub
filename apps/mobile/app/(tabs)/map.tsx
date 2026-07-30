@@ -14,7 +14,9 @@ import {
   ActivityIndicator,
   Animated,
   Image,
+  Modal,
 } from "react-native";
+import { ScrollView as GHScrollView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import * as Location from "expo-location";
@@ -85,6 +87,7 @@ export default function MapScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [userCoords, setUserCoords] = useState<Location.LocationObjectCoords | null>(null);
   const [currentRoute, setCurrentRoute] = useState<Coordinate[] | null>(null);
+  const [fullScreenImage, setFullScreenImage] = useState<string | null>(null);
 
   // Routing State
   const [isRoutingMode, setIsRoutingMode] = useState(false);
@@ -643,11 +646,13 @@ export default function MapScreen() {
             
             {/* Image Gallery */}
             {selectedItem.images && selectedItem.images.length > 0 && (
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageGallery}>
+              <GHScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageGallery} contentContainerStyle={{ paddingRight: 24 }}>
                 {selectedItem.images.map((imgUrl, idx) => (
-                  <Image key={idx} source={{ uri: imgUrl }} style={styles.locationImage} />
+                  <Pressable key={idx} onPress={() => setFullScreenImage(imgUrl)}>
+                    <Image source={{ uri: imgUrl }} style={styles.locationImage} />
+                  </Pressable>
                 ))}
-              </ScrollView>
+              </GHScrollView>
             )}
 
             <View style={styles.sheetHeader}>
@@ -706,6 +711,18 @@ export default function MapScreen() {
           </BottomSheetScrollView>
         )}
       </BottomSheet>
+
+      {/* Full Screen Image Viewer */}
+      <Modal visible={!!fullScreenImage} transparent={true} animationType="fade" onRequestClose={() => setFullScreenImage(null)}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.9)', justifyContent: 'center', alignItems: 'center' }}>
+          <Pressable style={{ position: 'absolute', top: Math.max(insets.top, 20), right: 20, zIndex: 10, padding: 8 }} onPress={() => setFullScreenImage(null)}>
+            <IconSymbol name="xmark.circle.fill" size={32} color="#FFFFFF" />
+          </Pressable>
+          {fullScreenImage && (
+            <Image source={{ uri: fullScreenImage }} style={{ width: width, height: height * 0.8 }} resizeMode="contain" />
+          )}
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -759,7 +776,7 @@ const styles = StyleSheet.create({
     color: '#1A2B4A',
   },
 
-  searchContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255, 255, 255, 0.75)", marginHorizontal: 16, paddingHorizontal: 16, paddingVertical: 12, borderRadius: 16, overflow: 'hidden' },
+  searchContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255, 255, 255, 0.75)", marginHorizontal: 16, paddingHorizontal: 16, paddingVertical: 0, borderRadius: 16, overflow: 'hidden' },
   searchInput: { flex: 1, marginLeft: 12, fontSize: 16, color: "#1A2B4A" },
   categoriesScroll: { marginTop: 12 },
   categoriesContent: { paddingHorizontal: 16, gap: 8 },
