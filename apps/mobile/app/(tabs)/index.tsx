@@ -7,9 +7,9 @@ import {
   ActivityIndicator,
   RefreshControl,
   StyleSheet,
-  FlatList,
   TextInput
-} from "react-native"; 
+} from "react-native";
+import { FlashList } from "@shopify/flash-list";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
@@ -25,7 +25,7 @@ import { PostCard } from "@/components/dashboard/PostCard";
 
 // New Foundation Components
 import { DynamicHeader } from "@/components/homescreen/DynamicHeader";
-import { DashboardSkeleton } from "@/components/homescreen/SkeletonLoader";
+import { DashboardSkeleton, SkeletonLoader } from "@/components/homescreen/SkeletonLoader";
 
 // Role Components
 import { FresherHomeScreen } from "@/components/homescreen/roles/FresherHomeScreen";
@@ -170,7 +170,7 @@ export default function FeedScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={["top"]}>
       <StatusBar style="dark" />
-      <FlatList
+      <FlashList
         data={posts}
         keyExtractor={item => item.id}
         renderItem={({ item }) => <PostCard post={item} onUpdate={refetchPosts} />}
@@ -270,11 +270,7 @@ export default function FeedScreen() {
             </View>
           </>
         }
-        ListFooterComponent={
-          isLoadingMore ? (
-            <ActivityIndicator size="small" color="#A93C40" style={{ marginVertical: 20 }} />
-          ) : null
-        }
+        ListFooterComponent={isLoadingMore ? <SkeletonLoader width="100%" height={200} borderRadius={24} style={{ marginTop: 16 }} /> : null}
       />
 
       {/* Expandable FAB for Creating Content (For Admins) */}
