@@ -61,6 +61,7 @@ const MAPPING = {
   'bell.badge.fill': 'notifications-active',
   'bell.slash.fill': 'notifications-off',
   'mappin.and.ellipse': 'location-on',
+  'location.north.line.fill': 'navigation',
   'megaphone.fill': 'campaign',
   'person.3.fill': 'groups',
   'checkmark.circle.fill': 'check-circle',
