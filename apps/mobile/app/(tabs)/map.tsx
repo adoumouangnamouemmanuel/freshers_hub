@@ -15,15 +15,18 @@ import {
   Animated,
   Image,
   Modal,
+  Share,
 } from "react-native";
 import { ScrollView as GHScrollView } from "react-native-gesture-handler";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLocalSearchParams } from "expo-router";
 import * as Location from "expo-location";
+import * as Haptics from "expo-haptics";
 import Constants from "expo-constants";
 import Mapbox from "@rnmapbox/maps";
 import { IconSymbol } from "@/components/ui/icon-symbol";
 import BottomSheet, { BottomSheetScrollView } from "@gorhom/bottom-sheet";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { BlurView } from "expo-blur";
 import { apiRequest } from "@/lib/api";
 import { calculateCampusRoute } from "../../lib/routing";
@@ -95,6 +98,10 @@ export default function MapScreen() {
   const [routeDestination, setRouteDestination] = useState<LocationItem | null>(null);
   const [selectingSource, setSelectingSource] = useState(false);
 
+  // New States
+  const [is3D, setIs3D] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<LocationItem[]>([]);
+
   const { data: locations = [], isLoading } = useQuery({
     queryKey: ['campus_locations'],
     queryFn: async () => {
@@ -109,7 +116,7 @@ export default function MapScreen() {
   
   const insets = useSafeAreaInsets();
   const bottomSheetRef = useRef<BottomSheet>(null);
-  const snapPoints = useMemo(() => ["35%", "55%", "90%"], []);
+  const snapPoints = useMemo(() => ["15%", "35%", "60%", "90%"], []);
 
   const handleSheetChanges = (index: number) => {
     if (index === -1) {
@@ -162,11 +169,35 @@ export default function MapScreen() {
         console.warn("Failed to get location:", e);
       }
     })();
+
+    // Load recent searches
+    (async () => {
+      try {
+        const stored = await AsyncStorage.getItem('recentSearches');
+        if (stored) {
+          setRecentSearches(JSON.parse(stored));
+        }
+      } catch (e) {
+        console.warn("Failed to load recent searches", e);
+      }
+    })();
   }, []);
+
+  const saveRecentSearch = async (loc: LocationItem) => {
+    try {
+      const updated = [loc, ...recentSearches.filter(item => item.id !== loc.id)].slice(0, 5);
+      setRecentSearches(updated);
+      await AsyncStorage.setItem('recentSearches', JSON.stringify(updated));
+    } catch (e) {
+      console.warn("Failed to save recent search", e);
+    }
+  };
 
   useEffect(() => {
     if (selectedItem && !isRoutingMode) {
-      bottomSheetRef.current?.snapToIndex(1); // Default to middle snap point
+      setTimeout(() => {
+        bottomSheetRef.current?.snapToIndex(2); // Middle snap point (60%)
+      }, 100);
       
       cameraRef.current?.setCamera({
         centerCoordinate: [selectedItem.coordinate.longitude, selectedItem.coordinate.latitude],
@@ -174,7 +205,7 @@ export default function MapScreen() {
         animationDuration: 600,
       });
     } else {
-      bottomSheetRef.current?.close();
+      bottomSheetRef.current?.close(); // Hide completely when nothing is selected
     }
   }, [selectedItem, isRoutingMode]);
 
@@ -468,30 +499,10 @@ export default function MapScreen() {
         )}
       </Mapbox.MapView>
 
-      {/* Right Sidebar Controls */}
-      <View style={[styles.rightSidebar, { top: Math.max(insets.top, 16) + (isRoutingMode ? 140 : 120) }]}>
-        <BlurView intensity={80} tint="light" style={styles.controlGroup}>
-          <Pressable style={styles.sidebarBtn} onPress={resetMap}>
-             <IconSymbol name="arrow.triangle.turn.up.right.circle.fill" size={20} color="#1A2B4A" />
-          </Pressable>
-          {userCoords && (
-            <>
-              <View style={styles.divider} />
-              <Pressable style={styles.sidebarBtn} onPress={() => {
-                cameraRef.current?.setCamera({ centerCoordinate: [userCoords.longitude, userCoords.latitude], zoomLevel: 17, animationDuration: 500 });
-              }}>
-                <IconSymbol name="location.fill" size={20} color="#1A2B4A" />
-              </Pressable>
-            </>
-          )}
-        </BlurView>
-
-      </View>
-
       {/* Top Bar (Routing or Search) */}
       <View style={[styles.topBar, { paddingTop: Math.max(insets.top, 16) }]}>
         {isRoutingMode ? (
-          <BlurView intensity={80} tint="light" style={styles.routingContainer}>
+          <View style={styles.routingContainer}>
             <View style={styles.routingHeaderRow}>
               <Pressable onPress={exitRoutingMode} style={{ padding: 8 }}>
                 <IconSymbol name="chevron.left" size={24} color="#1A2B4A" />
@@ -517,9 +528,9 @@ export default function MapScreen() {
                 </View>
               </View>
             </View>
-          </BlurView>
+          </View>
         ) : (
-          <BlurView intensity={80} tint="light" style={styles.searchContainer}>
+          <View style={styles.searchContainer}>
             <IconSymbol name="magnifyingglass" size={20} color="#9BA3AE" />
             <TextInput
               style={styles.searchInput}
@@ -537,7 +548,7 @@ export default function MapScreen() {
                 <IconSymbol name="xmark.circle.fill" size={18} color="#9BA3AE" />
               </Pressable>
             )}
-          </BlurView>
+          </View>
         )}
 
         {!isRoutingMode && (
@@ -545,7 +556,11 @@ export default function MapScreen() {
             {categories.map(cat => (
               <Pressable
                 key={cat}
-                onPress={() => { setActiveCategory(cat); setSelectedItem(null); }}
+                onPress={() => { 
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  setActiveCategory(cat); 
+                  setSelectedItem(null); 
+                }}
                 style={[styles.categoryPill, activeCategory === cat && styles.categoryPillActive]}
               >
                 <Text style={[styles.categoryPillText, activeCategory === cat && styles.categoryPillTextActive]}>{cat}</Text>
@@ -563,18 +578,8 @@ export default function MapScreen() {
       )}
 
       {/* Search Results Dropdown (used for normal search OR selecting source) */}
-      {isSearching && (
+      {isSearching && (searchQuery.length > 0 || recentSearches.length > 0 || selectingSource) && (
         <View style={[styles.searchResults, { top: Math.max(insets.top, 16) + (isRoutingMode ? 120 : 64) }]}>
-          <View style={{flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: '#E5E7EB'}}>
-            <IconSymbol name="magnifyingglass" size={18} color="#9BA3AE" />
-            <TextInput 
-              autoFocus={selectingSource}
-              placeholder="Search locations..."
-              style={{flex: 1, marginLeft: 8, fontSize: 16}}
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-            />
-          </View>
           <ScrollView keyboardShouldPersistTaps="handled">
             {/* Option to use Current Location if selecting source */}
             {selectingSource && (
@@ -596,7 +601,13 @@ export default function MapScreen() {
               </Pressable>
             )}
 
-            {filteredLocations.map(loc => (
+            {searchQuery.length === 0 && !selectingSource && recentSearches.length > 0 && (
+              <View style={{ paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 }}>
+                <Text style={{ fontSize: 13, fontWeight: "700", color: "#6B7280", textTransform: "uppercase" }}>Recent Searches</Text>
+              </View>
+            )}
+
+            {(searchQuery.length > 0 ? filteredLocations : recentSearches).map(loc => (
               <Pressable
                 key={loc.id}
                 style={styles.searchResultItem}
@@ -609,6 +620,7 @@ export default function MapScreen() {
                     calculateAndDrawRoute(loc, routeDestination);
                   } else {
                     setSelectedItem(loc);
+                    saveRecentSearch(loc);
                     setIsSearching(false);
                     Keyboard.dismiss();
                   }
@@ -623,12 +635,47 @@ export default function MapScreen() {
                 </View>
               </Pressable>
             ))}
-            {filteredLocations.length === 0 && !selectingSource && (
+            {searchQuery.length > 0 && filteredLocations.length === 0 && !selectingSource && (
               <Text style={styles.noResultsText}>No locations found</Text>
             )}
           </ScrollView>
         </View>
       )}
+
+      
+      {/* Floating Map Controls */}
+      <View style={[styles.mapControls, { bottom: Math.max(insets.bottom, 120) }]}>
+         <Pressable style={styles.fabBtn} onPress={() => {
+             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+             if (is3D) {
+               cameraRef.current?.setCamera({ pitch: 0, animationDuration: 500 });
+               setIs3D(false);
+             } else {
+               cameraRef.current?.setCamera({ pitch: 45, animationDuration: 500 });
+               setIs3D(true);
+             }
+         }}>
+            <Text style={{ fontWeight: '800', fontSize: 16, color: '#1A2B4A' }}>{is3D ? '2D' : '3D'}</Text>
+         </Pressable>
+         <View style={styles.fabDivider} />
+         <Pressable style={styles.fabBtn} onPress={() => {
+             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+             cameraRef.current?.setCamera({ heading: 0, animationDuration: 500 });
+         }}>
+            <IconSymbol name="location.north.line.fill" size={20} color="#1A2B4A" />
+         </Pressable>
+         <View style={styles.fabDivider} />
+         <Pressable style={styles.fabBtn} onPress={() => {
+             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+             if (userCoords) {
+               cameraRef.current?.setCamera({ centerCoordinate: [userCoords.longitude, userCoords.latitude], zoomLevel: 17, animationDuration: 500 });
+             } else {
+               resetMap();
+             }
+         }}>
+            <IconSymbol name="location.fill" size={20} color="#3B82F6" />
+         </Pressable>
+      </View>
 
       {/* Bottom Sheet Details */}
       <BottomSheet
@@ -641,21 +688,29 @@ export default function MapScreen() {
         handleIndicatorStyle={styles.bottomSheetIndicator}
         style={styles.bottomSheetShadow}
       >
-        {selectedItem && (
+        
+        {selectedItem ? (
           <BottomSheetScrollView style={styles.sheetContent} contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 24) }}>
             
             {/* Image Gallery */}
             {selectedItem.images && selectedItem.images.length > 0 && (
-              <GHScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageGallery} contentContainerStyle={{ paddingRight: 24 }}>
-                {selectedItem.images.map((imgUrl, idx) => (
-                  <Pressable key={idx} onPress={() => setFullScreenImage(imgUrl)}>
-                    <Image source={{ uri: imgUrl }} style={styles.locationImage} />
-                  </Pressable>
-                ))}
-              </GHScrollView>
+              <View>
+                <GHScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageGallery} contentContainerStyle={{ paddingRight: 24, paddingLeft: 24 }} pagingEnabled snapToAlignment="center" decelerationRate="fast">
+                  {selectedItem.images.map((imgUrl, idx) => (
+                    <Pressable key={idx} onPress={() => setFullScreenImage(imgUrl)}>
+                      <Image source={{ uri: imgUrl }} style={styles.locationImage} />
+                    </Pressable>
+                  ))}
+                </GHScrollView>
+                <View style={styles.paginationDots}>
+                  {selectedItem.images.map((_, idx) => (
+                    <View key={idx} style={styles.dot} />
+                  ))}
+                </View>
+              </View>
             )}
 
-            <View style={styles.sheetHeader}>
+            <View style={[styles.sheetHeader, { paddingHorizontal: 24 }]}>
               <View style={[styles.sheetIconWrapper, { backgroundColor: CATEGORY_COLORS[selectedItem.category] || "#A93C40" }]}>
                 <IconSymbol name={(selectedItem.icon as any) || "mappin"} size={24} color="#FFFFFF" />
               </View>
@@ -677,7 +732,7 @@ export default function MapScreen() {
             </View>
 
             {/* Action Buttons Row */}
-            <View style={styles.actionButtonsRow}>
+            <View style={[styles.actionButtonsRow, { paddingHorizontal: 24 }]}>
               <Pressable style={styles.actionBtn} onPress={handleGetDirections}>
                 <View style={styles.actionBtnIcon}>
                   <IconSymbol name="location.fill" size={20} color="#FFFFFF" />
@@ -685,31 +740,41 @@ export default function MapScreen() {
                 <Text style={styles.actionBtnText}>Directions</Text>
               </Pressable>
 
+              <Pressable style={styles.actionBtnSecondary} onPress={() => {
+                Share.share({
+                  message: `Check out ${selectedItem.name} at Ashesi University!`,
+                });
+              }}>
+                <View style={styles.actionBtnIconSecondary}>
+                  <IconSymbol name="square.and.arrow.up" size={20} color="#3B82F6" />
+                </View>
+              </Pressable>
+              
               <Pressable style={styles.actionBtnSecondary} onPress={handleGetExternalDirections}>
                 <View style={styles.actionBtnIconSecondary}>
                   <IconSymbol name="map.fill" size={20} color="#3B82F6" />
                 </View>
-                <Text style={styles.actionBtnTextSecondary}>Google Maps</Text>
               </Pressable>
             </View>
 
             <View style={styles.sheetDivider} />
 
             {selectedItem.description && (
-              <View style={styles.infoSection}>
+              <View style={[styles.infoSection, { paddingHorizontal: 24 }]}>
                 <Text style={styles.sectionTitle}>Overview</Text>
                 <Text style={styles.sheetDescription}>{selectedItem.description}</Text>
               </View>
             )}
 
             {selectedItem.hours && (
-              <View style={styles.infoRow}>
+              <View style={[styles.infoRow, { paddingHorizontal: 24 }]}>
                 <IconSymbol name="clock.fill" size={20} color="#3B82F6" />
                 <Text style={styles.infoText}>{selectedItem.hours}</Text>
               </View>
             )}
           </BottomSheetScrollView>
-        )}
+        ) : null}
+
       </BottomSheet>
 
       {/* Full Screen Image Viewer */}
@@ -776,17 +841,17 @@ const styles = StyleSheet.create({
     color: '#1A2B4A',
   },
 
-  searchContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255, 255, 255, 0.75)", marginHorizontal: 16, paddingHorizontal: 16, paddingVertical: 0, borderRadius: 16, overflow: 'hidden' },
-  searchInput: { flex: 1, marginLeft: 12, fontSize: 16, color: "#1A2B4A" },
+  searchContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255, 255, 255, 0.95)", marginHorizontal: 10, paddingHorizontal: 16, paddingVertical: 0, borderRadius: 100, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 8, borderWidth: 1, borderColor: "rgba(0,0,0,0.05)" },
+  searchInput: { flex: 1, marginLeft: 12, fontSize: 15, color: "#1A2B4A" },
   categoriesScroll: { marginTop: 12 },
   categoriesContent: { paddingHorizontal: 16, gap: 8 },
-  categoryPill: { backgroundColor: "rgba(255, 255, 255, 0.8)", paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20 },
+  categoryPill: { backgroundColor: "rgba(255, 255, 255, 0.9)", paddingHorizontal: 20, paddingVertical: 5, borderRadius: 100, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 4, elevation: 2, borderWidth: 1, borderColor: "rgba(255,255,255,0.3)" },
   categoryPillActive: { backgroundColor: "#A93C40" },
   categoryPillText: { fontSize: 14, fontWeight: "600", color: "#4B5563" },
   categoryPillTextActive: { color: "#FFFFFF" },
   loadingOverlay: { position: "absolute", top: 120, left: 0, right: 0, alignItems: "center" },
   
-  searchResults: { position: "absolute", left: 16, right: 16, backgroundColor: "rgba(255, 255, 255, 0.9)", borderRadius: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 5, maxHeight: 300, zIndex: 20, overflow: 'hidden' },
+  searchResults: { position: "absolute", left: 32, right: 32, backgroundColor: "rgba(255, 255, 255, 0.95)", borderRadius: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.1, shadowRadius: 12, elevation: 5, maxHeight: 300, zIndex: 20, overflow: 'hidden' },
   searchResultItem: { flexDirection: "row", alignItems: "center", padding: 16, borderBottomWidth: 1, borderBottomColor: "#F3F4F6" },
   searchResultName: { fontSize: 16, fontWeight: "600", color: "#1A2B4A" },
   searchResultCategory: { fontSize: 13, color: "#6B7280", marginTop: 2 },
@@ -795,9 +860,9 @@ const styles = StyleSheet.create({
   bottomSheetBackground: { backgroundColor: "#FFFFFF", borderTopLeftRadius: 24, borderTopRightRadius: 24 },
   bottomSheetIndicator: { backgroundColor: "#E5E7EB", width: 40, height: 5 },
   bottomSheetShadow: { shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.15, shadowRadius: 16, elevation: 20, zIndex: 40 },
-  sheetContent: { paddingHorizontal: 24, paddingTop: 12 },
-  imageGallery: { flexDirection: 'row', marginBottom: 16 },
-  locationImage: { width: 280, height: 160, borderRadius: 16, marginRight: 12, backgroundColor: '#E5E7EB' },
+  sheetContent: { paddingTop: 12 },
+  imageGallery: { flexDirection: 'row', marginBottom: 8 },
+  locationImage: { width: width - 48, height: 200, borderRadius: 16, marginRight: 16, backgroundColor: '#E5E7EB' },
   sheetHeader: { flexDirection: "row", alignItems: "flex-start", marginBottom: 16 },
   sheetIconWrapper: { width: 48, height: 48, borderRadius: 24, alignItems: "center", justifyContent: "center", marginRight: 16 },
   sheetIconEmoji: { fontSize: 24 },
@@ -829,4 +894,11 @@ const styles = StyleSheet.create({
   floorBtnActive: { backgroundColor: "#A93C40" },
   floorBtnText: { fontSize: 15, fontWeight: "700", color: "#6B7280" },
   floorBtnTextActive: { color: "#FFFFFF" },
+  mapControls: { position: 'absolute', right: 16, backgroundColor: '#FFFFFF', borderRadius: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 12, elevation: 8, zIndex: 30, overflow: 'hidden' },
+  fabBtn: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
+  fabDivider: { height: 1, backgroundColor: '#F3F4F6', marginHorizontal: 8 },
+  paginationDots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginBottom: 16 },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#D1D5DB' },
+  exploreChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', paddingHorizontal: 16, paddingVertical: 12, borderRadius: 100, gap: 8, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8, elevation: 4 },
+  exploreChipText: { fontSize: 15, fontWeight: '600', color: '#4B5563' },
 });
