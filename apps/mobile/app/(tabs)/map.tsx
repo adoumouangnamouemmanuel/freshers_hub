@@ -32,7 +32,7 @@ import { apiRequest } from "@/lib/api";
 import { calculateCampusRoute } from "../../lib/routing";
 import { campusNodes, Coordinate } from "../../constants/campusGraph";
 
-Mapbox.setAccessToken("YOUR_MAPBOX_TOKEN");
+Mapbox.setAccessToken(process.env.EXPO_PUBLIC_MAPBOX_TOKEN || "");
 
 const { width, height } = Dimensions.get("window");
 
@@ -281,7 +281,7 @@ export default function MapScreen() {
       : source.coordinate;
       
     try {
-      const apiKey = Constants.expoConfig?.android?.config?.googleMaps?.apiKey || Constants.expoConfig?.ios?.config?.googleMapsApiKey || "YOUR_GOOGLE_MAPS_API_KEY";
+      const apiKey = Constants.expoConfig?.android?.config?.googleMaps?.apiKey || Constants.expoConfig?.ios?.config?.googleMapsApiKey || process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || "";
       const requestBody = {
         origin: { location: { latLng: { latitude: startCoord.latitude, longitude: startCoord.longitude } } },
         destination: { location: { latLng: { latitude: dest.coordinate.latitude, longitude: dest.coordinate.longitude } } },
